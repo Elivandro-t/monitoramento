@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" th:href="@{/css/registro.css}">
+
+</head>
+<body>
+<script src="../static/css/group.js"></script>
+<script th:src="@{/css/group.js}"></script>
+
+
+  <h1>Grupos de Serviços</h1>
+   <form method="post" action="/group/registro">
+       <input type="text" name="nome"  placeholder="Nome do grupo...">
+   </form>
+<div id="modal" style="display:block;" th:if="${mensagem}" th:text="${mensagem}"></div>
+
+</body>
+</html>

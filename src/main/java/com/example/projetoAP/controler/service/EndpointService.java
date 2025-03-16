@@ -1,0 +1,109 @@
+package com.example.projetoAP.controler.service;
+
+import com.example.projetoAP.EndpointDTO;
+import com.example.projetoAP.Service.EndpointInterfaceDTO;
+import com.example.projetoAP.domain.model.Endpoin;
+import com.example.projetoAP.repository.GroupRepository;
+import com.example.projetoAP.repository.SalvaEndPoint;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.*;
+
+@Service
+public class EndpointService {
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private final BlockingQueue<Row> filaDeProcessamento = new LinkedBlockingQueue<>();
+    @Autowired
+    GroupRepository groupService;
+    private int totalLinhas = 0; // Total de linhas a processar
+    private int linhasProcessadas = 0;
+
+    SalvaEndPoint salvaEndPoint;
+    public EndpointService( SalvaEndPoint salvaEndPoint){
+        this.salvaEndPoint = salvaEndPoint;
+    }
+    public EndpointDTO setRegistro(EndpointInterfaceDTO e) throws IOException, InterruptedException {
+        var l = groupService.getReferenceById(Long.parseLong(e.ReceiveGrupoId()));
+        var resposta = new Endpoin(e,l.getName());
+        return salvaEndPoint.GetSalva(resposta);
+    }
+    public List<EndpointDTO> getLista(){
+        var lista = salvaEndPoint.GetLista();
+        return lista;
+    }
+    public String salvaMultPartAsync(String caminho) throws IOException, InterruptedException {
+        try (FileInputStream fis = new FileInputStream(new File(caminho))) {
+            Workbook workbook = new XSSFWorkbook(fis);
+            Sheet sheet = workbook.getSheetAt(0);
+            Iterator<Row> rowIterator = sheet.iterator();
+            while (rowIterator.hasNext()) {
+                Row row = rowIterator.next();
+                if (row.getRowNum() == 0) {  // Ignorar o cabeçalho
+                    continue;
+                }
+                totalLinhas++;
+              filaDeProcessamento.offer(row);
+            }
+        }
+        executorService.submit(this::processarDados);
+        enviarMensagemParaWebSocket();
+        return "processando";
+    }
+    @Transactional
+    private void processarDados() {
+        while (!filaDeProcessamento.isEmpty()) {
+            try {
+                Row row = filaDeProcessamento.poll(10, TimeUnit.SECONDS); // Aguarda até 10s por uma nova linha
+                if (row != null) {
+                    processarLinha(row);
+                    linhasProcessadas++;
+                    enviarMensagemParaWebSocket();
+                }else{
+                    linhasProcessadas = 0;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        enviarMensagemParaWebSocket();
+    }
+    private void processarLinha(Row texto) throws IOException, InterruptedException {
+    try {
+        String localization = String.valueOf(texto.getCell(0));
+        String mac = String.valueOf(texto.getCell(1));
+        String hostname = String.valueOf(texto.getCell(2));
+        String filial = String.valueOf(texto.getCell(3));
+        String ipv4 = String.valueOf(texto.getCell(4));
+        String modelo = String.valueOf(texto.getCell(5));
+        String sn = String.valueOf(texto.getCell(6));
+        var grupo = texto.getCell(7);
+        EndpointInterfaceDTO ed = new EndpointInterfaceDTO(hostname.replace("GM-",""), modelo.toUpperCase(), sn, localization.replace("SLZ-",""),mac, ipv4, "", "", "20/10/2023", "", "1");
+        var l = groupService.findById(Long.parseLong(ed.ReceiveGrupoId())).orElseThrow(()->new RuntimeException("nenhum resultado"));
+        var resposta = new Endpoin(ed, l.getName());
+        salvaEndPoint.GetSalvas(resposta);
+    }catch (Exception e){
+        e.printStackTrace();
+    }
+    }
+
+    private void enviarMensagemParaWebSocket() {
+        String mensagem = String.format("Processando... %d/%d", linhasProcessadas, totalLinhas);
+        messagingTemplate.convertAndSend("/topic/processamento", mensagem);  // Envia para o tópico que o cliente está ouvindo
+    }
+}

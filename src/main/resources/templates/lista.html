@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head >
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" th:href="@{/css/lista.css}">
+    <link rel="stylesheet" href="../static/css/lista.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
+</head>
+<body>
+<script src="../static/css/javascrip.js"></script>
+<script src="../static/css/lista_mac.js"></script>
+
+<script th:src="@{/css/javascrip.js}"></script>
+<script th:src="@{/css/javascript.js}"></script>
+<script th:src="@{/css/visual.js}"></script>
+<script th:src="@{/css/lista_mac.js}"></script>
+
+
+   <section class="area_container">
+       <div class="container_int container_registro">
+           <a href="/registro" onclick="app('/registro',this );" data-route="/registro">Novo</a>
+       </div>
+       <h1>Status do Processamento</h1>
+       <div id="modals"></div>
+       <div th:if="${off}" th:text="'DOWN '+${#lists.size(off)}"></div>
+       <div class="container">
+           <form method="get" action="/lista">
+               <label for="mac">Busca</label>
+               <input type="text" id="mac" name="mac" placeholder="00:00:00:00:00:00">
+               <button id="enviar">enviar</button>
+               </form>
+       </div>
+       <div><button onclick="toggleFullscreen()">Tela Cheia</button></div>
+   </section>
+    <div class="area_table"  id="meuContainer">
+        <table>
+            <thead>
+                <tr>
+                    <th><select>
+                        <option>
+                            STATUS
+                        </option>
+                    </select></th>
+                    <th><select>
+                        <option>
+                            PROFILE
+                        </option>
+                    </select></th>
+                    <th>
+                        <select>
+                            <option>
+                                HOSTNAME
+                            </option>
+                        </select>
+                    </th>
+                    <th> <select>
+                            <option>
+                                MODEL
+                            </option>
+                        </select></th>
+                    <th><select>
+                            <option>
+                                S/N
+                            </option>
+                        </select></th>
+
+                    <th><select>
+                            <option>
+                                MAC_ADRESS
+                            </option>
+                        </select></th>
+                    <th><select>
+                            <option>
+                                IPv4
+                            </option>
+                        </select></th>
+                    <th>ICM PING</th>
+                    <th>URL</th>
+                    <th>CPD</th>
+                    <th>HOST GROUP</th>
+                </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item:${lista}" class="tr" th:data-name="${item.id}"  th:if="${item.status.toUpperCase() == 'DOWN'}">
+                <td th:text="${item.status}" th:id="ad"
+                    class="th-text ad"
+                    th:style="'background-color: ' + (${item.status != null && item.status.toUpperCase() == 'UP'} ? 'rgba(0, 128, 0, 0.8)' : 'rgba(255, 0, 0, 0.5)')"></td>
+                <td th:text="${item.localizacao}"></td>
+                <td th:text="${item.nome}" ></td>
+                <td th:text="${item.modelo}"></td>
+                <td th:text="${item.sn}"></td>
+                <td th:text="${item.mac}"></td>
+                <td th:text="${item.ip}"></td>
+                <td >
+                    <button onclick="visual(this);" th:data-ping="${item.ping}"> Visualizar</button>
+                    <div th:id="modal"  class="modal">
+                        <div>
+                            <button onclick="visual(this);">X</button>
+                        </div>
+                        <div class="area-propt" th:text="${item.ip}"></div>
+                        <div th:text="${item.ping}" class="area-propt"></div>
+                    </div>
+                </td>
+                <td >
+                    <a th:text="${item.link}"></a>
+                </td>
+                <td >EM PROCESSO</td>
+                <td th:text="${item.grupo}">EM PROCESSO</td>
+
+
+            </tr>
+                <tr th:each="item:${lista}" class="tr" th:data-name="${item.id}"  th:if="${item.status.toUpperCase() == 'UP'}">
+                    <td th:text="${item.status}" id="ad"
+                        class="th-text ad"
+                        th:style="'background-color: ' + (${item.status != null && item.status.toUpperCase() == 'UP'} ? 'rgba(0, 128, 0, 0.8)' : 'rgba(255, 0, 0, 0.5)')"></td>
+                    <td th:text="${item.localizacao}"></td>
+                    <td th:text="${item.nome}" ></td>
+                    <td th:text="${item.modelo}"></td>
+                    <td th:text="${item.sn}"></td>
+                    <td th:text="${item.mac}"></td>
+                    <td th:text="${item.ip}"></td>
+                    <td >
+                        <button onclick="visual(this);" th:data-ping="${item.ping}"> Visualizar</button>
+                        <div id="modal"  class="modal">
+                            <div>
+                                <button onclick="visual(this);">X</button>
+                            </div>
+                            <div class="area-propt" th:text="${item.ip}"></div>
+                            <div th:text="${item.ping}" class="area-propt"></div>
+                        </div>
+                    </td>
+                    <td >
+                        <a th:text="${item.link}"></a>
+                    </td>
+                    <td >EM PROCESSO</td>
+                    <td th:text="${item.grupo}">EM PROCESSO</td>
+                    
+
+                </tr>
+            </tbody>
+        </table>
+        <p th:text="'Total '+${#lists.size(lista)}"></p>
+    </div>
+
+</body>
+
+</html>

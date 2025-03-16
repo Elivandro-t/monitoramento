@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head >
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" th:href="@{/css/lista.css}">
+    <link rel="stylesheet" href="../static/css/lista.css">
+
+</head>
+<body>
+<script src="../static/css/javascrip.js"></script>
+<script src="../static/css/lista_mac.js"></script>
+
+<script th:src="@{/css/javascrip.js}"></script>
+   <section class="area_container">
+       <div class="container_int container_registro">
+           <button onclick="app('/registro',this );" data-route="/registro">Novo</button>
+       </div>
+       <div class="container">
+           <form method="post" action="/pagina">
+               <label for="mac">Busca</label>
+               <input type="text" id="mac" name="mac" placeholder="00:00:00:00:00:00">
+               <button id="enviar">enviar</button>
+       </div>
+   </section>
+    <div class="area_table">
+        <table>
+            <thead>
+                <tr>
+                    <th>
+                        <select>
+                            <option>
+                                NOME
+                            </option>
+                        </select>
+                    </th>
+                    <th> <select>
+                            <option>
+                                MODELO
+                            </option>
+                        </select></th>
+                    <th><select>
+                            <option>
+                                DATA
+                            </option>
+                        </select></th>
+                    <th><select>
+                            <option>
+                                LOCAL
+                            </option>
+                        </select></th>
+                    <th><select>
+                            <option>
+                                MAC
+                            </option>
+                        </select></th>
+                    <th><select>
+                            <option>
+                                IP
+                            </option>
+                        </select></th>
+                    <th><select>
+                            <option>
+                                STATUS
+                            </option>
+                        </select></th>
+                    <th>PING</th>
+                    <th>ACESS</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr  class="tr" data-name="elivandro1">
+                    <td>WEBKIT</td>
+                    <td>AP7522</td>
+                    <td>20/10/2018</td>
+                    <td>CIDADE 09</td>
+                    <td>78:5F.02.00:25:F0</td>
+                    <td>10.88.1.00</td>
+                    <td>ON</td>
+                    <td>icmp_seq=2 ttl=63 time=74.9 ms</td>
+                    <td>htts://10.88.1.00/logout</td>
+                </tr>
+                <tr  class="tr" data-name="elivandro2">
+                    <td>WEBKIT</td>
+                    <td>AP7522</td>
+                    <td>20/10/2018</td>
+                    <td>CIDADE 09</td>
+                    <td>78:5F.02.00:25:F0</td>
+                    <td>10.88.1.00</td>
+                    <td>ON</td>
+                    <td>icmp_seq=2 ttl=63 time=74.9 ms</td>
+                    <td>htts://10.88.1.00/logout</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+
+</html>

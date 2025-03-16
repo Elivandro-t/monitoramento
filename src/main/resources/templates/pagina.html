@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" th:href="@{/css/pagina.css}">
+     <link rel="stylesheet" href="../static/css/pagina.css">
+    <link rel="stylesheet" href="../static/css/lista.css">
+    <link rel="stylesheet" th:href="@{/css/lista.css}">
+
+
+</head>
+<body>
+<script src="../static/css/javascript.js"></script>
+<script th:src="@{/css/javascript.js}"></script>
+     <div class="container">
+        <form method="post" id="meuFormulario" action="/pagina">
+            <label for="mac">Buscar</label>
+            <input type="text" id="mac" name="mac" maxlength="17" placeholder="00:00:00:00:00:0B">
+            <button id="enviar" >enviar</button>
+            </form>
+     </div>
+<div class="area_table" th:if="${nome}">
+    <table>
+        <thead>
+        <tr>
+            <th>
+                        NOME
+            </th>
+            <th>
+                    MODELO
+               </th>
+            <th>
+                    DATA
+               </th>
+            <th>
+                    LOCAL
+              </th>
+            <th>
+                    MAC
+               </th>
+            <th>
+                    IP
+                </th>
+            <th>
+                    STATUS
+               </th>
+            <th>PING</th>
+            <th>ACESS</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>WEBKIT</td>
+            <td>AP7522</td>
+            <td>20/10/2018</td>
+            <td>CIDADE 09</td>
+            <td>78:5F.02.00:25:F0</td>
+            <td>10.88.1.00</td>
+            <td>ON</td>
+            <td>icmp_seq=2 ttl=63 time=74.9 ms</td>
+            <td>htts://10.88.1.00/logout</td>
+        </tr>
+
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
