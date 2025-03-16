@@ -43,8 +43,6 @@ public class Sheduled {
         var endpoints = entityRepository.findAll();
 
         List<CompletableFuture<Void>> futures = new ArrayList<>();
-
-        // Aqui você itera sobre os endpoints e cria uma tarefa para cada um deles
         for (var endpoint : endpoints) {
             futures.add(rodar(endpoint));
             process = endpoints.size();
