@@ -1,63 +1,70 @@
-document.addEventListener("DOMContentLoaded", function() {
-    let currentMenu = "";
+document.addEventListener("DOMContentLoaded", async function () {
+    let currentMenu = null; // menu atualmente aberto
+    let dados = /*[[${lista}]]*/[];
+    let lista = dados.map(e => e.status)
+    document.querySelectorAll(".tr").forEach(async (b) => {
 
-    document.querySelectorAll(".tr").forEach(b => {
-        let lista = "";         
-        const section = `
-        <section class="section">
-            <ul class="ul-name">
-               <li onclick="deletes('1')">Deletar</li>
-               <li onclick=(Atualizar())>Atualizar</li>
-               <li onclick=(removeL())>Sair }</li>
-            </ul>
-        </section>
-     `;
-
-        const contextMenuHandler = function(e) {
-            e.preventDefault(); 
-
-            let id = e.currentTarget.getAttribute("data-name");
-           // Se houver um menu aberto, remova-o
-        //    if (currentMenu && currentMenu !== lista && currentMenu.parentNode) {
-        //     currentMenu.parentNode.removeChild(currentMenu);
-        // }
-            if (!lista  ) {
-                lista = document.createElement("div");
-                lista.setAttribute("class", "td");
-                lista.innerHTML = section;
-                b.appendChild(lista);
-                if(b.includes(lista)){
-                    b.removeChild(lista)
-                }
-                currentMenu = lista;
-            }else {
-
-                // Se o menu já estiver visível, remova-o
-             
-                    b.removeChild(lista);
-                    lista = null;
-                
+        const contextMenuHandler = async function (e) {
+            e.preventDefault();
+            let response = await fetch("http://localhost:8080/itens");
+            let responseJson = await response.json();
+            let nada = "";
+            const idHost = b.getAttribute("data-name")
+            if (responseJson.item && Array.isArray(responseJson.item)) {
+                nada = responseJson.item.map(item => `
+                                     <li onclick="deletes('${idHost}','${item.itemid}')">${item.name}</li>
+                                 `).join("");
+            } else {
+                nada = `<li>Nenhum item encontrado</li>`;
             }
+            let section = `
+                                             <section class="section">
+                                                 <ul class="ul-name" >
+                                                    ${nada}
+                                                 </ul>
+                                             </section>
+                                         `;
+            // Remove menu atual, se existir
+            if (currentMenu) {
+                currentMenu.remove();
+                currentMenu = null;
+            }
+
+            // Cria novo menu
+            const menu = document.createElement("div");
+            menu.classList.add("td");
+            menu.innerHTML = section;
+
+            // Adiciona o menu à TR clicada
+            b.appendChild(menu);
+            currentMenu = menu;
         };
 
+        // Adiciona o evento de clique direito na TR
         b.addEventListener("contextmenu", contextMenuHandler);
 
-       
     });
-    console.log(lista)
-    
+
+    // Fecha o menu ao clicar fora
+    document.addEventListener("click", (e) => {
+        if (currentMenu && !currentMenu.contains(e.target)) {
+            currentMenu.remove();
+            currentMenu = null;
+        }
+    });
+
 });
 
-function deletes(isd){
-    alert("Em criação "+isd);
-
+function deletes(hostid,itemid) {
+    const url = `http://localhost:8080/char?limit=8000&hostid=${hostid}&itemid=${itemid}`;
+    window.location.href = url;
 }
 
-function removeL(){
-  alert("DEU CERTO")
+function removeL() {
+    alert("DEU CERTO")
 
 }
-function Atualizar(){
+function Atualizar() {
     alert("Atualizar")
-  
-  }
+
+}

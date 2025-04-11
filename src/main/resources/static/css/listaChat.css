@@ -1,0 +1,133 @@
+@keyframes fadeOpacity {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+body {
+  background-color: #1e1e1e;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #888282 #383d52;
+}
+.log{
+  width: 100%;
+  padding:10px;
+  margin-bottom: 5px;
+  font-size: 25px;
+}
+p {
+  top: 0;
+  padding: 5px 10px;
+  margin: 0;
+  font-size: 14px;
+
+}
+span{
+  padding: 10px 0;
+  font-size: 15px;
+  color:#9999 ;
+}
+small{
+  color:#f2f2f2 ;
+
+}
+
+.chart-containerw {
+  width: 210px;
+  height: 200px;
+  position: relative;
+  background-color: #302e2e;
+
+
+}
+
+.ls {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(6, 1fr);
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+
+
+}
+
+.area1 {
+  background-color: #302e2e;
+}
+
+.percent-labelRED {
+  background-color: #f12011;
+  animation: fadeOpacity 20s infinite;
+
+}
+
+.clildrenOff {
+  color: #f12011;
+  animation: fadeOpacity 20s linear ease-in;
+}
+
+.clildrenOn {
+  color: #7ed77e;
+
+}
+
+.percent-label {
+  background-color: #61c061;
+
+
+}
+
+.gauge-container {
+  width: 200px;
+  height: 100px;
+  position: relative;
+  margin: 10px;
+}
+
+.gauge-arc {
+  transition: 3s ease-out;
+  width: 80%;
+  height: 78%;
+  border-top-left-radius: 100px;
+  border-top-right-radius: 100px;
+  overflow: hidden;
+  transform: rotate(360deg);
+  padding-top: 20px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.gauge-arc:hover {
+  transition: 1s ease;
+  background: #61c061;
+}
+
+.gauge-fill {
+  width: 80%;
+  height: 100%;
+  background-color: #302e2e;
+  border-radius: 0 0 100px 100px;
+  transform: rotate(180deg);
+
+}
+
+.gauge-text {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 30px;
+}

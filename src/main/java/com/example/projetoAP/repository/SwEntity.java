@@ -14,7 +14,7 @@ public class SwEntity extends Host {
     }
 
     public SwEntity(EndpointInterfaceDTO e,String nameGroup) throws IOException, InterruptedException {
-        super(e,nameGroup);
+        super(e,nameGroup,null);
     }
 
     public SwEntity(EndpointDTO e) throws IOException, InterruptedException {

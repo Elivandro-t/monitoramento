@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
+import java.time.LocalDateTime;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,6 +29,10 @@ public class EndpointEntity {
     private String sn;
     private Integer grupoId;
     private String grupo;
+    private long grupoSetor;
+    private Integer filialName;
+    private String NomeComplexo;
+    private LocalDateTime ultimaVezOnline;
     public EndpointEntity(){}
     public EndpointEntity(Endpoin e){
         this.hostname = e.getNome();
@@ -42,6 +47,9 @@ public class EndpointEntity {
         this.grupo = e.getGrupo();
         this.grupoId = e.getGrupoId();
         this.sn = e.getSn();
+        this.filialName = e.getFilialName();
+        this.grupoSetor = e.getGrupoSetor();
+        this.NomeComplexo = e.getNomeCompleto();
     }
 
     public String getNome() {
@@ -124,7 +132,6 @@ public class EndpointEntity {
         StringBuilder result = new StringBuilder();
         String line;
         Pattern pattern = Pattern.compile("icmp_seq=(\\d+) ttl=(\\d+) time=([\\d.]+) ms");
-
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
         while ((line = bufferedReader.readLine())!=null){
             Matcher matcher = pattern.matcher(line);
@@ -148,8 +155,13 @@ public class EndpointEntity {
     public  void atualiza(String ip) throws IOException, InterruptedException {
         this.ping =getCmd(ip);
         this.Status =statusIp(ip);
-    }
+        if("DOWN".contains(statusIp(ip))){
+            this.ultimaVezOnline = LocalDateTime.now();
+            return;
+        }
+        this.ultimaVezOnline = null;
 
+    }
     public Integer getGrupoId() {
         return grupoId;
     }
@@ -160,5 +172,28 @@ public class EndpointEntity {
 
     public String getSn() {
         return sn;
+    }
+
+    public Integer getFilialName() {
+        return filialName;
+    }
+
+    public long getGrupoSetor() {
+        return grupoSetor;
+    }
+
+    public String getNomeComplexo() {
+        return null;
+    }
+
+    public void atualizaEndpoint(String ip) {
+    }
+
+    public String getHostname() {
+        return hostname;
+    }
+
+    public LocalDateTime getUltimaVezOnline() {
+        return ultimaVezOnline;
     }
 }

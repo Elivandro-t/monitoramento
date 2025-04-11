@@ -48,6 +48,7 @@ public class MacConectados {
                 } else {
                     String mac = formatMacAddress((OctetString) vb.getVariable());
                     macT.put(mac,"Desconhecido" );
+                    System.out.println("9Mesus Macs "+mac);
                     pdu.clear();
                     pdu.add(new VariableBinding(vb.getOid())); // Próximo OID
 

@@ -6,6 +6,8 @@ import com.example.projetoAP.repository.EndpointEntity;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.time.LocalDateTime;
+
 public class Host {
     private String hostname;
     public String model;
@@ -18,7 +20,11 @@ public class Host {
     private String data;
     private String sn;
     private Integer grupoId;
+    private long grupoSetor;
+    private Integer filialName;
     private String grupo;
+    private String nomeCompleto;
+    private LocalDateTime ultimaVezOnline;
     public Host(EndpointDTO e) throws IOException, InterruptedException {
         this.hostname = e.nome();
         this.model = e.modelo();
@@ -33,7 +39,7 @@ public class Host {
         this.sn = e.sn();
 
     }
-    public Host(EndpointInterfaceDTO e,String s) throws IOException, InterruptedException {
+    public Host(EndpointInterfaceDTO e,String s,Setores sd) throws IOException, InterruptedException {
         this.hostname = e.nome();
         this.model = e.modelo();
         this.mac_adress = e.mac();
@@ -46,6 +52,9 @@ public class Host {
         this.ping = "";
         this.grupoId = Integer.parseInt(e.ReceiveGrupoId());
         this.sn = e.sn();
+        this.filialName = sd.getFilial();
+        this.grupoSetor = sd.getId();
+        this.nomeCompleto = sd.getNameComplexo();
 
     }
     public Host(EndpointEntity e) throws IOException, InterruptedException {
@@ -60,6 +69,8 @@ public class Host {
         this.data = e.getIp();
         this.link = e.getLink();
         this.sn = e.getSn();
+        this.grupoSetor = e.getGrupoSetor();
+        this.filialName = e.getFilialName();
 
 
     }
@@ -89,11 +100,6 @@ public class Host {
     public String getPing() {
         return ping;
     }
-
-    public void setPing(String ping) {
-        this.ping = ping;
-    }
-
     public String getStatus() {
         return Status;
     }
@@ -146,11 +152,24 @@ public class Host {
         return grupo;
     }
 
-    public void setGrupo(String grupo) {
-        this.grupo = grupo;
-    }
 
     public String getSn() {
         return sn;
+    }
+
+    public long getGrupoSetor() {
+        return grupoSetor;
+    }
+
+    public Integer getFilialName() {
+        return filialName;
+    }
+
+    public String getNomeCompleto() {
+        return nomeCompleto;
+    }
+
+    public LocalDateTime getUltimaVezOnline() {
+        return ultimaVezOnline;
     }
 }

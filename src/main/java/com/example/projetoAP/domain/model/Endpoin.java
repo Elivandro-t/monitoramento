@@ -3,6 +3,7 @@ package com.example.projetoAP.domain.model;
 import com.example.projetoAP.EndpointDTO;
 import com.example.projetoAP.Service.EndpointInterfaceDTO;
 import com.example.projetoAP.repository.EndpointEntity;
+import com.example.projetoAP.repository.EntitySetor.EntitySetores;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,13 +19,14 @@ public class Endpoin extends Host{
         super(e);
     }
 
-    public Endpoin(EndpointInterfaceDTO e,String nameGroup) throws IOException, InterruptedException {
-        super(e,nameGroup);
+    public Endpoin(EndpointInterfaceDTO e,String nameGroup,Setores s) throws IOException, InterruptedException {
+        super(e,nameGroup,s);
     }
 
     public Endpoin(EndpointEntity e) throws IOException, InterruptedException {
         super(e);
     }
+
 
     public long getId() {
         return id;

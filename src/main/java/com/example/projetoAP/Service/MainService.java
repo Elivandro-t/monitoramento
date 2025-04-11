@@ -25,7 +25,7 @@ public class MainService {
         Snmp snmp = null;
         try {
             Set<String> ipAddressList = new HashSet<>();
-            ipAddressList.add("192.168.100.136");
+            ipAddressList.add("10.88.4.35");
              snmp = new Snmp(new DefaultUdpTransportMapping());
             snmp.listen();
 
@@ -37,7 +37,6 @@ public class MainService {
                 target.setVersion(SnmpConstants.version2c);
                 target.setRetries(3);
                 target.setTimeout(5000);
-                String apIp = getSnmpValue(snmp, target, new OID("1.3.6.1.2.1.4.20.1.1." + ipAddress));
                allEndpoints.addAll( macConectados.getConectados(snmp, target));
 
             }

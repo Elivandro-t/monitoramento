@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8">
+  <title>ICMP Response Time</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      background-color: #1e1e1e;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .chart-container {
+      display: flex;
+      justify-content: center;
+      width: 1200px;
+      /* Largura maior */
+      height: 500px;
+      /* Altura maior */
+      margin: 40px auto;
+    }
+
+
+    .chart-containerw {
+      width: 210px;
+      height: 200px;
+      position: relative;
+    }
+
+    #icmpChart,
+    #latencyChart {
+      background-color: #302e2e;
+      max-width: 900px;
+      max-height: 400px;
+
+    }
+
+    .ls {
+      display: flex;
+      padding: 25px;
+      justify-content: center;
+      align-items: center;
+      margin: 0;
+    }
+
+    .percent-label {
+      position: absolute;
+      top: 65%;
+      /* Ajuste fino: estava 50%, agora está mais abaixo */
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 48px;
+      color: #81c784;
+      font-family: sans-serif;
+      pointer-events: none;
+    }
+  </style>
+</head>
+
+<body>
+  <h2 id="titule">ICMP Response Time (ms)</h2>
+  <canvas id="icmpChart"></canvas>
+  <section class="ls">
+    <div class="chart-containerw" id="canv">
+      <canvas id="gaugeChart"></canvas>
+      <div class="percent-label" id="percentLabel">0%</div>
+    </div>
+  </section>
+
+  <div class="chart-container">
+    <canvas id="latencyChart"></canvas>
+  </div>
+
+  <script th:inline="javascript">
+    let titule = document.getElementById('titule')
+    let latencyChart = document.getElementById('icmpChart')
+    let latenciap = document.getElementById('icmpChart')
+    let latenc = document.getElementById('latencyChart')
+    let dados = /*[[${data.result}]]*/[]; // O objeto único vindo do Thymeleaf
+    const labels = dados.map((_, index) => index + 1);
+    const labelss = dados[0].icmpName;
+    const item = dados[0].itemId;
+    let timestamp = dados.map(e => new Date(e.clock * 1000))
+      let dataFormatada;
+      timestamp.forEach(ts => {
+        dataFormatada = ts.toLocaleString("pt-BR");
+        console.log("Data formatada:", dataFormatada);
+      });
+    titule.innerHTML = labelss;// Usar o índice como label
+    const datas = dados.map(e => Number(e.value));
+    console.log("todas as minhas datas "+ dataFormatada)
+
+
+    if (item === 1) {
+      latenc.style.display = "none"
+      const data = {
+        labels: labels,
+        datasets: [{
+          label: labelss + " "+dataFormatada,
+          data: datas,
+          fill: false,
+          borderColor: 'rgba(75, 192, 192, 1)',
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          tension: 0.3,
+          pointRadius: 2
+        }]
+      };
+
+      const config = {
+        type: 'line',
+        data: data,
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Tempo (ms)'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Amostra'
+              }
+            }
+          }
+        }
+      };
+
+      new Chart(document.getElementById('icmpChart'), config);
+      const percent = dados[0].value; 
+      const ctxf = document.getElementById('gaugeChart').getContext('2d');
+      const percentLabel = document.getElementById('percentLabel');
+
+      new Chart(ctxf, {
+        type: 'doughnut',
+        data: {
+          datasets: [{
+            data: [percent, 100 - percent],
+            backgroundColor: ['#81c784', '#2e2e2e'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          rotation: -90,
+          circumference: 180,
+          cutout: '80%',
+          responsive: true,
+          plugins: {
+            tooltip: { enabled: false },
+            legend: { display: false }
+          }
+        }
+      });
+
+      percentLabel.textContent = `${percent}%`;
+    }
+    else {
+     
+      const valuesInMs = dados.map(v => parseFloat((v.value * 1000).toFixed(2)));
+      latencyChart.style.display = "none"
+      const ctx = document.getElementById('latencyChart').getContext('2d');
+      latenciap.style.display = "none"
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: labelss + dataFormatada,
+            backgroundColor: '#4caf50',
+            borderColor: '#4caf50',
+            data: valuesInMs
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false, // Deixa o tamanho livre
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                color: 'white',
+                callback: (value) => value + ' ms'
+              }
+            },
+            x: {
+              ticks: {
+                color: 'white',
+                maxRotation: 90,
+                minRotation: 90
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: {
+                color: 'white'
+              }
+            },
+            title: {
+              display: true,
+              text: 'ICMP Response Time',
+              color: 'white'
+            }
+          }
+        }
+      });
+    }
+
+
+
+
+  </script>
+</body>
+
+</html>

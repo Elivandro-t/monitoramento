@@ -2,11 +2,10 @@ package com.example.projetoAP.controler;
 
 import com.example.projetoAP.EndpointDTO;
 import com.example.projetoAP.Service.EndpointInterfaceDTO;
-import com.example.projetoAP.controler.service.EndpointService;
-import com.example.projetoAP.controler.service.GroupService;
-import org.apache.poi.ss.usermodel.Row;
+import com.example.projetoAP.controler.SetoresService.SetorService;
+import com.example.projetoAP.controler.service.*;
+import com.example.projetoAP.domain.vo.MetricasDTO;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.Banner;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -17,28 +16,33 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 @Controller
 @RequestMapping
+@CrossOrigin(origins = "*")
 public class ApControler {
+    @Autowired
+    CalcularPerdas calcularPerdas;
     @Autowired
     GroupService groupService;
     EndpointService endpointService;
-    ApControler(EndpointService endpointService){
+    SetorService setorService;
+    ApControler(EndpointService endpointService,SetorService setor){
+
         this.endpointService = endpointService;
+        this.setorService = setor;
     }
 
 
-    @GetMapping("var")
+    @GetMapping("/monitoramento")
     public String getVier(){
         return "index";
     }
 
-    @PostMapping("/var")
+    @PostMapping("/monitoramento")
     public String getVierPost(String id,Model model){
         model.addAttribute("v",id);
         return "index";
@@ -53,20 +57,29 @@ public class ApControler {
         return "pagina";
     }
     @GetMapping("/lista")
-    public String getVierListPage(Model model, String mac){
+    public String getVierListPage(Model model, @RequestParam(name = "mac", required = false) String mac, @RequestParam(name = "ReceiveGrupoId",required = false) String ReceiveGrupoId){
         List<EndpointDTO> l = new ArrayList<>();
+        System.out.println("Meu grupo "+ReceiveGrupoId);
         if (mac != null && !mac.isEmpty()) {
             // Filtra a lista baseado no MAC
             var lista = endpointService.getLista().stream()
                     .filter(e -> e.mac().contains(mac.trim())
                             ||e.ip().contains(mac.trim())
                             ||e.sn().contains(mac.trim())
+                            ||e.localizacao().contains(mac.trim())
                     ).toList();
           l.addAll(lista);
-        } else {
+        }else if(ReceiveGrupoId!=null){
+            var lista = endpointService.getLista().stream()
+                    .filter(e -> e.grupo().contains(ReceiveGrupoId)).toList();
+            l.addAll(lista);
+        }
+        else {
             l.addAll( endpointService.getLista());
             // Caso o MAC seja null, adiciona a lista completa
         }
+        var lista = groupService.findAll();
+        model.addAttribute("groups",lista);
         model.addAttribute("off",endpointService.getLista().stream().filter(e->e.status().contains("DOWN")).toList());
         model.addAttribute("lista", l); // Passa a lista para o front-end
         return "lista";
@@ -79,8 +92,9 @@ public class ApControler {
     @GetMapping("/registro")
     public String setRegistro(Model model){
           var lista = groupService.findAll();
+        var listaSetor = setorService.getLista();
           model.addAttribute("groups",lista);
-
+        model.addAttribute("setor",listaSetor);
 
         return "registro";
     }
@@ -105,16 +119,36 @@ public class ApControler {
     }
 
     @PostMapping("/mult")
-    public String mult(@RequestParam("file") MultipartFile file,Model red) throws IOException, InterruptedException {
-        System.out.println("Meu arquivo "+file.getInputStream().toString());
-        System.out.println("Nome do meu arquivo "+file.getOriginalFilename());
-        String caminho = "/home/elivandro/Downloads/projetoAP/"+file.getOriginalFilename();
+    public String mult(@RequestParam(value = "file",required = false) MultipartFile file,Model red, String ReceiveGrupoId,String nome) throws IOException, InterruptedException {
+        String caminho = "/home/elivandro/Downloads/projetoAP"+file.getOriginalFilename();
+        System.out.print("Dados vindo no Front "+nome);
         file.transferTo(new File(caminho));
-        endpointService.salvaMultPartAsync(caminho);
+        endpointService.salvaMultPartAsync(caminho,ReceiveGrupoId,nome);
         red.addAttribute("mensagem","Processando dados...");
 
-        return "registro";
+        return "redirect:/registro";
     }
+    @GetMapping("/web")
+    public String websocket(){
+        return "listaweb";
+    }
+    @GetMapping("/monitoramento/char")
+    public String monitor(){
+        return "charlista";
+    }
+    @GetMapping("/char")
+    public String Char(@RequestParam(required = false) String limit,
+                       @RequestParam(required = false) String hostid,
+                       @RequestParam(required = false) String itemid, Model model) throws ExecutionException, InterruptedException {
+        System.out.print("Dados "+Long.parseLong(limit)+" "+Long.parseLong(itemid)+" "+Long.parseLong(hostid));
+        var lista = calcularPerdas.listaMetricas(new Filter(Long.parseLong(limit),Long.parseLong(itemid),Long.parseLong(hostid)));;
+     Map<String,List<MetricasDTO>> li = lista.get();
+        model.addAttribute("data",lista.get());
+        return "char";
+    }
+
+
+
 }
 
 

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
-<head >
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
@@ -12,53 +12,78 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
 
 </head>
+
 <body>
-<script th:src="@{/css/group.js}"></script>
-<script th:src="@{/css/javascript.js}"></script>
+    <script src="../static/css/group.js"></script>
 
-<div class="area_table">
-      <div>
-          <label for="arquivo">Upload de arquivo</label>
+    <script th:src="@{/css/group.js}"></script>
+    <script th:src="@{/css/javascript.js}"></script>
 
-          <input type="checkbox" id="checkbox" name="check">
+    <div class="area_table">
+        <div>
+            <label for="arquivo">Upload de arquivo</label>
 
-      </div>
-    <section id="form">
-       <form method="post" action="/registro"  >
-           <label>Nome</label>
-           <input type="text" name="nome" th:value="${form?.nome}" />
-           <label>Mac</label>
-           <input type="text" id="mac" name="mac"  th:value="${form?.mac}"  maxlength="17"/>
-           <label>Data</label>
-           <input type="text" name="data"  th:value="${form?.data}" />
-           <label>Numero de Série</label>
-           <input type="text" name="sn"  th:value="${form?.sn}" />
-           <label>Modelo</label>
-           <input type="text" name="modelo"  th:value="${form?.modelo}"/>
-           <label>Localização</label>
-           <input type="text" name="localizacao"  th:value="${form?.localizacao}" />
-           <label>IP Adress</label>
-           <input type="text" name="ip"  th:value="${form?.ip}" />
-           <label>Link</label>
-           <input type="text" name="link"  th:value="${form?.link}" />
-           <select name="ReceiveGrupoId" required>
-               <option>Selecione uma Opção</option>
-               <option th:each="item:${groups}"
-                       th:value="${item.id}"
-                       th:text="|${item.id} ${item.nome}|"
-                       th:selected="${item.id == selectedGroupId}"
-               ></option>
+            <input type="checkbox" id="checkbox" name="check">
 
-           </select>
-           <button id="btnEnviar">Enviar</button>
-           <div id="modals" style="display:block;" th:if="${mensagem}" th:text="${mensagem}"></div>
-           <div th:id="modal" style="display:block;" th:if="${erro}" th:text="${erro}"></div>
-       </form>
-    </section>
-       <form method="post" action="/mult" id="arquivo" enctype="multipart/form-data" class="arquivo">
-             <input type="file" name="file" accept="*/*" placeholder="arquivo xlsnsx" title="elivandro" required/>
-             <button>enviar</button>
-       </form>
+        </div>
+        <section id="form">
+            <form method="post" action="/registro">
+                <label>Nome</label>
+                <input type="text" name="nome" th:value="${form?.nome}" />
+                <label>Mac</label>
+                <input type="text" id="mac" name="mac" th:value="${form?.mac}" maxlength="17" />
+                <label>Data</label>
+                <input type="text" name="data" th:value="${form?.data}" />
+                <label>Numero de Série</label>
+                <input type="text" name="sn" th:value="${form?.sn}" />
+                <label>Modelo</label>
+                <input type="text" name="modelo" th:value="${form?.modelo}" />
+                <label>Localização</label>
+                <input type="text" name="localizacao" th:value="${form?.localizacao}" />
+                <label>IP Adress</label>
+                <input type="text" name="ip" th:value="${form?.ip}" />
+                <label>Link</label>
+                <input type="text" name="link" th:value="${form?.link}" />
+                <select  required name="setorID">
+                    <option>Selecione uma Opção</option>
+                    <option th:each="item:${setor}" th:value="${item.id}" th:text="|${item.nome}  ${item.filial}|"
+                            ></option>
+
+                </select>
+                <select name="ReceiveGrupoId" required>
+                    <option>Selecione uma Opção</option>
+                    <option th:each="item:${groups}" th:value="${item.id}" th:text="|${item.id} ${item.nome}|"
+                        th:selected="${item.id == selectedGroupId}"></option>
+
+                </select>
+                <button id="btnEnviar">Enviar</button>
+                <div id="modals" style="display:block;" th:if="${mensagem}" th:text="${mensagem}"></div>
+                <div th:id="modal" style="display:block;" th:if="${erro}" th:text="${erro}"></div>
+            </form>
+        </section>
+        <form method="post" action="/mult" id="arquivo" enctype="multipart/form-data" class="arquivo">
+            <div class="group-name">
+                <select  required name="nome">
+                    <option>Selecione um complexo</option>
+                    <option th:each="item:${setor}" th:value="${item.nome}" th:text="|${item.nome}  ${item.filial}|"
+                            th:selected="${item.nome == nome}"
+                    ></option>
+
+                </select>
+                <select name="ReceiveGrupoId" id="host" required>
+                    <option>Selecione uma Opção</option>
+                    <option th:each="item:${groups}" th:value="${item.id}" th:text="|${item.id} ${item.nome}|"
+                        th:selected="${item.id == selectedGroupId}"></option>
+    
+                </select>
+                <label for="host">group name</label>
+            </div>
+            <div class="group-name">
+            <input type="file" name="file" accept="*/*" placeholder="arquivo xlsnsx" title="elivandro" required />
+            <button class="file-btn">enviar</button>
+        </div>
+        </form>
     </div>
 </body>
+
 </html>
