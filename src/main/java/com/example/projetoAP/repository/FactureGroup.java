@@ -18,7 +18,6 @@ public class FactureGroup implements GroupInterfaceRepository {
     @Override
     public void save(Group s) {
        GroupEntity grupo = new GroupEntity(s);
-       System.out.println("chenaod aqui "+grupo.getName());
        groupRepository.save(grupo);
     }
 

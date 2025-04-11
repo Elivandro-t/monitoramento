@@ -18,22 +18,19 @@ body{
 .area_table {
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
     gap: 10px;
-    flex: 1;
-    height: 100vh;
-    margin-button:56px;
+    padding: 10px;
+    height:100vh;
 }
 form{
     width: 450px;
     display:flex;
-    margin-top: 5px;
-    gap: 8px;
+    gap: 6px;
     flex-direction: column;
     background-color: #FFF;
     border: 1px solid #F2F2F2;
-    padding: 20px 50px;
+    padding: 10px 30px;
 }
 select{
     padding:6px ;
@@ -64,8 +61,37 @@ button:hover{
    transform-style: preserve-3d;
    background-color: rgb(128, 175, 236);
    color: #FFF;
-
 }
+.file-btn{
+    padding:8px 10px;
+    cursor: pointer;
+    border-radius: 5px;
+    background-color: rgb(78, 146, 235);
+    border: 1px solid #999;
+    color: #FFF;
+}
+.file-btn:hover{
+    transform-style: preserve-3d;
+    background-color: rgb(128, 175, 236);
+    color: #FFF;
+ }
 .arquivo{
     display: none;
+}
+.group-name{
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 20px;
+
+}
+.group-name label{
+   font-size: 13px;
+   word-wrap: break-word;
+}
+.group-name select{
+    width: 100%;
+}
+#arquivo input{
+    width: 100%;
 }

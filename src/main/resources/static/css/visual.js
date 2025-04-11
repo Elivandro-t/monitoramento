@@ -53,6 +53,7 @@ document.addEventListener("DOMContentLoaded", function (e) {
 
 function toggleFullscreen() {
             let element = document.getElementById("meuContainer");
+                let container = document.getElementById("container_banner");
 
             if (!document.fullscreenElement) {
                 if (element.requestFullscreen) {
@@ -64,9 +65,12 @@ function toggleFullscreen() {
                 } else if (element.msRequestFullscreen) { // IE/Edge
                     element.msRequestFullscreen();
                 }
+                document.body.style.overflow = 'auto'; 
             } else {
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
                 }
+                document.body.style.overflow = ''; // Restaurando o comportamento padrão do overflow
+
             }
         }

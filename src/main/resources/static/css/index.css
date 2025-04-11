@@ -2,6 +2,7 @@ body{
     background-color:"#999999";
     color: red;
     margin: 0;
+    overflow: hidden;
 }
 main{
     background-color: #2C2F33;
@@ -53,12 +54,14 @@ button:checked{
     margin-top: 5px;
     border-top-left-radius: 2px;
     border-top-right-radius: 2px;
-    height: 100vh;
+   box-sizing: border-box;
 }
 .area_view_mac{
 }
 iframe{
     border: 0;
     height:100vh;
+    overflow: hidden;
+
 
 }

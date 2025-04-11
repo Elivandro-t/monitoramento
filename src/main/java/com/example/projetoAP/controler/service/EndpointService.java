@@ -3,6 +3,9 @@ package com.example.projetoAP.controler.service;
 import com.example.projetoAP.EndpointDTO;
 import com.example.projetoAP.Service.EndpointInterfaceDTO;
 import com.example.projetoAP.domain.model.Endpoin;
+import com.example.projetoAP.domain.model.Setores;
+import com.example.projetoAP.repository.EntitySetor.FactureSetor;
+import com.example.projetoAP.repository.EntitySetor.RepositorySetor;
 import com.example.projetoAP.repository.GroupRepository;
 import com.example.projetoAP.repository.SalvaEndPoint;
 import org.apache.poi.ss.usermodel.Row;
@@ -25,29 +28,38 @@ import java.util.concurrent.*;
 
 @Service
 public class EndpointService {
+
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final BlockingQueue<Row> filaDeProcessamento = new LinkedBlockingQueue<>();
+    private
     @Autowired
     GroupRepository groupService;
+    @Autowired
+    private RepositorySetor repositorySetor;
     private int totalLinhas = 0; // Total de linhas a processar
     private int linhasProcessadas = 0;
-
     SalvaEndPoint salvaEndPoint;
+    private String id ;
+    private String setores;
     public EndpointService( SalvaEndPoint salvaEndPoint){
         this.salvaEndPoint = salvaEndPoint;
     }
     public EndpointDTO setRegistro(EndpointInterfaceDTO e) throws IOException, InterruptedException {
         var l = groupService.getReferenceById(Long.parseLong(e.ReceiveGrupoId()));
-        var resposta = new Endpoin(e,l.getName());
+        var setor = repositorySetor.findById(e.setorID()).get();
+
+        System.out.print("Registro de endpoint "+e.setorID());
+        var resposta = new Endpoin(e,l.getName(),new Setores(setor));
         return salvaEndPoint.GetSalva(resposta);
     }
     public List<EndpointDTO> getLista(){
         var lista = salvaEndPoint.GetLista();
         return lista;
     }
-    public String salvaMultPartAsync(String caminho) throws IOException, InterruptedException {
+    public String salvaMultPartAsync(String caminho, String p,String nome) throws IOException, InterruptedException {
+       this.setores = nome;
         try (FileInputStream fis = new FileInputStream(new File(caminho))) {
             Workbook workbook = new XSSFWorkbook(fis);
             Sheet sheet = workbook.getSheetAt(0);
@@ -61,6 +73,7 @@ public class EndpointService {
               filaDeProcessamento.offer(row);
             }
         }
+        this.id = p;
         executorService.submit(this::processarDados);
         enviarMensagemParaWebSocket();
         return "processando";
@@ -84,6 +97,9 @@ public class EndpointService {
         enviarMensagemParaWebSocket();
     }
     private void processarLinha(Row texto) throws IOException, InterruptedException {
+        var setor = repositorySetor.findOneNameComplexo(setores);
+        System.out.print("MEu setor vindo da api "+setor.getNameComplexo());
+
     try {
         String localization = String.valueOf(texto.getCell(0));
         String mac = String.valueOf(texto.getCell(1));
@@ -93,9 +109,14 @@ public class EndpointService {
         String modelo = String.valueOf(texto.getCell(5));
         String sn = String.valueOf(texto.getCell(6));
         var grupo = texto.getCell(7);
-        EndpointInterfaceDTO ed = new EndpointInterfaceDTO(hostname.replace("GM-",""), modelo.toUpperCase(), sn, localization.replace("SLZ-",""),mac, ipv4, "", "", "20/10/2023", "", "1");
+        System.out.println(" Dados vindo do frontEnd "+setores);
+        System.out.println(" Dados vindo do BackEnd "+setor.getNameComplexo());
+        var setorw = repositorySetor.findById(setor.getId()).get();
+
+
+        EndpointInterfaceDTO ed = new EndpointInterfaceDTO(hostname.replace("GM-",""), modelo.toUpperCase(), sn, localization.replace("SLZ-",""),mac, ipv4, "", "", "20/10/2023", "",this.id, setor.getFilial(),setor.getNameComplexo(),setor.getId());
         var l = groupService.findById(Long.parseLong(ed.ReceiveGrupoId())).orElseThrow(()->new RuntimeException("nenhum resultado"));
-        var resposta = new Endpoin(ed, l.getName());
+        var resposta = new Endpoin(ed, l.getName(),new Setores(setorw));
         salvaEndPoint.GetSalvas(resposta);
     }catch (Exception e){
         e.printStackTrace();

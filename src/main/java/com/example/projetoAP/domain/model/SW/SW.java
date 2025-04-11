@@ -18,6 +18,6 @@ public class SW extends Host {
     }
 
     public SW(EndpointInterfaceDTO e,String nameGroup) throws IOException, InterruptedException {
-        super(e,nameGroup);
+        super(e,nameGroup,null);
     }
 }

@@ -3,20 +3,35 @@
     align-items: center;
     justify-content: flex-end;
 }
-
+body{
+    overflow: hidden;
+}
 .area_table {
     padding-top: 20px;
 }
 
 table {
+ 
     width: 100%;
     border-collapse: collapse;
     color: white;
     text-align: left;
     flex-direction: column;
-    overflow-y: auto; /* Permite o scroll vertical */
+    overflow: hidden;
 }
-
+#meuContainer{
+    top: 0;
+    padding:0;
+    height:calc(100vh - 100px);
+    overflow: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #888282 #383d52;
+    margin-top: 0;
+}
+thead{
+    position: relative;
+    width: 100%;
+}
 th {
     background-color: #2C2F33;
     border: 1px solid #383d52;
@@ -24,10 +39,18 @@ th {
     padding: 5px;
 
 }
-
+.section{
+position:absolute;
+left:50%;
+z-index:9999;
+background-color:black;
+}
 tbody {
+    overflow: auto;
     border: 1px solid #383d52;
     background-color: #F2F2F2;
+   
+
 
 
 }
@@ -44,12 +67,26 @@ tr {
 
 
 }
+ .btn-a{
+    padding: 5px 10px;
+    border-radius: 5px;
+    background-color: rgb(78, 146, 235);
+    cursor: pointer;
+    list-style: none;
+    text-decoration: none;
+    color: white;
+    transition: all 1s;
+}
+ .btn-a:hover{
+    background-color: rgb(115, 173, 248);
+
+}
 
 select {
     width: 100%;
     border: 0;
     outline: none;
-    background-color: #1a1c2e;
+    background-color: #2C2F33;
     color: white;
 
 }
@@ -68,15 +105,18 @@ td {
     display: flex;
     align-Items: center;
     justify-content: space-between;
+    padding:5px 0;
 }
-
-.container_registro {}
 .area-propt{
     padding:20px;
 }
 #modal{
 position:absolute;
+
 }
+.modal_2{
+display:flex;
+gap:10px;}
 .modal {
     display: none;
     top: 0;
@@ -98,8 +138,7 @@ color:#FFF;
 
 .td{
     background-color: rgb(50, 50, 51);
-    position: fixed;
-    right:5em;
+  
 }
 .td ul{
     margin: 0;
@@ -113,8 +152,6 @@ color:#FFF;
     transition: 1s ease;
     margin:5px 0;
     padding: 5px 15px;
-
-
 
 }
 .ul-name li:hover{

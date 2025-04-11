@@ -1,7 +1,10 @@
 package com.example.projetoAP.controler.service;
 
+import com.example.projetoAP.EndpointDTO;
 import com.example.projetoAP.repository.EndpointEntity;
+import com.example.projetoAP.repository.EntitySetor.FactureSetor;
 import com.example.projetoAP.repository.RepositoryEntity;
+import org.apache.commons.math3.analysis.function.Abs;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -20,8 +23,11 @@ public class Sheduled {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
     private RepositoryEntity entityRepository;
+    @Autowired
+    EndpointService endpointService;
+
     // Defina um ThreadPoolExecutor com controle de número de threads
-    private final ExecutorService executorService = Executors.newFixedThreadPool(10); // Aqui você limita a 10 threads simultâneas.
+    private final ExecutorService executorService = Executors.newFixedThreadPool(20); // Aqui você limita a 10 threads simultâneas.
 
     public Sheduled(RepositoryEntity repository){
         this.entityRepository = repository;
@@ -29,7 +35,6 @@ public class Sheduled {
     private  int process = 0;
     private  int linhas = 0;
     private boolean isProcess = false;
-    double processo = (double) linhas / process * 100;
 
     public CompletableFuture<String> statusIpAsync(String host) throws IOException {
         InetAddress inet = InetAddress.getByName(host);
@@ -40,6 +45,7 @@ public class Sheduled {
     @Transactional
     @Scheduled(cron = "* * * * * *")
     public void gerar() throws IOException, InterruptedException {
+
         var endpoints = entityRepository.findAll();
 
         List<CompletableFuture<Void>> futures = new ArrayList<>();
@@ -54,7 +60,6 @@ public class Sheduled {
         // Espera todas as tarefas assíncronas terminarem
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
-
     // A execução assíncrona agora está usando o ExecutorService
     public CompletableFuture<Void> rodar(EndpointEntity endpoint) {
         return CompletableFuture.runAsync(() -> {
@@ -65,10 +70,19 @@ public class Sheduled {
                 endpoint.atualiza(endpoint.getIp()); // Atualiza o ping também
                 entityRepository.save(endpoint);
                 linhas++;
+                double processo = Math.abs((double) linhas / process * 100);
+
                 if(process<linhas){
                     linhas = 0;
                 }
-                String mensagem = String.format("Processando... %d/%d (%.2f%%)",linhas, process,processo);
+                String mensagem;
+                if(linhas == process){
+                     mensagem = String.format("Processado %d/%d ( %.0f%% )",linhas, process,processo);
+
+                }else{
+                    mensagem = String.format("Processando... %d/%d ( %.0f%% )",linhas, process,processo);
+
+                }
                 EnvidoSoquet(mensagem);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -90,6 +104,16 @@ public class Sheduled {
         }
     }
     private void EnvidoSoquet(String mensagem){
+
         messagingTemplate.convertAndSend("/topic/processamento", mensagem );
+//        messagingTemplate.convertAndSend("/off", lista.stream().filter(e->e.status().equals("DOWN")).toList() );
+    }
+
+    @Scheduled(cron = "* * * * * *")
+    public void getVierListPage(){
+        // Filtra a lista baseado no MAC
+        var lista = endpointService.getLista().stream().toList();
+        messagingTemplate.convertAndSend("/lista", lista);
+
     }
 }
