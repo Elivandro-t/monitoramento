@@ -20,12 +20,6 @@
     <script th:src="@{/css/javascript.js}"></script>
 
     <div class="area_table">
-        <div>
-            <label for="arquivo">Upload de arquivo</label>
-
-            <input type="checkbox" id="checkbox" name="check">
-
-        </div>
         <section id="form">
             <form method="post" action="/registro">
                 <label>Nome</label>
@@ -61,6 +55,12 @@
                 <div th:id="modal" style="display:block;" th:if="${erro}" th:text="${erro}"></div>
             </form>
         </section>
+        <div>
+            <label for="arquivo">Upload de arquivo</label>
+
+            <input type="checkbox" id="checkbox" name="check">
+
+        </div>
         <form method="post" action="/mult" id="arquivo" enctype="multipart/form-data" class="arquivo">
             <div class="group-name">
                 <select  required name="nome">

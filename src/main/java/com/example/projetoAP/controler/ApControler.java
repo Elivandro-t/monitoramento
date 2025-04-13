@@ -5,6 +5,7 @@ import com.example.projetoAP.Service.EndpointInterfaceDTO;
 import com.example.projetoAP.controler.SetoresService.SetorService;
 import com.example.projetoAP.controler.service.*;
 import com.example.projetoAP.domain.vo.MetricasDTO;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -57,10 +58,14 @@ public class ApControler {
         return "pagina";
     }
     @GetMapping("/lista")
-    public String getVierListPage(Model model, @RequestParam(name = "mac", required = false) String mac, @RequestParam(name = "ReceiveGrupoId",required = false) String ReceiveGrupoId){
+    public String getVierListPage(Model model, @RequestParam(name = "mac", required = false) String mac, @RequestParam(name = "ReceiveGrupoId",required = false) String ReceiveGrupoId, HttpSession sessionAttribute){
+        if(ReceiveGrupoId!=null){
+            sessionAttribute.setAttribute("search",ReceiveGrupoId);
+        }
         List<EndpointDTO> l = new ArrayList<>();
-        System.out.println("Meu grupo "+ReceiveGrupoId);
+       var re = sessionAttribute.getAttribute("search");
         if (mac != null && !mac.isEmpty()) {
+            sessionAttribute.removeAttribute("search");
             // Filtra a lista baseado no MAC
             var lista = endpointService.getLista().stream()
                     .filter(e -> e.mac().contains(mac.trim())
@@ -69,19 +74,22 @@ public class ApControler {
                             ||e.localizacao().contains(mac.trim())
                     ).toList();
           l.addAll(lista);
-        }else if(ReceiveGrupoId!=null){
+        }else if(re!=null){
+            System.out.print("Meus dado vindo do front"+re);
+
             var lista = endpointService.getLista().stream()
-                    .filter(e -> e.grupo().contains(ReceiveGrupoId)).toList();
+                    .filter(e -> e.grupo().contains(re.toString())).toList();
             l.addAll(lista);
         }
         else {
+            model.addAttribute("off",endpointService.getLista().stream().filter(e->e.status().contains("DOWN")).toList());
             l.addAll( endpointService.getLista());
             // Caso o MAC seja null, adiciona a lista completa
         }
         var lista = groupService.findAll();
         model.addAttribute("groups",lista);
-        model.addAttribute("off",endpointService.getLista().stream().filter(e->e.status().contains("DOWN")).toList());
-        model.addAttribute("lista", l); // Passa a lista para o front-end
+        model.addAttribute("lista", l);
+        // Passa a lista para o front-end
         return "lista";
     }
     @GetMapping("/antenas")
@@ -138,9 +146,9 @@ public class ApControler {
     }
     @GetMapping("/char")
     public String Char(@RequestParam(required = false) String limit,
+                       @RequestParam(required = false) String hostname,
                        @RequestParam(required = false) String hostid,
                        @RequestParam(required = false) String itemid, Model model) throws ExecutionException, InterruptedException {
-        System.out.print("Dados "+Long.parseLong(limit)+" "+Long.parseLong(itemid)+" "+Long.parseLong(hostid));
         var lista = calcularPerdas.listaMetricas(new Filter(Long.parseLong(limit),Long.parseLong(itemid),Long.parseLong(hostid)));;
      Map<String,List<MetricasDTO>> li = lista.get();
         model.addAttribute("data",lista.get());

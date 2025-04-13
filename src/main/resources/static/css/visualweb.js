@@ -1,6 +1,7 @@
 var socket = new SockJS('/ws');  // Ponto de entrada do WebSocket
 var stompClient = Stomp.over(socket);
 // Função para conectar ao WebSocket
+stompClient.debug = ()=>{}
 function connectToWebSocket() {
     stompClient.connect({}, function (frame) {
         // Inscrever-se para o destino "/lista"
@@ -30,7 +31,6 @@ function connectToWebSocket() {
             data.forEach(function (item) {
 
                 if(item.status.toUpperCase() === "DOWN"){
-                 console.log("Quantidade de itens  off"+data.length)
                     iteml = data.length
                     output += `
                     <tr class="tr" data-name="${item.id}" >
@@ -47,10 +47,8 @@ function connectToWebSocket() {
                 `;
                 }
             });
-            console.log("Quantidade de itens "+data.length)
             data.forEach(function (item) {
                 if(item.status.toUpperCase() === "UP"){
-                  console.log("Quantidade de itens  UP"+data.length)
                     output += `
                     <tr class="tr" data-name="${item.id}" >
                         <td class="th-text"${item.status.toUpperCase() === 'DOWN' ? 'style="background-color: rgba(255, 0, 0, 0.5)"' : 'style="background-color: rgba(0, 128, 0, 0.8)"'}>${item.status}</td>
@@ -77,29 +75,9 @@ function connectToWebSocket() {
     });
 }
 connectToWebSocket();
-// stompClient.connect({},function(res){
-//     stompClient.subscribe("/lista",function(resposnde){
-//         var itens = resposnde.body;
-//       console.log(itens)
 
-//       let div ;
-//       itens.forEach(function(element) {
-//         div = `<div class="itens">
-//         <h1>${element.status}</h1>
-//         <span>${element.localizacao}</span>
-         
-//      </div>`;
-//       })
-//       let container = document.getElementById("meuContainer");
-
-//       container.innerHTML += div;
-
-//     })
-// })
 function toggleFullscreen() {
     let element = document.getElementById("meuContainer");
-        let container = document.getElementById("container_banner");
-
     if (!document.fullscreenElement) {
         if (element.requestFullscreen) {
             element.requestFullscreen();
@@ -115,7 +93,7 @@ function toggleFullscreen() {
         if (document.exitFullscreen) {
             document.exitFullscreen();
         }
-        document.body.style.overflow = ''; // Restaurando o comportamento padrão do overflow
+        document.body.style.overflow = ''; 
 
     }
 }

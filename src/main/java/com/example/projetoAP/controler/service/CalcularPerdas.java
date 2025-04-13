@@ -4,7 +4,9 @@ import com.example.projetoAP.domain.model.Metricas;
 import com.example.projetoAP.domain.vo.LostDTO;
 import com.example.projetoAP.domain.vo.MetricasDTO;
 import com.example.projetoAP.repository.*;
+import jakarta.annotation.PreDestroy;
 import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -32,22 +34,23 @@ public class CalcularPerdas {
     //Código omitido
 
     ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
-
+    @PreDestroy
+    public void shutdownExecutor() {
+        executor.shutdown();
+    }
     //Código omitido
     public CalcularPerdas(RepositoryEntity repository,ICMPRepository icmpRepository,MetricasRepository metricasRepository){
-
         this.repository = repository;
         this.icmpRepository = icmpRepository;
         this.metricasRepository = metricasRepository;
     }
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "*/30 * * * * *")
     public void CalcularMestricasDeEquipamento(){
         var equipamento = repository.findAll();
         var icmp = icmpRepository.findAll();
         List<CompletableFuture<Void>> lista = new ArrayList<>();
         if(equipamento.isEmpty()){
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Equipamento não encontrado");
-
         }
         for (var equipamentos:equipamento) {
             String ip = equipamentos.getIp();
@@ -57,21 +60,14 @@ public class CalcularPerdas {
 
         CompletableFuture.allOf(lista.toArray(new CompletableFuture[0])).join();
     }
-
-
-
     private CompletableFuture<String> calcularPerdas(String ip)  {
        try {
            String pingCmd = os.contains("win") ? "ping -n 4 " + ip : "ping -c 4 " + ip;
-
            Process process = Runtime.getRuntime().exec(pingCmd);
-
            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
            String linhas;
            int pacotesEnviado = 4, pacotesRecebidos = 0;
            while ((linhas = bufferedReader.readLine())!=null){
-               System.out.println("PING: " + linhas);
-
                if(linhas.contains("time=")) pacotesRecebidos++;
            }
            var resposta  = String.valueOf(((pacotesEnviado - pacotesRecebidos)*100) / pacotesEnviado);
@@ -85,21 +81,23 @@ public class CalcularPerdas {
         Map<String,List<MetricasDTO>> listaMap = new HashMap<>();
        var lista =  metricasRepository.findAllById(filter.itemids(),filter.hostid()).stream().map(MetricasDTO::new).toList();
        listaMap.put("result",lista);
-
        return  CompletableFuture.supplyAsync(()->listaMap);
-
+    }
+    public CompletableFuture<Map<String,List<MetricasDTO>>> ListaMestricasSemID(FilterHost filter){
+        Map<String,List<MetricasDTO>> listaMap = new HashMap<>();
+        var lista =  metricasRepository.findAllByIdOne(filter.hostid()).stream().map(MetricasDTO::new).toList();
+        listaMap.put("result",lista);
+        return  CompletableFuture.supplyAsync(()->listaMap);
     }
     public CompletableFuture listas(){
         return CompletableFuture.runAsync(()->{});
     }
     private CompletableFuture<Double> CalcularLatencia(String ip) throws IOException {
             String pingCmd = os.contains("win") ? "ping -n 1 " + ip : "ping -c 1 " + ip;
-
             Process process = Runtime.getRuntime().exec(pingCmd);
             String linha;
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             double latenciaMedia = 0;
-
             while ((linha = bufferedReader.readLine()) != null) {
                 if (linha.contains("rtt min/avg/max")) {
                     String[] partes = linha.split("=");
@@ -110,7 +108,6 @@ public class CalcularPerdas {
                 }
             }
         return CompletableFuture.completedFuture(latenciaMedia);
-
     }
 
     private long calculaTempo(EndpointEntity endpointDTO){
@@ -126,19 +123,21 @@ public class CalcularPerdas {
             try {
                 double latencia = CalcularLatencia(ip).get();
                 String Perda = calcularPerdas(ip).get();
-                System.out.print("Minha latencia "+latencia);
+                List<MetricasEntity> batch = new ArrayList<>();
                 for(int i = 0;i < icmp.size();i++) {
                     if(icmp.get(i).getKey_().equals("icmppingsec")){
                         MetricasDTO m = new MetricasDTO(String.valueOf(latencia),icmp.get(i).getItemid(),hostid,icmp.get(i).getName(),0l);;
                         Metricas metricas = new Metricas(m);
-                        metricasRepository.save(new MetricasEntity(metricas));
-
+                        batch.add(new MetricasEntity(metricas));
                     }else if(icmp.get(i).getKey_().equals("icmppingloss")){
                         LostDTO m = new LostDTO(Perda,icmp.get(i).getItemid(),hostid,icmp.get(i).getName());;
                         Metricas metricas = new Metricas(m);
-                        metricasRepository.save(new MetricasEntity(metricas));
+                        batch.add(new MetricasEntity(metricas));
                     }
 
+                }
+                if (!batch.isEmpty()) {
+                    metricasRepository.saveAll(batch);  // Salva todas as métricas de uma vez
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);

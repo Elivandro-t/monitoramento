@@ -11,7 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
 </head>
 
-<body >
+<body>
     <script src="../static/css/javascrip.js"></script>
     <script src="../static/css/lista_mac.js"></script>
 
@@ -25,64 +25,50 @@
         <div class="container_int container_registro">
             <a href="/registro" class="btn-a" onclick="app('/registro',this );" data-route="/registro">Novo</a>
         </div>
-        <div id="modals"></div>
+        <!-- <div id="modals"></div> -->
+        <p th:text="'Total '+${#lists.size(lista)}"></p>
         <div th:if="${off}" th:text="'OFF '+${#lists.size(off)}"></div>
         <div class="container">
             <form method="get" class="modal_2" action="/lista">
                 <label for="mac">Busca</label>
                 <input type="text" id="mac" name="mac" placeholder="00:00:00:00:00:00">
-                <select name="ReceiveGrupoId">
-                    <option>Grupo</option>
+                <select name="ReceiveGrupoId" id="stc">
+                    <option value="">Selecione o grupo</option>
                     <option th:each="item:${groups}" th:value="${item.nome}" th:text="${item.nome}"></option>
                 </select>
                 <button id="enviar">enviar</button>
             </form>
         </div>
-        <p th:text="'Total '+${#lists.size(lista)}"></p>
         <div><button onclick="toggleFullscreen()">Tela Cheia</button></div>
     </section>
     <div class="area_table" id="meuContainer">
         <table>
             <thead>
                 <tr>
-                    <th><select>
-                            <option>
-                                STATUS
-                            </option>
-                        </select></th>
-                    <th><select>
-                            <option>
-                                PROFILE
-                            </option>
-                        </select></th>
                     <th>
-                        <select>
-                            <option>
-                                HOSTNAME
-                            </option>
-                        </select>
+                        STATUS
                     </th>
-                    <th> <select>
-                            <option>
-                                MODEL
-                            </option>
-                        </select></th>
-                    <th><select>
-                            <option>
-                                S/N
-                            </option>
-                        </select></th>
+                    <th>
+                        PROFILE
+                    </th>
+                    <th>
 
-                    <th><select>
-                            <option>
-                                MAC_ADRESS
-                            </option>
-                        </select></th>
-                    <th><select>
-                            <option>
-                                IPv4
-                            </option>
-                        </select></th>
+                        HOSTNAME
+
+                    </th>
+                    <th>
+                        MODEL
+                    </th>
+                    <th>
+                        S/N
+                    </th>
+
+                    <th>
+                        MAC_ADRESS
+                    </th>
+                    <th>
+                        IPv4
+                    </th>
                     <th>ICM PING</th>
                     <th>CPD</th>
                     <th>FILIAL</th>
@@ -91,62 +77,62 @@
                 </tr>
             </thead>
             <tbody>
-                    <tr th:each="item:${lista}" class="tr" th:data-name="${item.id}"
-                        th:if="${item.status.toUpperCase() == 'DOWN'}">
-                        <td th:text="${item.status}" th:id="ad" class="th-text ad"
-                            th:style="'background-color: ' + (${item.status != null && item.status.toUpperCase() == 'UP'} ? 'rgba(0, 128, 0, 0.8)' : 'rgba(255, 0, 0, 0.5)')">
-                        </td>
-                        <td th:text="${item.localizacao}"></td>
-                        <td th:text="${item.nome}"></td>
-                        <td th:text="${item.modelo}"></td>
-                        <td th:text="${item.sn}"></td>
-                        <td th:text="${item.mac}"></td>
-                        <td th:text="${item.ip}"></td>
-                        <td>
-                            <button onclick="visual(this);" th:data-ping="${item.ping}"> Visualizar</button>
-                            <div th:id="modal" class="modal ">
-                                <div>
-                                    <button onclick="visual(this);">X</button>
-                                </div>
-                                <div class="area-propt" th:text="${item.ip}"></div>
-                                <div th:text="${item.ping}" class="area-propt"></div>
+                <tr th:each="item:${lista}" class="tr" th:data-location="${item.localizacao}" th:data-id="${item.id}"
+                    th:data-ip="${item.ip}" th:if="${item.status.toUpperCase() == 'DOWN'}">
+                    <td th:text="${item.status}" th:id="ad" class="th-text ad"
+                        th:style="'background-color: ' + (${item.status != null && item.status.toUpperCase() == 'UP'} ? 'rgba(0, 128, 0, 0.8)' : 'rgba(255, 0, 0, 0.5)')">
+                    </td>
+                    <td th:text="${item.localizacao}"></td>
+                    <td th:text="${item.nome}"></td>
+                    <td th:text="${item.modelo}"></td>
+                    <td th:text="${item.sn}"></td>
+                    <td th:text="${item.mac}"></td>
+                    <td th:text="${item.ip}"></td>
+                    <td>
+                        <button onclick="visual(this);" th:data-ping="${item.ping}"> Visualizar</button>
+                        <div th:id="modal" class="modal ">
+                            <div>
+                                <button onclick="visual(this);">X</button>
                             </div>
-                        </td>
-                        <td>EM DESENVOLVIMENTO</td>
-                        <td th:text="${item.filial}"></td>
-                        <td th:text="${item.nomeComplexo}"></td>
-                        <td th:text="${item.grupo}"></td>
+                            <div class="area-propt" th:text="${item.ip}"></div>
+                            <div th:text="${item.ping}" class="area-propt"></div>
+                        </div>
+                    </td>
+                    <td>EM DESENVOLVIMENTO</td>
+                    <td th:text="${item.filial}"></td>
+                    <td th:text="${item.nomeComplexo}"></td>
+                    <td th:text="${item.grupo}"></td>
 
 
-                    </tr>
-                    <tr th:each="item:${lista}" class="tr" th:data-name="${item.id}"
-                        th:if="${item.status.toUpperCase() == 'UP'}">
-                        <td th:text="${item.status}" id="ad" class="th-text ad"
-                            th:style="'background-color: ' + (${item.status != null && item.status.toUpperCase() == 'UP'} ? 'rgba(0, 128, 0, 0.8)' : 'rgba(255, 0, 0, 0.5)')">
-                        </td>
-                        <td th:text="${item.localizacao}"></td>
-                        <td th:text="${item.nome}"></td>
-                        <td th:text="${item.modelo}"></td>
-                        <td th:text="${item.sn}"></td>
-                        <td th:text="${item.mac}"></td>
-                        <td th:text="${item.ip}"></td>
-                        <td>
-                            <button onclick="visual(this);" th:data-ping="${item.ping}"> Visualizar</button>
-                            <div id="modal" class="modal">
-                                <div>
-                                    <button onclick="visual(this);">X</button>
-                                </div>
-                                <div class="area-propt" th:text="${item.ip}"></div>
-                                <div th:text="${item.ping}" class="area-propt"></div>
+                </tr>
+                <tr th:each="item:${lista}" class="tr" th:data-name="${item.id}"
+                    th:if="${item.status.toUpperCase() == 'UP'}">
+                    <td th:text="${item.status}" id="ad" class="th-text ad"
+                        th:style="'background-color: ' + (${item.status != null && item.status.toUpperCase() == 'UP'} ? '#51c061' : '#f12011')">
+                    </td>
+                    <td th:text="${item.localizacao}"></td>
+                    <td th:text="${item.nome}"></td>
+                    <td th:text="${item.modelo}"></td>
+                    <td th:text="${item.sn}"></td>
+                    <td th:text="${item.mac}"></td>
+                    <td th:text="${item.ip}"></td>
+                    <td>
+                        <button onclick="visual(this);" th:data-ping="${item.ping}"> Visualizar</button>
+                        <div id="modal" class="modal">
+                            <div>
+                                <button onclick="visual(this);">X</button>
                             </div>
-                        </td>
-                        <td>EM PROCESSO</td>
-                        <td th:text="${item.filial}"></td>
-                        <td th:text="${item.nomeComplexo}"></td>
-                        <td th:text="${item.grupo}">EM PROCESSO</td>
+                            <div class="area-propt" th:text="${item.ip}"></div>
+                            <div th:text="${item.ping}" class="area-propt"></div>
+                        </div>
+                    </td>
+                    <td>EM PROCESSO</td>
+                    <td th:text="${item.filial}"></td>
+                    <td th:text="${item.nomeComplexo}"></td>
+                    <td th:text="${item.grupo}">EM PROCESSO</td>
 
 
-                    </tr>
+                </tr>
             </tbody>
         </table>
 

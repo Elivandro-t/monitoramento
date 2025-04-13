@@ -7,6 +7,8 @@
     <title>TI-CD116</title>
     <link rel="stylesheet" th:href="@{/css/listaChat.css}">
     <link rel="stylesheet" href="../static/css/listaChat.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
@@ -15,15 +17,28 @@
 <body>
 
     <script th:inline="javascript" th:src="@{/css/char.js}"></script>
+    <script th:inline="javascript" src="../static/css/char.js"></script>
     <script th:inline="javascript" src="../static/css/listaChat.css"></script>
-     <div class="log">Monitoramento de equipamento
+     <div class="log">Monitoramento de Equipamentos
      </div>
      <main id="main">
-<!-- 
-        <span>OFF : <small id="off"></small></span>
+        <!-- <span>OFF : <small id="off"></small></span>
     <section class="ls">
        <div class="area1">
-        <p id="profile">Cidade 1</p>
+        <div class="area-header">
+            <div class="log_ip">
+                <p id="profile">Cidade 1</p>
+            <a id="exibir">
+                <span class="material-symbols-outlined">
+                    error
+                    </span>
+            </a>
+            <section class="data_ip" id="data">192.168.88.6</section>
+            </div>
+            <a href="" ><span class="material-symbols-outlined">
+                open_in_new
+                </span></a>
+        </div>
         <div class="gauge-container">
             <div class="gauge-arc percent-labelRED">
                 <div class="gauge-fill" style="width: 100%;"></div>
@@ -43,23 +58,10 @@
                 </div>
                 <div class="gauge-text clildrenOn">100%</div>
             </div>
-           </div>
-        
+           </div>   
     </section> -->
 
      </main>
-
-
-
-
-    <!--    <section class="area_container" id="sumi">-->
-    <!--        <div  id="item-lenght"></div>-->
-    <!--        <div><button onclick="toggleFullscreen()">Tela cheia</button></div>-->
-    <!--    </section>-->
-    <!--    <div class="area_table" id="meuContainer">-->
-    <!--      -->
-    <!--    </div>-->
-
 </body>
 
 </html>
