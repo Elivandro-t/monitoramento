@@ -49,19 +49,19 @@ button:checked{
     
 }
 .area_view{
-    background-color: #F2F2F3;
-    border:1px dotted #8f7676;
+    color: #fff;    
+    /* border:1px dotted #8f7676; */
     margin-top: 5px;
     border-top-left-radius: 2px;
     border-top-right-radius: 2px;
    box-sizing: border-box;
+   margin-bottom: 25px;
 }
 .area_view_mac{
 }
 iframe{
     border: 0;
-    height:100vh;
+    height:calc(100vh - 70px);
     overflow: hidden;
-
 
 }

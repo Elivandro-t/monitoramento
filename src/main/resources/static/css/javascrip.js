@@ -32,6 +32,16 @@ function app(pagina, bt) {
 
 
 }
+function app2(pagina, bt) {
+  window.location.href = pagina;
+  document.querySelectorAll(".in button").forEach(button => {
+    button.classList.remove("botao");
+});
+
+  bt.classList.add("botao")
+
+
+}
 function atualizarBotaoAtivo(){
   document.querySelectorAll(".in button").forEach(btn => {
     if(btn.getAttribute("data-route") === "/lista"){

@@ -9,16 +9,18 @@ document.addEventListener("DOMContentLoaded", async function () {
             let response = await fetch("http://localhost:8080/itens");
             let responseJson = await response.json();
             let nada = "";
-            const idHost = b.getAttribute("data-name")
+            const localizacao = b.getAttribute("data-location")
+            const hostid = b.getAttribute("data-id")
+            const hostIp = b.getAttribute("data-ip")
             if (responseJson.item && Array.isArray(responseJson.item)) {
                 nada = responseJson.item.map(item => `
-                                     <li onclick="deletes('${idHost}','${item.itemid}')">${item.name}</li>
+                                     <li onclick="deletes('${localizacao}','${hostid}','${item.itemid}','${hostIp}')">${item.name}</li>
                                  `).join("");
             } else {
                 nada = `<li>Nenhum item encontrado</li>`;
             }
             let section = `
-                                             <section class="section">
+                                             <section class="menud">
                                                  <ul class="ul-name" >
                                                     ${nada}
                                                  </ul>
@@ -55,8 +57,8 @@ document.addEventListener("DOMContentLoaded", async function () {
 
 });
 
-function deletes(hostid,itemid) {
-    const url = `http://localhost:8080/char?limit=8000&hostid=${hostid}&itemid=${itemid}`;
+function deletes(localizacao,hostid,itemid,ip) {
+    let url = `http://localhost:8080/char?hostname=${localizacao}&interfaceIp=${ip}&hostid=${hostid}&itemid=${itemid}&limit=0`;
     window.location.href = url;
 }
 

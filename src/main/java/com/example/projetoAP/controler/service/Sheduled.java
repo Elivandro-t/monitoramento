@@ -4,6 +4,7 @@ import com.example.projetoAP.EndpointDTO;
 import com.example.projetoAP.repository.EndpointEntity;
 import com.example.projetoAP.repository.EntitySetor.FactureSetor;
 import com.example.projetoAP.repository.RepositoryEntity;
+import jakarta.annotation.PreDestroy;
 import org.apache.commons.math3.analysis.function.Abs;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -27,23 +28,25 @@ public class Sheduled {
     EndpointService endpointService;
 
     // Defina um ThreadPoolExecutor com controle de número de threads
-    private final ExecutorService executorService = Executors.newFixedThreadPool(20); // Aqui você limita a 10 threads simultâneas.
+    private final ExecutorService executorService = Executors.newFixedThreadPool(30); // Aqui você limita a 10 threads simultâneas.
 
     public Sheduled(RepositoryEntity repository){
         this.entityRepository = repository;
     }
     private  int process = 0;
     private  int linhas = 0;
-    private boolean isProcess = false;
-
     public CompletableFuture<String> statusIpAsync(String host) throws IOException {
         InetAddress inet = InetAddress.getByName(host);
         boolean isReactive = inet.isReachable(3000);
         return CompletableFuture.completedFuture(isReactive ? "UP" : "DOWN");
     }
+    @PreDestroy
+    public void shutdownExecutor() {
+        executorService.shutdown();
+    }
 
     @Transactional
-    @Scheduled(cron = "* * * * * *")
+    @Scheduled(cron = "*/20 * * * * *")
     public void gerar() throws IOException, InterruptedException {
 
         var endpoints = entityRepository.findAll();
