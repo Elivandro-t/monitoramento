@@ -6,6 +6,8 @@
 
 body {
     overflow: hidden;
+    background-color: #2C2F33;
+    color: #fff;
 }
 
 .area_table {
@@ -48,7 +50,7 @@ th {
 tbody {
     overflow: auto;
     border: 1px solid #383d52;
-    background-color: #F2F2F2;
+    background-color: rgb(117.3, 117.3, 117.3);
 
 
 
@@ -56,17 +58,17 @@ tbody {
 }
 
 tr {
-    border: 1px solid #b0b3c0;
+    border: 1px solid rgb(117.3, 117.3, 117.3);
     padding: 5px;
     transition: background-color 0.1s ease;
     /* Suaviza a transição */
-    background-color: #F2F2F2;
+    background-color: #2a2e3f;
     cursor: pointer;
 }
 
 .tr:hover {
-    background-color: rgba(173, 216, 230, 0.3);
-    /* Azul um pouco mais forte no hover */
+    background-color: rgba(92, 94, 95, 0.3);    
+    color: white;
 
 
 }

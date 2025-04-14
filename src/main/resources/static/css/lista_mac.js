@@ -6,25 +6,16 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         const contextMenuHandler = async function (e) {
             e.preventDefault();
-            let response = await fetch("http://localhost:8080/itens");
-            let responseJson = await response.json();
-            let nada = "";
             const localizacao = b.getAttribute("data-location")
             const hostid = b.getAttribute("data-id")
             const hostIp = b.getAttribute("data-ip")
-            if (responseJson.item && Array.isArray(responseJson.item)) {
-                nada = responseJson.item.map(item => `
-                                     <li onclick="deletes('${localizacao}','${hostid}','${item.itemid}','${hostIp}')">${item.name}</li>
-                                 `).join("");
-            } else {
-                nada = `<li>Nenhum item encontrado</li>`;
-            }
+    
             let section = `
-                                             <section class="menud">
-                                                 <ul class="ul-name" >
-                                                    ${nada}
-                                                 </ul>
-                                             </section>
+                          <section class="menud">
+                                <ul class="ul-name" >
+                                    <li onclick="deletes('${localizacao}','${hostid}','${hostIp}')">Metricas</li>
+                                </ul>
+                          </section>
                                          `;
             // Remove menu atual, se existir
             if (currentMenu) {
@@ -36,6 +27,10 @@ document.addEventListener("DOMContentLoaded", async function () {
             const menu = document.createElement("div");
             menu.classList.add("td");
             menu.innerHTML = section;
+            menu.style.position = "absolute";
+    menu.style.top = `${e.pageY}px`;
+    menu.style.left = `${e.pageX}px`;
+    menu.style.zIndex = 9999;
 
             // Adiciona o menu à TR clicada
             b.appendChild(menu);
@@ -57,8 +52,8 @@ document.addEventListener("DOMContentLoaded", async function () {
 
 });
 
-function deletes(localizacao,hostid,itemid,ip) {
-    let url = `http://localhost:8080/char?hostname=${localizacao}&interfaceIp=${ip}&hostid=${hostid}&itemid=${itemid}&limit=0`;
+function deletes(localizacao,hostid,ip) {
+    let url = `http://localhost:8080/char?hostname=${localizacao}&interfaceIp=${ip}&hostid=${hostid}&limit=0&itemid=0`;
     window.location.href = url;
 }
 

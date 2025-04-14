@@ -4,12 +4,19 @@ let indexs;
 stompClient.debug = ()=>{}
 function connectToWebSocket() {
     stompClient.connect({}, function (frame) {
+        let loading = document.getElementById("overlay-loader");
         stompClient.subscribe('/lista', function (response) {
             var data = JSON.parse(response.body);
             let downContent = '';
             let upContent = '';
             let countDown = 0;
             let countUp = 0;
+            console.log("lista "+data)
+            if(data.length < 0){
+                loading.style.display = "block";
+                return;
+            }
+            loading.style.display = "none";
 
             data.forEach(function (item, index) {
                 const status = item.status.toUpperCase();
@@ -64,15 +71,53 @@ function connectToWebSocket() {
             document.getElementById("main").innerHTML = output;
 
         });
+        buscarMacLocal;
+        setInterval(buscarMacLocal(), 20000);  
+
     }, function (error) {
-        setTimeout(connectToWebSocket, 5000);  // Tentar reconectar após 5 segundos
+        reconnect
     });
+}
+connectToWebSocket();
+
+function reconnect(){
+    setTimeout(() => {
+      console.log("Conectando so serviço");
+      connectToWebSocket();
+    }, 5000)
+  }
+// document.getElementById("form").addEventListener("submit",(e)=>{
+// e.preventDefault()
+// buscarMac()
+// })
+
+function buscarMac() {
+    const select = document.getElementById("stc");
+    const ReceiveGrupoId = select.value;
+    if(ReceiveGrupoId!=null&&ReceiveGrupoId.trim()!=="" ){
+        localStorage.setItem("ReceiveGrupoId", ReceiveGrupoId);
+        stompClient.send("/app/mestricasM", {}, ReceiveGrupoId);
+    }
+}
+function buscarMacLocal(){
+    let loading2 = document.getElementById("overlay-loader");
+    let loading = document.getElementById("overlay");
+    const item = localStorage.getItem("ReceiveGrupoId");
+    if (item && item.trim()!=="") {
+        loading.style.display = "none";
+        stompClient.send("/app/mestricasM", {}, item);
+    }else{
+        loading.style.display = "block";
+        loading2.style.display = "none";
+        loading.innerHTML = "Selecione um grupo de monitoramento!"
+    }
 }
 
 function latencia(localizacao,hostid,itemid,ip) {
     let url = `http://localhost:8080/char?hostname=${localizacao}&interfaceIp=${ip}&hostid=${hostid}&itemid=${itemid}&limit=0`;
     window.location.href = url;
 }
+
 
 document.addEventListener("mouseenter", function (event) {
     if (event.target.matches(".data")) {
@@ -82,6 +127,6 @@ document.addEventListener("mouseenter", function (event) {
         }
     }
 }, true);
-connectToWebSocket();
+
 
 
