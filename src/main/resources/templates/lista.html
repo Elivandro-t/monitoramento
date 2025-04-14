@@ -69,11 +69,11 @@
                     <th>
                         IPv4
                     </th>
-                    <th>ICM PING</th>
                     <th>CPD</th>
                     <th>FILIAL</th>
                     <th>COMPLEXO</th>
                     <th>GROUP</th>
+                    <th>ICM PING</th>
                 </tr>
             </thead>
             <tbody>
@@ -88,6 +88,10 @@
                     <td th:text="${item.sn}"></td>
                     <td th:text="${item.mac}"></td>
                     <td th:text="${item.ip}"></td>
+                    <td>EM DESENVOLVIMENTO</td>
+                    <td th:text="${item.filial}"></td>
+                    <td th:text="${item.nomeComplexo}"></td>
+                    <td th:text="${item.grupo}"></td>
                     <td>
                         <button onclick="visual(this);" th:data-ping="${item.ping}"> Visualizar</button>
                         <div th:id="modal" class="modal ">
@@ -98,15 +102,11 @@
                             <div th:text="${item.ping}" class="area-propt"></div>
                         </div>
                     </td>
-                    <td>EM DESENVOLVIMENTO</td>
-                    <td th:text="${item.filial}"></td>
-                    <td th:text="${item.nomeComplexo}"></td>
-                    <td th:text="${item.grupo}"></td>
 
 
                 </tr>
-                <tr th:each="item:${lista}" class="tr" th:data-name="${item.id}"
-                    th:if="${item.status.toUpperCase() == 'UP'}">
+                <tr th:each="item:${lista}" class="tr" th:data-location="${item.localizacao}" th:data-id="${item.id}"
+                    th:data-ip="${item.ip}" th:if="${item.status.toUpperCase() == 'UP'}">
                     <td th:text="${item.status}" id="ad" class="th-text ad"
                         th:style="'background-color: ' + (${item.status != null && item.status.toUpperCase() == 'UP'} ? '#51c061' : '#f12011')">
                     </td>
@@ -116,6 +116,10 @@
                     <td th:text="${item.sn}"></td>
                     <td th:text="${item.mac}"></td>
                     <td th:text="${item.ip}"></td>
+                    <td>EM PROCESSO</td>
+                    <td th:text="${item.filial}"></td>
+                    <td th:text="${item.nomeComplexo}"></td>
+                    <td th:text="${item.grupo}">EM PROCESSO</td>
                     <td>
                         <button onclick="visual(this);" th:data-ping="${item.ping}"> Visualizar</button>
                         <div id="modal" class="modal">
@@ -126,10 +130,6 @@
                             <div th:text="${item.ping}" class="area-propt"></div>
                         </div>
                     </td>
-                    <td>EM PROCESSO</td>
-                    <td th:text="${item.filial}"></td>
-                    <td th:text="${item.nomeComplexo}"></td>
-                    <td th:text="${item.grupo}">EM PROCESSO</td>
 
 
                 </tr>

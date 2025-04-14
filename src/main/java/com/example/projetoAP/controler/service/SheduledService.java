@@ -1,14 +1,10 @@
 package com.example.projetoAP.controler.service;
 
-import com.example.projetoAP.EndpointDTO;
 import com.example.projetoAP.repository.EndpointEntity;
-import com.example.projetoAP.repository.EntitySetor.FactureSetor;
 import com.example.projetoAP.repository.RepositoryEntity;
 import jakarta.annotation.PreDestroy;
-import org.apache.commons.math3.analysis.function.Abs;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +16,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 @Component
-public class Sheduled {
+public class SheduledService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
     private RepositoryEntity entityRepository;
@@ -30,7 +26,7 @@ public class Sheduled {
     // Defina um ThreadPoolExecutor com controle de número de threads
     private final ExecutorService executorService = Executors.newFixedThreadPool(30); // Aqui você limita a 10 threads simultâneas.
 
-    public Sheduled(RepositoryEntity repository){
+    public SheduledService(RepositoryEntity repository){
         this.entityRepository = repository;
     }
     private  int process = 0;
@@ -112,11 +108,11 @@ public class Sheduled {
 //        messagingTemplate.convertAndSend("/off", lista.stream().filter(e->e.status().equals("DOWN")).toList() );
     }
 
-    @Scheduled(cron = "* * * * * *")
-    public void getVierListPage(){
-        // Filtra a lista baseado no MAC
-        var lista = endpointService.getLista().stream().toList();
-        messagingTemplate.convertAndSend("/lista", lista);
-
-    }
+//    @Scheduled(cron = "* * * * * *")
+//    public void getVierListPage(){
+//        // Filtra a lista baseado no MAC
+//        var lista = endpointService.getLista().stream().toList();
+//        messagingTemplate.convertAndSend("/lista", lista);
+//
+//    }
 }

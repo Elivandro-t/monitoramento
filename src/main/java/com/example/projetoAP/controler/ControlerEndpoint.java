@@ -6,6 +6,8 @@ import com.example.projetoAP.controler.service.EndepointBuscadosService;
 import com.example.projetoAP.domain.vo.MetricasDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -28,9 +30,14 @@ public class ControlerEndpoint {
     @GetMapping("/index/{mac}")
     public ResponseEntity<List<EndpointDTO>> getList(@PathVariable String mac) throws Exception {
         var listass  = macConectados.allEndpoints.stream().filter(e->e.mac().equals(mac)).toList();
-
         return ResponseEntity.ok(listass);
     }
+//    @MessageMapping("/listahost")
+//    @SendTo("/list")
+//    public ResponseEntity<List<EndpointDTO>> gethost(String mac) throws Exception {
+//        var listass  = macConectados.allEndpoints.stream().filter(e->e.mac().equals(mac)).toList();
+//        return ResponseEntity.ok(listass);
+//    }
     @GetMapping("/item")
     public ResponseEntity<List<EndpointDTO>> getOnt() throws Exception {
         var lista  = macConectados.Dev();
@@ -46,7 +53,5 @@ public class ControlerEndpoint {
     public void BuscaDispositivos(@PathVariable String mac) throws Exception {
         endepoint.findDeviceByMacAddress(mac);
     }
-
-
 }
 

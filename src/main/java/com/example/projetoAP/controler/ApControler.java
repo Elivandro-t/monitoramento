@@ -4,9 +4,13 @@ import com.example.projetoAP.EndpointDTO;
 import com.example.projetoAP.Service.EndpointInterfaceDTO;
 import com.example.projetoAP.controler.SetoresService.SetorService;
 import com.example.projetoAP.controler.service.*;
+import com.example.projetoAP.domain.vo.Filter;
 import com.example.projetoAP.domain.vo.MetricasDTO;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -16,9 +20,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 @Controller
@@ -27,6 +31,8 @@ import java.util.concurrent.ExecutionException;
 public class ApControler {
     @Autowired
     CalcularPerdas calcularPerdas;
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
     @Autowired
     GroupService groupService;
     EndpointService endpointService;
@@ -154,9 +160,6 @@ public class ApControler {
         model.addAttribute("data",lista.get());
         return "char";
     }
-
-
-
 }
 
 

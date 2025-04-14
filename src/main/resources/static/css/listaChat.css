@@ -21,11 +21,20 @@ body {
     scrollbar-color: #888282 #383d52;
 }
 .log{
+  display: flex;
   width: 100%;
-  padding:3px 10px;
   margin-bottom: 5px;
-  font-size: 25px;
+  justify-content: space-between;
+  align-items: center;
 }
+h1{
+  flex: 1;
+  padding: 0;
+  font-size: 25px;
+
+
+}
+
 .area-header{
   display: flex;
   justify-content: space-between;

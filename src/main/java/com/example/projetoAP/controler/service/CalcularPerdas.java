@@ -1,12 +1,13 @@
 package com.example.projetoAP.controler.service;
 
 import com.example.projetoAP.domain.model.Metricas;
+import com.example.projetoAP.domain.vo.Filter;
+import com.example.projetoAP.domain.vo.FilterHost;
 import com.example.projetoAP.domain.vo.LostDTO;
 import com.example.projetoAP.domain.vo.MetricasDTO;
 import com.example.projetoAP.repository.*;
 import jakarta.annotation.PreDestroy;
 import org.springframework.http.HttpStatus;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
