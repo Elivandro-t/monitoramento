@@ -1,15 +1,11 @@
 package com.example.projetoAP.controler;
 
 import com.example.projetoAP.EndpointDTO;
-import com.example.projetoAP.controler.service.CalcularPerdas;
-import com.example.projetoAP.controler.service.EndpointService;
-import com.example.projetoAP.controler.service.ItensMetricasService;
-import com.example.projetoAP.domain.vo.Filter;
-import com.example.projetoAP.domain.vo.FilterHost;
-import com.example.projetoAP.domain.vo.IcmpDTO;
-import com.example.projetoAP.domain.vo.MetricasDTO;
+import com.example.projetoAP.controler.service.*;
+import com.example.projetoAP.domain.vo.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -22,17 +18,20 @@ import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping
+@CrossOrigin(origins = "*")
 public class ControlerMetrias {
     @Autowired
     CalcularPerdas calcularPerdas;
     ItensMetricasService service;
+    GroupService groupService;
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
     EndpointService endpointService;
-    public  ControlerMetrias(ItensMetricasService itensMetricasService,EndpointService endpointService){
+    public  ControlerMetrias(ItensMetricasService itensMetricasService,EndpointService endpointService,GroupService groupService){
 
         this.service = itensMetricasService;
         this.endpointService =endpointService;
+        this.groupService = groupService;
     }
     @MessageMapping("/enviarDados")
     public  void lista( Filter id){
@@ -41,25 +40,25 @@ public class ControlerMetrias {
       });
     }
     @MessageMapping("/metricas")
-    @SendTo("/grafico")
-    public CompletableFuture<Map<String,List<MetricasDTO>>> listaMestricas(FilterHost filter){
-        return calcularPerdas.ListaMestricasSemID(filter);
+    public void listaMestricas(@Payload  FilterHost filter){
+        CompletableFuture<Map<String, List<MetricasDTO>>> future = calcularPerdas.ListaMestricasSemID(filter);
+        future.thenAccept(result -> {
+            messagingTemplate.convertAndSend("/topic/grafico/" + filter.clientId(), result);
+        });
     };
     @MessageMapping("/mestricasM")
-    public void getVierListPageSocket( String ReceiveGrupoId){
+    public void getVierListPageSocket(@Payload Dados receiveGrupoId){
         List<EndpointDTO> l = new ArrayList<>();
-        if(ReceiveGrupoId!=null && !ReceiveGrupoId.isEmpty()){
-            System.out.print("Meus dado vindo do front"+ReceiveGrupoId);
-
+        if(receiveGrupoId.ReceiveGrupoId()!=null && !receiveGrupoId.ReceiveGrupoId().isEmpty()){
             var lista = endpointService.getLista().stream()
-                    .filter(e -> e.grupo().contains(ReceiveGrupoId)).toList();
+                    .filter(e -> e.grupo().contains(receiveGrupoId.ReceiveGrupoId())).toList();
            l.addAll(lista);
         }
         else {
             l.addAll(endpointService.getLista());
             // Caso o MAC seja null, adiciona a lista completa
         };
-        messagingTemplate.convertAndSend("/lista",l);
+        messagingTemplate.convertAndSend("/topic/monitor/"+receiveGrupoId.clientId(),l);
 
 //       messagingTemplate.convertAndSend("/lista",listMap);
     }
@@ -70,5 +69,10 @@ public class ControlerMetrias {
     @GetMapping("/itens")
     public Map<String,List<IcmpDTO>> lista(){
         return service.lista();
+    }
+    @GetMapping("/itens/group")
+    public List<GroupRegistroDTO> findAll(){
+        var lista = groupService.findAll();
+        return lista;
     }
 }

@@ -1,4 +1,4 @@
 package com.example.projetoAP.domain.vo;
 
-public record FilterHost(Long hostid) {
+public record FilterHost(Long hostid,String clientId) {
 }

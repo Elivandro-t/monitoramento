@@ -24,7 +24,7 @@ public class SheduledService {
     EndpointService endpointService;
 
     // Defina um ThreadPoolExecutor com controle de número de threads
-    private final ExecutorService executorService = Executors.newFixedThreadPool(30); // Aqui você limita a 10 threads simultâneas.
+    private final ExecutorService executorService = Executors.newFixedThreadPool(50); // Aqui você limita a 10 threads simultâneas.
 
     public SheduledService(RepositoryEntity repository){
         this.entityRepository = repository;
@@ -42,7 +42,7 @@ public class SheduledService {
     }
 
     @Transactional
-    @Scheduled(cron = "*/20 * * * * *")
+    @Scheduled(cron = "*/30 * * * * *")
     public void gerar() throws IOException, InterruptedException {
 
         var endpoints = entityRepository.findAll();
@@ -108,11 +108,11 @@ public class SheduledService {
 //        messagingTemplate.convertAndSend("/off", lista.stream().filter(e->e.status().equals("DOWN")).toList() );
     }
 
-//    @Scheduled(cron = "* * * * * *")
-//    public void getVierListPage(){
-//        // Filtra a lista baseado no MAC
-//        var lista = endpointService.getLista().stream().toList();
-//        messagingTemplate.convertAndSend("/lista", lista);
-//
-//    }
+    @Scheduled(cron = "* * * * * *")
+    public void getVierListPage(){
+        // Filtra a lista baseado no MAC
+        var lista = endpointService.getLista().stream().toList();
+        messagingTemplate.convertAndSend("/lista", lista);
+
+    }
 }

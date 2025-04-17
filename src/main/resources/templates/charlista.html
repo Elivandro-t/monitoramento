@@ -70,14 +70,13 @@
     <script th:inline="javascript" src="../static/css/char.js"></script>
     <script th:inline="javascript" src="../static/css/listaChat.css"></script>
      <div class="log">
-        <h1>Monitoramento de Equipamentos</h1>
+        <h1 id="Monitoramento">Monitoramento de Equipamentos</h1>
         <div>
             <form method="get" class="modal_2" id="form">
                 <label class="label" for="mac">Busca</label>
                 <select name="ReceiveGrupoId" id="stc">
-                    <option value="">Selecione o grupo</option>
-                    <option value="LINK-SERVICE">LINK-SERVICE</option>
-                    <option value="AP-SERVICE">AP-SERVICE</option>
+                    <!-- <option value="LINK CD">LINK-CD</option>
+                    <option value="AP-SERVICE">AP-SERVICE</option> -->
                 </select>
                 <button onclick="buscarMac()" id="enviar">enviar</button>
             </form>

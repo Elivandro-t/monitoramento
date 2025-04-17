@@ -17,6 +17,7 @@ import java.util.concurrent.ExecutionException;
 
 @RestController
 @RequestMapping("endpoint")
+@CrossOrigin(origins = "*")
 public class ControlerEndpoint {
     @Autowired
     private MainService macConectados;

@@ -56,7 +56,7 @@ public class CalcularPerdas {
         for (var equipamentos:equipamento) {
             String ip = equipamentos.getIp();
             lista.add(runFuntion(equipamentos.getIp(),icmp,equipamentos.getId()));
-            long time = calculaTempo(equipamentos);
+//            long time = calculaTempo(equipamentos);
         }
 
         CompletableFuture.allOf(lista.toArray(new CompletableFuture[0])).join();
@@ -94,7 +94,7 @@ public class CalcularPerdas {
         return CompletableFuture.runAsync(()->{});
     }
     private CompletableFuture<Double> CalcularLatencia(String ip) throws IOException {
-            String pingCmd = os.contains("win") ? "ping -n 1 " + ip : "ping -c 1 " + ip;
+            String pingCmd = os.contains("win") ? "ping -n 1 " + ip : "ping -c 4 " + ip;
             Process process = Runtime.getRuntime().exec(pingCmd);
             String linha;
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -111,13 +111,13 @@ public class CalcularPerdas {
         return CompletableFuture.completedFuture(latenciaMedia);
     }
 
-    private long calculaTempo(EndpointEntity endpointDTO){
-        LocalDateTime localDateTime = LocalDateTime.now();
-        if("UP".equalsIgnoreCase(endpointDTO.getStatus())){
-            return 0;
-        }
-        return Duration.between(endpointDTO.getUltimaVezOnline(),localDateTime).toMinutes();
-    }
+//    private long calculaTempo(EndpointEntity endpointDTO){
+//        LocalDateTime localDateTime = LocalDateTime.now();
+//        if("UP".equalsIgnoreCase(endpointDTO.getStatus())){
+//            return 0;
+//        }
+//        return Duration.between(endpointDTO.getUltimaVezOnline(),localDateTime).toMinutes();
+//    }
 
     public CompletableFuture<Void> runFuntion(String ip,List<ItemsICMPEntity> icmp,long hostid){
         return CompletableFuture.runAsync(()->{
