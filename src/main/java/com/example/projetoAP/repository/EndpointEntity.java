@@ -148,8 +148,19 @@ public class EndpointEntity {
         return result.toString().trim();
     }
     public String statusIp(String host) throws IOException {
-        InetAddress inet = InetAddress.getByName(host);
-        boolean isReactive = inet.isReachable(100);
+//        InetAddress inet = InetAddress.getByName(host);
+//        boolean isReactive = inet.isReachable(300);
+        Process p = Runtime.getRuntime().exec("ping -c 1 " + host); // No Windows, use "ping -n 1"
+        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        String line;
+        boolean isReactive = false;
+        while ((line = input.readLine()) != null) {
+            if (line.contains("ttl=") || line.contains("TTL=")) {
+                isReactive = true;
+                break;
+            }
+        }
+        input.close();
         return isReactive ? "UP":"DOWN";
     }
     public  void atualiza(String ip) throws IOException, InterruptedException {

@@ -12,13 +12,14 @@ var socket = new SockJS('/ws');
 var stompClient = Stomp.over(socket);
 stompClient.debug = () => {};
  function fetchDados() {
+  const client = localStorage.getItem("client");
   const url = new URLSearchParams(window.location.search);
   const ipv4 = url.get("interfaceIp");
   const hostname = url.get("hostname");
   let loading = document.getElementById('overlay-loader')
 
     stompClient.connect({}, function (frame) {
-      stompClient.subscribe("/grafico", function (response) {
+      stompClient.subscribe(`/topic/grafico/${client}`, function (response) {
         var data = JSON.parse(response.body);
         if(data.result.length<0){
           loading.style.display = "block"
@@ -47,38 +48,38 @@ stompClient.debug = () => {};
     }, 5000)
   }
   function rodaStoP(){
+    const client = localStorage.getItem("client");
+
     const url = new URLSearchParams(window.location.search);
         const host = url.get("hostid")
         stompClient.send("/app/metricas", {}, JSON.stringify({
-          hostid: host
+          hostid: host,
+          clientId:client
         }));
   }
   async  function atualizarGrafico(dataNames,hostname,ipv4) {
   const dadosName = dataNames;
   let titule = document.getElementById('titule')
-  let latenciap = document.getElementById('icmpChart')
-  let latenc = document.getElementById('latencyChart')
-  let canv = document.getElementById('canv')
   let dados = dadosName?.result;
   const {itens} = await itensICMP();
-  const item = itens.item.map(e=>e.key_);
-  // const ultimaData = new Date(dados[0].clock * 1000).toLocaleString("pt-BR");
-  // const labelss = itens.item.map(e=>e.name);
-  titule.innerHTML = hostname;// Usar o índice como label
-  const datas = dados.map(e => Number(e.value));
+  const itemICMP0 = dados[0].itemId;
+  const itemICMP1 = dados[1].itemId;
+  const dadosPerda = dados.filter(e => e.icmpName === "ICMP loss");
+  const dadosLatencia = dados.filter(e => e.icmpName === "ICMP response time");
+  titule.innerHTML = hostname;
   const labelsclock = dados.map(e => {
     const ts = new Date(e.clock * 1000).toLocaleString("pt-BR");
     return ts;
   });
 
 itens.item.map(element => {
-  if(element.key_.includes("icmppingloss")){
-    graficoICMPPerdas(datas,ipv4,dados);
+  const datas = dados.map(e => Number(e.value));
 
-  }if(element.key_.includes("icmpping")){
-    console.log("meus elementos "+ 2)
-  }if(element.key_.includes("icmppingsec")){
-    graficoICMPSec(dados,ipv4,labelsclock,element.name);
+  if(element.itemid==itemICMP1){
+    graficoICMPPerdas(dadosPerda.map(e => Number(e.value)),ipv4,dados);
+
+  }if(element.itemid==itemICMP0){
+    graficoICMPSec(dadosLatencia,ipv4,labelsclock,element.name);
 
   }
 });
@@ -91,11 +92,11 @@ function graficoICMPPerdas(datas,ipv4,dados){
       label: "Perdas" ,
       data: datas.reverse(),
       fill: false,
-      borderColor: 'rgba(35, 192, 192, 0.3)',
-      backgroundColor: 'rgba(81, 207, 207, 0.2)',
-      borderWidth:2,
+      borderColor: '#ff6363',
+      backgroundColor: 'transparent',
+      borderWidth: 2,
       tension: 0.3,
-      pointRadius: 2
+      pointRadius: 0
     }]
   };
 
@@ -127,6 +128,13 @@ function graficoICMPPerdas(datas,ipv4,dados){
       },
       plugins: {
         tooltip: {
+          tooltip: {
+            backgroundColor: '#222',
+            titleColor: '#ff6363',
+            bodyColor: '#fff',
+            borderColor: '#ff6363',
+            borderWidth: 1
+          },
           callbacks: {
             label: function (context) {
               return context.parsed.y + '%' + " IPV4 "+ipv4;

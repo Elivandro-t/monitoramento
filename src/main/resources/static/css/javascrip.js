@@ -6,7 +6,6 @@ document.getElementById("form").addEventListener("submit",function(){
 let btn = document.getElementById("btn")
 btn.addEventListener("click", () => {
   alert("deu veryo")
-
 })
 document.querySelectorAll("[id^='item-']").forEach(function(element) {
 element.addEventListener("click",function(){
@@ -20,7 +19,6 @@ element.addEventListener("click",function(){
           }
        })
 });
-
 function app(pagina, bt) {
   let iframe = document.getElementById("iframe");
   iframe.src = pagina;
@@ -28,9 +26,7 @@ function app(pagina, bt) {
     button.classList.remove("botao");
 });
 
-  bt.classList.add("botao")
-
-
+  bt.classList.add("botao");
 }
 function app2(pagina, bt) {
   window.location.href = pagina;

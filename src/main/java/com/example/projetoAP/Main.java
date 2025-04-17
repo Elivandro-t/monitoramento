@@ -10,14 +10,35 @@ import org.snmp4j.mp.SnmpConstants;
 import org.snmp4j.smi.*;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public class Main {
     public static void main(String[] args) throws IOException, ExecutionException, InterruptedException {
-//            String ipAddress = "10.88.4.35"; // IP do AP ou roteador
+//            InetAddress inet = InetAddress.getByName("10.88.1.96");
+//            boolean isReactive = inet.isReachable(3000);
+//            var result = isReactive ? "UP" : "DOWN";
+//            System.out.print("Status "+ result);
+        String ip = "10.93.61.11";
+        Process p = Runtime.getRuntime().exec("ping -c 1 " + ip); // No Windows, use "ping -n 1"
+        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        String line;
+        boolean reachable = false;
+        while ((line = input.readLine()) != null) {
+            if (line.contains("ttl=") || line.contains("TTL=")) {
+                reachable = true;
+                break;
+            }
+        }
+        input.close();
+        System.out.println("Status " + reachable);
+        //            String ipAddress = "10.88.4.35"; // IP do AP ou roteador
 //            String community = "public"; // Comunidade SNMP (comum é "public")
 //
 //            // Criando uma conexão SNMP

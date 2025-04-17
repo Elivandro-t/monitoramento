@@ -38,7 +38,6 @@ public class ApControler {
     EndpointService endpointService;
     SetorService setorService;
     ApControler(EndpointService endpointService,SetorService setor){
-
         this.endpointService = endpointService;
         this.setorService = setor;
     }

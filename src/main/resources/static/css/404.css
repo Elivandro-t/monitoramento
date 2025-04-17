@@ -1,0 +1,18 @@
+body{
+    background-color: #1e1e1e;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    overflow: hidden;
+    flex-direction: column;
+}
+
+h1{
+    font-size: 42px;
+}
+a{
+    text-decoration: none;
+
+}
