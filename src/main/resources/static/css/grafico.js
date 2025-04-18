@@ -2,7 +2,7 @@ let chartInstance = null;
 let chartInstance2 = null;
 let lenght = 0;
 let chartInstance3= null;
-const endpoint = "http://localhost:8080";
+const endpoint = "http://192.168.88.70:8080";
 async function itensICMP() {
   const response = await fetch(`${endpoint}/itens`);
   const itens = await response.json();
@@ -17,16 +17,14 @@ stompClient.debug = () => {};
   const ipv4 = url.get("interfaceIp");
   const hostname = url.get("hostname");
   let loading = document.getElementById('overlay-loader')
-
     stompClient.connect({}, function (frame) {
       stompClient.subscribe(`/topic/grafico/${client}`, function (response) {
         var data = JSON.parse(response.body);
         if(data.result.length<0){
           loading.style.display = "block"
         }else{
-          loading.style.display = "none"
           atualizarGrafico(data,hostname,ipv4);
-
+          loading.style.display = "none"
         }
       })
       rodaStoP()
@@ -67,7 +65,11 @@ stompClient.debug = () => {};
   const dadosPerda = dados.filter(e => e.icmpName === "ICMP loss");
   const dadosLatencia = dados.filter(e => e.icmpName === "ICMP response time");
   titule.innerHTML = hostname;
-  const labelsclock = dados.map(e => {
+  const labelsclock = dadosLatencia.map(e => {
+    const ts = new Date(e.clock * 1000).toLocaleString("pt-BR");
+    return ts;
+  });
+  const labelsclocke = dadosPerda.map(e => {
     const ts = new Date(e.clock * 1000).toLocaleString("pt-BR");
     return ts;
   });
@@ -87,16 +89,15 @@ itens.item.map(element => {
 
 function graficoICMPPerdas(datas,ipv4,dados){
   const data = {
-    labels: labelsclock,
+    labels: labelsclocke.reverse(),
     datasets: [{
       label: "Perdas" ,
       data: datas.reverse(),
       fill: false,
-      borderColor: '#ff6363',
-      backgroundColor: 'transparent',
-      borderWidth: 2,
-      tension: 0.3,
-      pointRadius: 0
+      borderColor: 'rgba(35, 192, 192, 0.3)',
+      backgroundColor: 'rgba(81, 207, 207, 0.2)',
+      borderWidth:2,
+      pointRadius: 2
     }]
   };
 
@@ -107,7 +108,7 @@ function graficoICMPPerdas(datas,ipv4,dados){
       responsive: true,
       layout: {
         padding: {
-          right: 100 
+          right: 1
         }
       }, 
       scales: {
@@ -119,22 +120,15 @@ function graficoICMPPerdas(datas,ipv4,dados){
           }
         },
         x: {
-          // title: {
-          //   display: true,
-          //   text: 'Amostra'
-          // }
-          display: false
+          title: {
+            display: true,
+            text: 'Amostra'
+          },
+          display: true
         }
       },
       plugins: {
         tooltip: {
-          tooltip: {
-            backgroundColor: '#222',
-            titleColor: '#ff6363',
-            bodyColor: '#fff',
-            borderColor: '#ff6363',
-            borderWidth: 1
-          },
           callbacks: {
             label: function (context) {
               return context.parsed.y + '%' + " IPV4 "+ipv4;
@@ -216,7 +210,7 @@ function graficoICMPSec(dados,ipv4,labelsclock,labelss){
       maintainAspectRatio: false,
       layout: {
         padding: {
-          right: 100 
+          right:1
         }
       }, 
       scales: {

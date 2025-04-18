@@ -42,7 +42,7 @@ public class SheduledService {
     }
 
     @Transactional
-    @Scheduled(cron = "*/30 * * * * *")
+    @Scheduled(cron = "*/20 * * * * *")
     public void gerar() throws IOException, InterruptedException {
 
         var endpoints = entityRepository.findAll();
