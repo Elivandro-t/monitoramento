@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 @Entity
 @Table(name = "history")
@@ -28,6 +30,12 @@ public class MetricasEntity {
         this.clock = metricas.getClock();
         this.icmpName = metricas.getIcmpName();
         this.timestamp = LocalDateTime.now();
+    }
+    public String unit( ){
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy, HH:mm:ss", Locale.forLanguageTag("pt-BR"));
+        String formatString = timestamp.format(formatter);
+        return formatString;
+
     }
     public long getItemid() {
         return itemid;

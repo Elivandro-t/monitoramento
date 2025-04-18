@@ -41,10 +41,9 @@ public class ControlerMetrias {
     }
     @MessageMapping("/metricas")
     public void listaMestricas(@Payload  FilterHost filter){
-        CompletableFuture<Map<String, List<MetricasDTO>>> future = calcularPerdas.ListaMestricasSemID(filter);
-        future.thenAccept(result -> {
-            messagingTemplate.convertAndSend("/topic/grafico/" + filter.clientId(), result);
-        });
+        Map<String, List<MetricasDTO>> future = calcularPerdas.ListaMestricasSemID(filter);
+            messagingTemplate.convertAndSend("/topic/grafico/" + filter.clientId(), future);
+
     };
     @MessageMapping("/mestricasM")
     public void getVierListPageSocket(@Payload Dados receiveGrupoId){
@@ -63,7 +62,7 @@ public class ControlerMetrias {
 //       messagingTemplate.convertAndSend("/lista",listMap);
     }
     @PostMapping("/metricas")
-    public CompletableFuture<Map<String,List<MetricasDTO>>> listaMestricasApi(@RequestBody FilterHost filter){
+    public Map<String,List<MetricasDTO>> listaMestricasApi(@RequestBody FilterHost filter){
         return calcularPerdas.ListaMestricasSemID(filter);
     }
     @GetMapping("/itens")

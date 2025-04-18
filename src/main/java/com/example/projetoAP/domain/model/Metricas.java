@@ -9,6 +9,10 @@ import jakarta.persistence.Id;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.Timer;
 
 public class Metricas {
@@ -19,6 +23,7 @@ public class Metricas {
     private long clock;
     private String value;
     private String ns;
+    private LocalDateTime timestamp;
     public Metricas(MetricasDTO metricasDTO){
         this.value = String.valueOf(metricasDTO.value());
         this.hostid = metricasDTO.hostId();
@@ -41,7 +46,9 @@ public class Metricas {
         this.itemid = metricasDTO.getItemid();
         this.clock = Instant.now().getEpochSecond();
         this.icmpName = metricasDTO.getIcmpName();
+        this.timestamp = metricasDTO.getTimestamp();
     }
+
 
     public long getItemid() {
         return itemid;
@@ -69,5 +76,8 @@ public class Metricas {
 
     public String getIcmpName() {
         return icmpName;
+    }
+    public LocalDateTime getTimestamp(){
+        return timestamp;
     }
 }

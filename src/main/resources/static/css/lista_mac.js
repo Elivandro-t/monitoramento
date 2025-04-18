@@ -1,4 +1,4 @@
-let base = "http://localhost:8080"
+let base = "http://192.168.88.70:8080"
 document.addEventListener("DOMContentLoaded", async function () {
     let currentMenu = null; // menu atualmente aberto
     let dados = /*[[${lista}]]*/[];

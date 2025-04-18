@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://thymeleaf.org"
- xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-
- layout:decorate="~{layout.html}"
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
 >
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lista de APs</title>
     <link rel="stylesheet" th:href="@{/css/lista.css}">
     <link rel="stylesheet" href="../static/css/lista.css">
@@ -14,7 +13,6 @@
 </head>
 
 <body>
-    <div layout:fragment="conteudo">
     <script src="../static/css/javascrip.js"></script>
     <script src="../static/css/lista_mac.js"></script>
 
@@ -139,7 +137,6 @@
             </tbody>
         </table>
 
-    </div>
 </div>
 
 </body>

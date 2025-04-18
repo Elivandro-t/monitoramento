@@ -5,9 +5,9 @@ import com.example.projetoAP.repository.MetricasEntity;
 
 import java.util.Optional;
 
-public record MetricasDTO(String value,long itemId, long hostId,String icmpName,Long clock) {
+public record MetricasDTO(String value,long itemId, long hostId,String icmpName,Long clock,String timestamp) {
     public MetricasDTO(MetricasEntity e) {
-        this(e.getValue(),e.getItemid(),e.getHostid(),e.getIcmpName(),e.getClock());
+        this(e.getValue(),e.getItemid(),e.getHostid(),e.getIcmpName(),e.getClock(),e.unit());
     }
 
 

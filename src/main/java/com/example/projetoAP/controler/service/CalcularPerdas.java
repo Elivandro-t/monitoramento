@@ -45,7 +45,7 @@ public class CalcularPerdas {
         this.icmpRepository = icmpRepository;
         this.metricasRepository = metricasRepository;
     }
-    @Scheduled(cron = "*/30 * * * * *")
+    @Scheduled(fixedDelay = 1000)  // Executa a cada 30 segundos após o término da execução anterior
     public void CalcularMestricasDeEquipamento(){
         var equipamento = repository.findAll();
         var icmp = icmpRepository.findAll();
@@ -58,7 +58,7 @@ public class CalcularPerdas {
             lista.add(runFuntion(equipamentos.getIp(),icmp,equipamentos.getId()));
 //            long time = calculaTempo(equipamentos);
         }
-
+        System.out.print("Thread: "+Thread.currentThread().getName());
         CompletableFuture.allOf(lista.toArray(new CompletableFuture[0])).join();
     }
     private CompletableFuture<String> calcularPerdas(String ip)  {
@@ -80,15 +80,15 @@ public class CalcularPerdas {
     }
     public CompletableFuture<Map<String,List<MetricasDTO>>> listaMetricas(Filter filter){
         Map<String,List<MetricasDTO>> listaMap = new HashMap<>();
-       var lista =  metricasRepository.findAllById(filter.itemids(),filter.hostid()).stream().map(MetricasDTO::new).toList();
+       var lista =  metricasRepository.findAllById(filter.itemids(),filter.hostid()).stream().limit(200).map(MetricasDTO::new).toList();
        listaMap.put("result",lista);
        return  CompletableFuture.supplyAsync(()->listaMap);
     }
-    public CompletableFuture<Map<String,List<MetricasDTO>>> ListaMestricasSemID(FilterHost filter){
+    public Map<String,List<MetricasDTO>> ListaMestricasSemID(FilterHost filter){
         Map<String,List<MetricasDTO>> listaMap = new HashMap<>();
-        var lista =  metricasRepository.findAllByIdOne(filter.hostid()).stream().map(MetricasDTO::new).toList();
+        var lista =  metricasRepository.findAllByIdOne(filter.hostid()).stream().limit(200).map(MetricasDTO::new).toList();
         listaMap.put("result",lista);
-        return  CompletableFuture.supplyAsync(()->listaMap);
+        return listaMap;
     }
     public CompletableFuture listas(){
         return CompletableFuture.runAsync(()->{});
@@ -127,7 +127,7 @@ public class CalcularPerdas {
                 List<MetricasEntity> batch = new ArrayList<>();
                 for(int i = 0;i < icmp.size();i++) {
                     if(icmp.get(i).getKey_().equals("icmppingsec")){
-                        MetricasDTO m = new MetricasDTO(String.valueOf(latencia),icmp.get(i).getItemid(),hostid,icmp.get(i).getName(),0l);;
+                        MetricasDTO m = new MetricasDTO(String.valueOf(latencia),icmp.get(i).getItemid(),hostid,icmp.get(i).getName(),0l,"");;
                         Metricas metricas = new Metricas(m);
                         batch.add(new MetricasEntity(metricas));
                     }else if(icmp.get(i).getKey_().equals("icmppingloss")){

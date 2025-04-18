@@ -2,7 +2,7 @@ var socket = new SockJS('/ws');  // Ponto de entrada do WebSocket
 var stompClient = Stomp.over(socket);
 let indexs;
 stompClient.debug = ()=>{};
-const endpoint = "http://localhost:8080";
+const endpoint = "http://192.168.88.70:8080";
 
 function connectToWebSocket() {
    let clientId = 'client-' + Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 5);
@@ -17,8 +17,6 @@ function connectToWebSocket() {
             let upContent = '';
             let countDown = 0;
             let countUp = 0;
-            let letra = 0;
-            let aviso = "Sem item encontrado!"
             if(data.length < 0){
                 loading.style.display = "block";
                 return;
@@ -98,7 +96,7 @@ function reconnect(){
     setTimeout(() => {
       console.log("Conectando so serviço");
       connectToWebSocket();
-    }, 1000)
+    }, 3000)
   }
 
 function buscarMac() {
