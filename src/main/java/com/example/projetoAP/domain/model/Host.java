@@ -3,6 +3,8 @@ package com.example.projetoAP.domain.model;
 import com.example.projetoAP.EndpointDTO;
 import com.example.projetoAP.Service.EndpointInterfaceDTO;
 import com.example.projetoAP.repository.EndpointEntity;
+import com.example.projetoAP.repository.EntitySetor.EntitySetores;
+import com.example.projetoAP.repository.GroupEntity;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -73,6 +75,15 @@ public class Host {
         this.filialName = e.getFilialName();
 
 
+    }
+
+    public Host(UpdateDTO update) {
+        this.hostname = update.nome();
+        this.profile = update.localizacao();
+        this.sn = update.sn();
+        this.mac_adress = update.mac();
+        this.ipv4 = update.ip();
+        this.model = update.modelo();
     }
 
     public String getNome() {

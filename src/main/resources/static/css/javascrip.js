@@ -29,10 +29,10 @@ function app(pagina, bt) {
   bt.classList.add("botao");
 }
 function app2(pagina, bt) {
-  window.location.href = pagina;
   document.querySelectorAll(".in button").forEach(button => {
     button.classList.remove("botao");
 });
+window.location.href = pagina;
 
   bt.classList.add("botao")
 

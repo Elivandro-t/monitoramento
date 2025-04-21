@@ -21,7 +21,9 @@
 
     <div class="area_table">
         <section id="form">
-            <form method="post" action="/registro">
+            <form method="post" action="/endpoint" >
+                <input type="hidden" name="_method" value="put" th:if="${form!=null}">
+                <input type="hidden" name="id" th:value="${form?.id}">
                 <label>Nome</label>
                 <input type="text" name="nome" th:value="${form?.nome}" />
                 <label>Mac</label>
@@ -38,13 +40,13 @@
                 <input type="text" name="ip" th:value="${form?.ip}" />
                 <label>Link</label>
                 <input type="text" name="link" th:value="${form?.link}" />
-                <select  required name="setorID">
+                <select  required name="setorID" th:if="${form==null}">
                     <option>Selecione uma Opção</option>
                     <option th:each="item:${setor}" th:value="${item.id}" th:text="|${item.nome}  ${item.filial}|"
                             ></option>
 
                 </select>
-                <select name="ReceiveGrupoId" required>
+                <select name="ReceiveGrupoId" required th:if="${form==null}">
                     <option>Selecione uma Opção</option>
                     <option th:each="item:${groups}" th:value="${item.id}" th:text="|${item.id} ${item.nome}|"
                         th:selected="${item.id == selectedGroupId}"></option>
@@ -55,7 +57,7 @@
                 <div th:id="modal" style="display:block;" th:if="${erro}" th:text="${erro}"></div>
             </form>
         </section>
-        <div>
+        <div th:if="${form==null}">
             <label for="arquivo">Upload de arquivo</label>
 
             <input type="checkbox" id="checkbox" name="check">

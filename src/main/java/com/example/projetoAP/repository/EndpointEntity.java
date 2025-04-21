@@ -173,6 +173,15 @@ public class EndpointEntity {
         this.ultimaVezOnline = null;
 
     }
+    public  void update(Endpoin update) throws IOException, InterruptedException {
+        this.hostname = update.getNome();
+        this.profile = update.getLocal();
+        this.link = update.getLink();
+        this.macAdress = update.getMac();
+        this.ipv4 = update.getIp();
+        this.model = update.model;
+
+    }
     public Integer getGrupoId() {
         return grupoId;
     }

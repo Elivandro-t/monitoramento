@@ -4,6 +4,7 @@ import com.example.projetoAP.EndpointDTO;
 import com.example.projetoAP.Service.EndpointInterfaceDTO;
 import com.example.projetoAP.domain.model.Endpoin;
 import com.example.projetoAP.domain.model.Setores;
+import com.example.projetoAP.domain.model.UpdateDTO;
 import com.example.projetoAP.repository.EntitySetor.FactureSetor;
 import com.example.projetoAP.repository.EntitySetor.RepositorySetor;
 import com.example.projetoAP.repository.GroupRepository;
@@ -126,5 +127,16 @@ public class EndpointService {
     private void enviarMensagemParaWebSocket() {
         String mensagem = String.format("Processando... %d/%d", linhasProcessadas, totalLinhas);
         messagingTemplate.convertAndSend("/topic/processamento", mensagem);  // Envia para o tópico que o cliente está ouvindo
+    }
+
+    public void atualizaEndpoint(UpdateDTO e) {
+      try {
+          salvaEndPoint.findOndeById(e);
+      }catch (IOException | InterruptedException v){
+          v.getStackTrace();
+      }
+    }
+    public EndpointDTO findOneById(Long id) {
+       return salvaEndPoint.findOneById(id);
     }
 }

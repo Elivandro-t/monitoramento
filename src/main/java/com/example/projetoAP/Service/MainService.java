@@ -14,42 +14,42 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 
 import static com.example.projetoAP.Service.MacConectados.getSnmpValue;
-@Service
+//@Service
 public class MainService {
-   public List<EndpointDTO> allEndpoints = new ArrayList<>();
-    public List<EndpointDTO> Dev() throws Exception {
-        MacConectados macConectados = new MacConectados();
-         // Lista para armazenar todos os endpoints
+   public void main()throws Exception{
+        List<EndpointDTO> allEndpoints = new ArrayList<>();
+           MacConectados macConectados = new MacConectados();
+           // Lista para armazenar todos os endpoints
 
-        // IP do AP ou roteador
-        Snmp snmp = null;
-        try {
-            Set<String> ipAddressList = new HashSet<>();
-            ipAddressList.add("10.88.4.35");
-             snmp = new Snmp(new DefaultUdpTransportMapping());
-            snmp.listen();
+           // IP do AP ou roteador
+           Snmp snmp = null;
+           try {
+               Set<String> ipAddressList = new HashSet<>();
+               ipAddressList.add("10.88.4.84");
+               snmp = new Snmp(new DefaultUdpTransportMapping());
+               snmp.listen();
 
-            for (String ipAddress : ipAddressList) {
-                Address targetAddress = new UdpAddress(ipAddress + "/161");
-                CommunityTarget target = new CommunityTarget();
-                target.setCommunity(new OctetString("public"));
-                target.setAddress(targetAddress);
-                target.setVersion(SnmpConstants.version2c);
-                target.setRetries(3);
-                target.setTimeout(5000);
-               allEndpoints.addAll( macConectados.getConectados(snmp, target));
+               for (String ipAddress : ipAddressList) {
+                   Address targetAddress = new UdpAddress(ipAddress + "/161");
+                   CommunityTarget target = new CommunityTarget();
+                   target.setCommunity(new OctetString("public"));
+                   target.setAddress(targetAddress);
+                   target.setVersion(SnmpConstants.version2c);
+                   target.setRetries(3);
+                   target.setTimeout(5000);
+                    macConectados.getConectados(snmp, target);
 
-            }
+               }
 
-        }catch (Exception e){
-            e.printStackTrace();
-        }finally {
-            if(snmp!=null){
-                snmp.close();
+           }catch (Exception e){
+               e.printStackTrace();
+           }finally {
+               if(snmp!=null){
+                   snmp.close();
 
-            }
-        }
-        return allEndpoints;
-    }
+               }
+           }
+
+   }
 }
 

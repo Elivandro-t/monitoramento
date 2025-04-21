@@ -24,13 +24,13 @@
 
     <section class="area_container" id="sumi">
         <div class="container_int container_registro">
-            <a href="/registro" class="btn-a" onclick="app('/registro',this );" data-route="/registro">Novo</a>
+            <a th:href="@{/endpoint/registro}" class="btn-a" onclick="app2('/registro/registro',this );" >Novo</a>
         </div>
         <!-- <div id="modals"></div> -->
         <p th:text="'Total '+${#lists.size(lista)}"></p>
         <div th:if="${off}" th:text="'OFF '+${#lists.size(off)}"></div>
         <div class="container">
-            <form method="get" class="modal_2" action="/lista">
+            <form method="get" class="modal_2" action="/endpoint/lista">
                 <label for="mac">Busca</label>
                 <input type="text" id="mac" name="mac" placeholder="00:00:00:00:00:00">
                 <select name="ReceiveGrupoId" id="stc">

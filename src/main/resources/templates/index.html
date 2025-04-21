@@ -11,18 +11,18 @@
     <script th:src="@{/css/javascrip.js}"></script>
     <p>Informatica</p>
     <div class="container_ints in">
-      <button onclick="app('/pagina',this);" data-route="/pagina">Mac Search</button>
-      <button onclick="app('/lista',this);" data-route="/lista">Interface List</button>
-      <button onclick="app('/antenas',this);" data-route="/antenas">Host List</button>
-      <button onclick="app('/sw',this);" data-route="/sw">SW List</button>
-      <button onclick="app('/group/registro',this);" data-route="/group/registro">Host Group</button>
-      <button onclick="app2('/monitoramento/char',this);">Monitor 1</button>
-      <button onclick="app2('/web',this);" >Monitor 2</button>
+      <button onclick="app('/endpoint/pagina',this);" data-route="/pagina">Mac Search</button>
+      <button onclick="app('/endpoint/lista',this);" data-route="/lista">Interface List</button>
+      <button onclick="app('/endpoint/antenas',this);" data-route="/antenas">Host List</button>
+      <button onclick="app('/endpoint/sw',this);" data-route="/sw">SW List</button>
+      <button onclick="app('/endpoint/group/registro',this);" data-route="/group/registro">Host Group</button>
+      <button onclick="app2('/endpoint/monitoramento/char',this);">Monitor 1</button>
+      <button onclick="app2('/endpoint/web',this);" >Monitor 2</button>
 
 
     </div>
     <div class="area_view">
-        <iframe src="/lista" width="100%" id="iframe"></iframe>
+        <iframe src="/endpoint/lista" width="100%" id="iframe"></iframe>
     </div>
 </main>
 </body>

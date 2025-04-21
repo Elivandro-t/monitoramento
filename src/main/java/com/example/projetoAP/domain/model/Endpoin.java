@@ -4,6 +4,7 @@ import com.example.projetoAP.EndpointDTO;
 import com.example.projetoAP.Service.EndpointInterfaceDTO;
 import com.example.projetoAP.repository.EndpointEntity;
 import com.example.projetoAP.repository.EntitySetor.EntitySetores;
+import com.example.projetoAP.repository.GroupEntity;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -25,6 +26,9 @@ public class Endpoin extends Host{
 
     public Endpoin(EndpointEntity e) throws IOException, InterruptedException {
         super(e);
+    }
+    public  Endpoin(UpdateDTO updateDTO){
+        super(updateDTO);
     }
 
 

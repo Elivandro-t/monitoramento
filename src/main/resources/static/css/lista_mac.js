@@ -1,4 +1,4 @@
-let base = "http://192.168.88.70:8080"
+let base = "http://localhost:8080"
 document.addEventListener("DOMContentLoaded", async function () {
     let currentMenu = null; // menu atualmente aberto
     let dados = /*[[${lista}]]*/[];
@@ -53,7 +53,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 });
 
 function metricas(localizacao,hostid,ip) {
-    let url = `${base}/char?hostname=${localizacao}&interfaceIp=${ip}&hostid=${hostid}&limit=0&itemid=0`;
+    let url = `${base}/endpoint/monitoramento/char?hostname=${localizacao}&interfaceIp=${ip}&hostid=${hostid}&limit=0&itemid=0`;
     window.location.href = url;
 }
 
@@ -62,6 +62,6 @@ function Deletar(id) {
 
 }
 function Atualizar(id) {
-   window.location.href = `${base}/registro?id=${id}`
+   window.location.href = `${base}/endpoint/registro?id=${id}`
 
 }

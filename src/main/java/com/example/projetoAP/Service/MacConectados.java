@@ -17,38 +17,28 @@ import java.util.Map;
 @Component
 public class MacConectados {
 
-    public List<EndpointDTO> getConectados(Snmp snmp, CommunityTarget communityTarget) throws Exception {
+    public void getConectados(Snmp snmp, CommunityTarget communityTarget) throws Exception {
         Map<String,String > macT = new HashMap<>();
-        List<EndpointDTO> listaEndpoint = new ArrayList<>();
+//        List<EndpointDTO> listaEndpoint = new ArrayList<>();
         String apiAp = null;
+
         OID macTableOID = new OID("1.3.6.1.2.1.17.4.3.1.1"); // MACs conectados
         PDU pdu = new PDU();
         pdu.add(new VariableBinding(macTableOID));
         pdu.setType(PDU.GETNEXT);
-        pdu.setType(PDU.GET);
 
-        OID InforAp = new OID("1.3.6.1.2.1.1.5.0");
-        PDU InforApPud = new PDU();
-        InforApPud.add(new VariableBinding(InforAp));
-        InforApPud.setType(PDU.GETNEXT);// MACs conectados
-
-
-        ResponseEvent responseAp = snmp.get(pdu, communityTarget);
         boolean finished = false;
         while (!finished) {
             ResponseEvent response = snmp.getNext(pdu, communityTarget);
-            ResponseEvent responseAP = snmp.get(InforApPud, communityTarget);
             if (response != null && response.getResponse() != null) {
                 PDU responsePDU = response.getResponse();
                 VariableBinding vb = responsePDU.get(0);
-                 System.out.println("Nome da minha ap "+ responseAP.getResponse());
-                System.out.println("Cidade "+apiAp);
                 if (!vb.getOid().startsWith(macTableOID)) {
                     finished = true;
                 } else {
                     String mac = formatMacAddress((OctetString) vb.getVariable());
                     macT.put(mac,"Desconhecido" );
-                    System.out.println("9Mesus Macs "+mac);
+                    System.out.println("Macs encontrados "+mac);
                     pdu.clear();
                     pdu.add(new VariableBinding(vb.getOid())); // Próximo OID
 
@@ -65,7 +55,7 @@ public class MacConectados {
             }
 
         }
-        return listaEndpoint;
+//        return listaEndpoint;
 
 
     }

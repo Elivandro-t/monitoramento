@@ -16,10 +16,10 @@
 <script th:src="@{/css/javascrip.js}"></script>
    <section class="area_container">
        <div class="container_int container_registro">
-           <button onclick="app('/registro',this );" data-route="/registro">Novo</button>
+           <button onclick="app2('/endpoint',this );" data-route="/registro">Novo</button>
        </div>
        <div class="container">
-           <form method="post" action="/pagina">
+           <form method="post" action="/endpoint/pagina">
                <label for="mac">Busca</label>
                <input type="text" id="mac" name="mac" placeholder="00:00:00:00:00:00">
                <button id="enviar">enviar</button>

@@ -4,14 +4,18 @@ import com.example.projetoAP.EndpointDTO;
 import com.example.projetoAP.Service.EndpointInterfaceDTO;
 import com.example.projetoAP.controler.SetoresService.SetorService;
 import com.example.projetoAP.controler.service.*;
+import com.example.projetoAP.domain.model.UpdateDTO;
 import com.example.projetoAP.domain.vo.Filter;
 import com.example.projetoAP.domain.vo.MetricasDTO;
+import jakarta.persistence.Table;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,7 +30,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 @Controller
-@RequestMapping
+@RequestMapping("/endpoint")
 @CrossOrigin(origins = "*")
 public class ApControler {
     @Autowired
@@ -103,7 +107,12 @@ public class ApControler {
         return "antenas";
     }
     @GetMapping("/registro")
-    public String setRegistro(Model model){
+    public String setRegistro(Model model,Long id){
+        if(id!=null){
+           var hpst = endpointService.findOneById(id);
+            model.addAttribute("form",hpst);
+
+        }
           var lista = groupService.findAll();
         var listaSetor = setorService.getLista();
           model.addAttribute("groups",lista);
@@ -111,7 +120,7 @@ public class ApControler {
 
         return "registro";
     }
-    @PostMapping("/registro")
+    @PostMapping
     public String setRegistros(RedirectAttributes redirectAttributes,Model model, EndpointInterfaceDTO e) throws IOException, InterruptedException {
        try {
           endpointService.setRegistro(e);
@@ -158,6 +167,13 @@ public class ApControler {
      Map<String,List<MetricasDTO>> li = lista.get();
         model.addAttribute("data",lista.get());
         return "char";
+    }
+    @PutMapping
+    @Transactional
+    public String atualizaDados(UpdateDTO e){
+       endpointService.atualizaEndpoint(e);
+       System.out.println("Meus dados chegaram aqui");
+       return "registro";
     }
 }
 

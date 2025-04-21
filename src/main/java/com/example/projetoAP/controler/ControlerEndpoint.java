@@ -28,23 +28,23 @@ public class ControlerEndpoint {
         this.endepoint = endepointBuscadosService;
     }
     public ControlerEndpoint(){};
-    @GetMapping("/index/{mac}")
-    public ResponseEntity<List<EndpointDTO>> getList(@PathVariable String mac) throws Exception {
-        var listass  = macConectados.allEndpoints.stream().filter(e->e.mac().equals(mac)).toList();
-        return ResponseEntity.ok(listass);
-    }
+//    @GetMapping("/index/{mac}")
+//    public ResponseEntity<List<EndpointDTO>> getList(@PathVariable String mac) throws Exception {
+//        var listass  = macConectados.allEndpoints.stream().filter(e->e.mac().equals(mac)).toList();
+//        return ResponseEntity.ok(listass);
+//    }
 //    @MessageMapping("/listahost")
 //    @SendTo("/list")
 //    public ResponseEntity<List<EndpointDTO>> gethost(String mac) throws Exception {
 //        var listass  = macConectados.allEndpoints.stream().filter(e->e.mac().equals(mac)).toList();
 //        return ResponseEntity.ok(listass);
 //    }
-    @GetMapping("/item")
-    public ResponseEntity<List<EndpointDTO>> getOnt() throws Exception {
-        var lista  = macConectados.Dev();
-        lista.addAll(lista);
-        return ResponseEntity.ok(lista);
-    }
+//    @GetMapping("/item")
+//    public ResponseEntity<List<EndpointDTO>> getOnt() throws Exception {
+//        var lista  = macConectados.Dev();
+//        lista.addAll(lista);
+//        return ResponseEntity.ok(lista);
+//    }
     @GetMapping("/item/lista")
     public ResponseEntity<List<EndpointDTO>> gel() throws Exception {
 
