@@ -3,6 +3,7 @@ package com.example.projetoAP.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -11,4 +12,7 @@ public interface MetricasRepository extends JpaRepository<MetricasEntity,Long> {
     List<MetricasEntity> findAllById(long id,long hostid);
     @Query("SELECT p FROM MetricasEntity p where p.hostid=:hostid ORDER BY p.id DESC")
     List<MetricasEntity> findAllByIdOne(Long hostid);
+
+
+    List<MetricasEntity> findAllByTimestampBefore(LocalDateTime timeDay);
 }

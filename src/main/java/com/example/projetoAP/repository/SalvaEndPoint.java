@@ -51,6 +51,11 @@ public class SalvaEndPoint implements EntityRepository {
     }
 
     @Override
+    public List<EndpointDTO> GetListaDown() {
+        return repository.findAllByStatusDown("DOWN").stream().map(EndpointDTO::new).toList();
+    }
+
+    @Override
     public void findOndeById(UpdateDTO update) throws IOException, InterruptedException {
         Optional<EndpointEntity> entity = repository.findById(update.id());
         if(entity.isPresent()){

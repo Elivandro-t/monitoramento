@@ -5,7 +5,6 @@ import com.example.projetoAP.Service.EndpointInterfaceDTO;
 import com.example.projetoAP.domain.model.Endpoin;
 import com.example.projetoAP.domain.model.Setores;
 import com.example.projetoAP.domain.model.UpdateDTO;
-import com.example.projetoAP.repository.EntitySetor.FactureSetor;
 import com.example.projetoAP.repository.EntitySetor.RepositorySetor;
 import com.example.projetoAP.repository.GroupRepository;
 import com.example.projetoAP.repository.SalvaEndPoint;
@@ -13,10 +12,8 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +26,6 @@ import java.util.concurrent.*;
 
 @Service
 public class EndpointService {
-
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -50,12 +46,14 @@ public class EndpointService {
     public EndpointDTO setRegistro(EndpointInterfaceDTO e) throws IOException, InterruptedException {
         var l = groupService.getReferenceById(Long.parseLong(e.ReceiveGrupoId()));
         var setor = repositorySetor.findById(e.setorID()).get();
-
-        System.out.print("Registro de endpoint "+e.setorID());
         var resposta = new Endpoin(e,l.getName(),new Setores(setor));
         return salvaEndPoint.GetSalva(resposta);
     }
     public List<EndpointDTO> getLista(){
+        var lista = salvaEndPoint.GetLista();
+        return lista;
+    }
+    public List<EndpointDTO> getListaDown(){
         var lista = salvaEndPoint.GetLista();
         return lista;
     }
@@ -77,7 +75,7 @@ public class EndpointService {
         this.id = p;
         executorService.submit(this::processarDados);
         enviarMensagemParaWebSocket();
-        return "processando";
+        return "Processando...";
     }
     @Transactional
     private void processarDados() {
@@ -99,22 +97,15 @@ public class EndpointService {
     }
     private void processarLinha(Row texto) throws IOException, InterruptedException {
         var setor = repositorySetor.findOneNameComplexo(setores);
-        System.out.print("MEu setor vindo da api "+setor.getNameComplexo());
 
     try {
         String localization = String.valueOf(texto.getCell(0));
         String mac = String.valueOf(texto.getCell(1));
         String hostname = String.valueOf(texto.getCell(2));
-        String filial = String.valueOf(texto.getCell(3));
         String ipv4 = String.valueOf(texto.getCell(4));
         String modelo = String.valueOf(texto.getCell(5));
         String sn = String.valueOf(texto.getCell(6));
-        var grupo = texto.getCell(7);
-        System.out.println(" Dados vindo do frontEnd "+setores);
-        System.out.println(" Dados vindo do BackEnd "+setor.getNameComplexo());
         var setorw = repositorySetor.findById(setor.getId()).get();
-
-
         EndpointInterfaceDTO ed = new EndpointInterfaceDTO(hostname.replace("GM-",""), modelo.toUpperCase(), sn, localization.replace("SLZ-",""),mac, ipv4, "", "", "20/10/2023", "",this.id, setor.getFilial(),setor.getNameComplexo(),setor.getId());
         var l = groupService.findById(Long.parseLong(ed.ReceiveGrupoId())).orElseThrow(()->new RuntimeException("nenhum resultado"));
         var resposta = new Endpoin(ed, l.getName(),new Setores(setorw));
@@ -139,4 +130,6 @@ public class EndpointService {
     public EndpointDTO findOneById(Long id) {
        return salvaEndPoint.findOneById(id);
     }
+
+
 }

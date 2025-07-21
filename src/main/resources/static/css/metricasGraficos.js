@@ -13,7 +13,7 @@ stompClient.debug = () => {};
         atualizarGrafico(data,hostname,ipv4);
       })
       rodaStoP()
-      setInterval(rodaStoP, 20000);  
+      // setInterval(rodaStoP, 20000);  
     }, function (error) {
       setTimeout(() => {
         console.log("Conectando so serviço");
@@ -42,7 +42,6 @@ stompClient.debug = () => {};
   let dados = dadosName?.result;
   const labelss = dados[0].icmpName;
   const item = dados[0].itemId;
-  const ultimaData = new Date(dados[0].clock * 1000).toLocaleString("pt-BR");
   titule.innerHTML = hostname;// Usar o índice como label
   const datas = dados.map(e => Number(e.value));
   const labelsclock = dados.map(e => {

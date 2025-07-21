@@ -11,9 +11,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.concurrent.*;
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class SheduledService {
@@ -66,6 +70,12 @@ public class SheduledService {
                 // Verifica o status e atualiza o endpoint
                 String status = statusIpAsync(endpoint.getIp()).get(); // Espera o status para cada IP
                 endpoint.setStatus(status);
+                if(endpoint.getStatus().equals("UP")){
+                    endpoint.setUltimaVezOnline(null);
+                }
+                if(endpoint.getStatus().equals("DOWN") && endpoint.getUltimaVezOnline()==null){
+                    endpoint.setUltimaVezOnline(LocalDateTime.now());
+                }
                 endpoint.atualiza(endpoint.getIp()); // Atualiza o ping também
                 entityRepository.save(endpoint);
                 linhas++;
@@ -115,4 +125,6 @@ public class SheduledService {
         messagingTemplate.convertAndSend("/lista", lista);
 
     }
+
+
 }

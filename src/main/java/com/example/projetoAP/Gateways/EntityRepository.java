@@ -12,6 +12,7 @@ import java.util.List;
 public interface EntityRepository{
      EndpointDTO GetSalva(Endpoin e) throws IOException, InterruptedException;
      List<EndpointDTO> GetLista();
+     List<EndpointDTO> GetListaDown();
      void findOndeById(UpdateDTO update) throws IOException, InterruptedException;
 
 }

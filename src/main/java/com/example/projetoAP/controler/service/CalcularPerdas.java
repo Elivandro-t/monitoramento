@@ -1,12 +1,16 @@
 package com.example.projetoAP.controler.service;
 
+import com.example.projetoAP.domain.model.Endpoin;
 import com.example.projetoAP.domain.model.Metricas;
 import com.example.projetoAP.domain.vo.Filter;
 import com.example.projetoAP.domain.vo.FilterHost;
 import com.example.projetoAP.domain.vo.LostDTO;
 import com.example.projetoAP.domain.vo.MetricasDTO;
+import com.example.projetoAP.infra.BotService;
 import com.example.projetoAP.repository.*;
 import jakarta.annotation.PreDestroy;
+import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -17,17 +21,14 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.*;
 
 @Service
 public class CalcularPerdas {
+
+    private BotService service;
      private RepositoryEntity repository;
      private ICMPRepository icmpRepository;
      private MetricasRepository metricasRepository;
@@ -40,10 +41,15 @@ public class CalcularPerdas {
         executor.shutdown();
     }
     //Código omitido
-    public CalcularPerdas(RepositoryEntity repository,ICMPRepository icmpRepository,MetricasRepository metricasRepository){
+    public CalcularPerdas(RepositoryEntity repository,
+                          ICMPRepository icmpRepository,
+                          MetricasRepository metricasRepository,
+                          BotService service
+    ){
         this.repository = repository;
         this.icmpRepository = icmpRepository;
         this.metricasRepository = metricasRepository;
+        this.service = service;
     }
     @Scheduled(fixedDelay = 1000)  // Executa a cada 30 segundos após o término da execução anterior
     public void CalcularMestricasDeEquipamento(){
@@ -80,13 +86,13 @@ public class CalcularPerdas {
     }
     public CompletableFuture<Map<String,List<MetricasDTO>>> listaMetricas(Filter filter){
         Map<String,List<MetricasDTO>> listaMap = new HashMap<>();
-       var lista =  metricasRepository.findAllById(filter.itemids(),filter.hostid()).stream().limit(200).map(MetricasDTO::new).toList();
+       var lista =  metricasRepository.findAllById(filter.itemids(),filter.hostid()).stream().limit(1000).map(MetricasDTO::new).toList();
        listaMap.put("result",lista);
        return  CompletableFuture.supplyAsync(()->listaMap);
     }
     public Map<String,List<MetricasDTO>> ListaMestricasSemID(FilterHost filter){
         Map<String,List<MetricasDTO>> listaMap = new HashMap<>();
-        var lista =  metricasRepository.findAllByIdOne(filter.hostid()).stream().limit(200).map(MetricasDTO::new).toList();
+        var lista =  metricasRepository.findAllByIdOne(filter.hostid()).stream().limit(1000).map(MetricasDTO::new).toList();
         listaMap.put("result",lista);
         return listaMap;
     }
@@ -149,4 +155,42 @@ public class CalcularPerdas {
             }
         },executor);
     }
-}
+//   @Scheduled(cron = "0 0 1 */2 * *")
+@Scheduled(cron = "0 * * * * *")
+@Transactional
+public void deletedByTimestamp(){
+        LocalDateTime timeDay = LocalDateTime.now().minus(2, ChronoUnit.DAYS);
+       var listaBuscada = metricasRepository.findAllByTimestampBefore(timeDay);
+    for (var lista:listaBuscada){
+        System.out.println("itens da lista "+lista.getTimestamp() + " "+ lista.getIcmpName());
+    }
+       if(!listaBuscada.isEmpty()){
+           metricasRepository.deleteAll(listaBuscada);
+           System.out.println("Deletado com sucesso ");
+           return;
+       }
+    System.out.println("Sem dados encontrados ");
+};
+    private final Set<Long> notfication = ConcurrentHashMap.newKeySet();
+    @Scheduled(cron = "*/20 * * * * *")
+    public void enviarRespostaTeste(){
+        var equipamento = repository.findAllByStatusDown("DOWN");
+        if(equipamento==null){
+            this.service.notificationTelegramS();
+        }
+        equipamento.forEach(e->{
+                    LocalDateTime ultimaOnline = e.getUltimaVezOnline();
+                    Duration tempoOffline = Duration.between(ultimaOnline, LocalDateTime.now());
+                    // Verifica se está offline há mais de 1 minuto e múltiplos de 1 hora
+                    if ((tempoOffline.toMinutes() <= 2 || tempoOffline.toMinutes() % 60 == 0 && notfication.contains(e.getId()))) {
+                        try {
+                            service.notificationTelegram(new Endpoin(e));
+                            notfication.add(e.getId());
+                        } catch (IOException | InterruptedException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    }
+        });
+
+    }
+};

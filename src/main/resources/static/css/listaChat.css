@@ -65,6 +65,7 @@ p {
   margin: 0;
   font-size: 14px;
 
+
 }
 span{
   padding: 10px 0;
@@ -115,21 +116,16 @@ small{
   animation: fadeOpacity 20s infinite;
 
 }
-
 .clildrenOff {
   color: #f12011;
   animation: fadeOpacity 20s linear ease-in;
 }
-
 .clildrenOn {
   color: #f7faf7;
 
 }
-
 .percent-label {
   background-color: #61c061;
-
-
 }
 .log_ip{
   display: flex;
@@ -139,7 +135,6 @@ small{
   height: 100px;
   position: relative;
   margin: auto;
-
 }
 .data_ip{
   background-color: #302e2e;
@@ -158,7 +153,8 @@ small{
   overflow: hidden;
 
 }
-
+.txt-status{
+}
 .gauge-arc:hover {
   transition: 1s ease;
   background: #61c061;
@@ -182,4 +178,85 @@ small{
   width: 100%;
   text-align: center;
   font-size: 30px;
+}
+@media screen and (max-width:1020px) {
+  
+  .ls {
+
+    grid-template-columns: repeat(4, 1fr);
+    gap:8px;
+  
+  
+  }
+  p {
+    padding: 4px 5px;
+    font-size: 10px;
+  
+  
+  }
+}
+@media screen and (max-width:732px) {
+  
+  .ls {
+
+    grid-template-columns: repeat(3, 1fr);
+    gap:8px;
+  
+  
+  }
+  .chart-containerw {
+    width: 180px;
+    height: 180px;
+  }
+  .container-select #enviar{
+    height: 30px;
+    
+  }
+
+}
+@media screen and (max-width:460px) {
+  
+  .ls {
+
+    grid-template-columns: repeat(2, 1fr);
+    gap:8px;
+  
+  
+  }
+  .container-select {
+    width: 100%;
+    
+  }
+  form{
+    display: flex;
+    align-items: center;
+    gap: 5px;
+
+  }
+  .container-select select{
+    width: 80%;
+    height: 30px;
+    
+  }
+  .chart-containerw {
+    width: 180px;
+    height: 150px;
+  }
+  .log{
+    display: flex;
+    width: 100%;
+    margin-bottom: 5px;
+    flex-direction: column;
+  }
+  #Monitoramento{
+    font-size: 22px;
+    margin: 0;
+    padding: 0;
+  }
+
+.area1 {
+  margin: 20px 0;
+    height:90px;
+
+}
 }

@@ -13,9 +13,13 @@ import com.example.projetoAP.repository.SalvaEndPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.ResponseEntity;
+import org.telegram.telegrambots.meta.TelegramBotsApi;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 @Configuration
 public class ConfigurationEndpoint {
+    private final String token = "7938730712:AAEJur7PV7JgRC4c9dlQ49310p4L9NkSbFM";
    @Bean
    public RepositoryEntity repository(RepositoryEntity repository){
        return repository;
@@ -62,6 +66,13 @@ public class ConfigurationEndpoint {
     @Bean
     public SetorService setorService(FactureSetor factureSetor){
        return new SetorService(factureSetor);
+    }
+    @Bean
+    public BotService botService() throws TelegramApiException {
+        BotService botService = new BotService("Elivandro_bot",token);
+       var telegram = new TelegramBotsApi(DefaultBotSession.class);
+       telegram.registerBot(botService);
+       return botService;
     }
 
 

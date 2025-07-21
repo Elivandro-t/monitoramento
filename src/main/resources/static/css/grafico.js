@@ -2,7 +2,7 @@ let chartInstance = null;
 let chartInstance2 = null;
 let lenght = 0;
 let chartInstance3= null;
-const endpoint = "http://localhost:8080";
+const endpoint = "http://192.168.88.70:8080";
 async function itensICMP() {
   const response = await fetch(`${endpoint}/itens`);
   const itens = await response.json();
@@ -27,7 +27,7 @@ stompClient.debug = () => {};
           loading.style.display = "none"
         }
       })
-      rodaStoP()
+      // rodaStoP()
       setInterval(rodaStoP, 20000);  
     }, function (error) {
       reconnect();
@@ -41,7 +41,7 @@ stompClient.debug = () => {};
 
   function reconnect(){
     setTimeout(() => {
-      console.log("Conectando so serviço");
+      console.log("Conectando ao serviço");
       fetchDados();
     }, 5000)
   }
@@ -75,8 +75,6 @@ stompClient.debug = () => {};
   });
 
 itens.item.map(element => {
-  const datas = dados.map(e => Number(e.value));
-
   if(element.itemid==itemICMP1){
     graficoICMPPerdas(dadosPerda.map(e => Number(e.value)),ipv4,dados);
 
@@ -114,6 +112,8 @@ function graficoICMPPerdas(datas,ipv4,dados){
       scales: {
         y: {
           beginAtZero: true,
+          min:0,
+          max:100,
           title: {
             display: true,
             text: 'Perda'
@@ -183,11 +183,9 @@ function graficoICMPPerdas(datas,ipv4,dados){
 
 function graficoICMPSec(dados,ipv4,labelsclock,labelss){
 
-  const valuesInMs = dados.map(v => parseFloat((v.value * 1000).toFixed(2)));
-  // latencyChart.style.display = "none"
-  // canv.style.display = "none";
+  const valuesInMs = dados.map(v => parseFloat((v.value*1000).toFixed(2)));
+
   const ctx = document.getElementById('latencyChart').getContext('2d');
-  // latenciap.style.display = "none"
   if (chartInstance) {
     chartInstance.destroy()
   }
@@ -215,7 +213,7 @@ function graficoICMPSec(dados,ipv4,labelsclock,labelss){
       }, 
       scales: {
         y: {
-          max: 2000,
+          max: 8000,
           beginAtZero: true,
           ticks: {
             color: 'white',
@@ -236,7 +234,7 @@ function graficoICMPSec(dados,ipv4,labelsclock,labelss){
         tooltip: {
           callbacks: {
             label: function (context) {
-              return context.parsed.y + 'ms' + " "+ ipv4;
+              return context.parsed.y + 'ms' + " " + ipv4;
             }
           }
         },

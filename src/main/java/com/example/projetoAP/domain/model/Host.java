@@ -73,6 +73,7 @@ public class Host {
         this.sn = e.getSn();
         this.grupoSetor = e.getGrupoSetor();
         this.filialName = e.getFilialName();
+        this.ultimaVezOnline = e.getUltimaVezOnline();
 
 
     }

@@ -10,6 +10,7 @@ import com.example.projetoAP.domain.vo.MetricasDTO;
 import jakarta.persistence.Table;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -33,6 +34,8 @@ import java.util.concurrent.ExecutionException;
 @RequestMapping("/endpoint")
 @CrossOrigin(origins = "*")
 public class ApControler {
+    @Value("endpoint")
+    private String endereco;
     @Autowired
     CalcularPerdas calcularPerdas;
     @Autowired
@@ -79,13 +82,10 @@ public class ApControler {
             var lista = endpointService.getLista().stream()
                     .filter(e -> e.mac().contains(mac.trim())
                             ||e.ip().contains(mac.trim())
-                            ||e.sn().contains(mac.trim())
                             ||e.localizacao().contains(mac.trim())
                     ).toList();
           l.addAll(lista);
         }else if(re!=null){
-            System.out.print("Meus dado vindo do front"+re);
-
             var lista = endpointService.getLista().stream()
                     .filter(e -> e.grupo().contains(re.toString())).toList();
             l.addAll(lista);
@@ -93,7 +93,6 @@ public class ApControler {
         else {
             model.addAttribute("off",endpointService.getLista().stream().filter(e->e.status().contains("DOWN")).toList());
             l.addAll( endpointService.getLista());
-            // Caso o MAC seja null, adiciona a lista completa
         }
         var lista = groupService.findAll();
         model.addAttribute("groups",lista);
@@ -111,13 +110,11 @@ public class ApControler {
         if(id!=null){
            var hpst = endpointService.findOneById(id);
             model.addAttribute("form",hpst);
-
         }
           var lista = groupService.findAll();
         var listaSetor = setorService.getLista();
           model.addAttribute("groups",lista);
         model.addAttribute("setor",listaSetor);
-
         return "registro";
     }
     @PostMapping
@@ -142,14 +139,12 @@ public class ApControler {
 
     @PostMapping("/mult")
     public String mult(@RequestParam(value = "file",required = false) MultipartFile file,Model red, String ReceiveGrupoId,String nome) throws IOException, InterruptedException {
-        String caminho = "/home/elivandro/Downloads/projetoAP"+file.getOriginalFilename();
-        System.out.print("Dados vindo no Front "+nome);
+        String caminho = endereco+file.getOriginalFilename();
         file.transferTo(new File(caminho));
         endpointService.salvaMultPartAsync(caminho,ReceiveGrupoId,nome);
         red.addAttribute("mensagem","Processando dados...");
-
         return "redirect:/registro";
-    }
+    };
     @GetMapping("/web")
     public String websocket(){
         return "listaweb";
@@ -176,6 +171,4 @@ public class ApControler {
        return "registro";
     }
 }
-
-
 ///sudo docker run --name mysql -e MYSQL_DATABASE=informatica -e MYSQL_ROOT_PASSWORD=Tgfhvbnm1@ -p 3306:3306 -d mysql:latest

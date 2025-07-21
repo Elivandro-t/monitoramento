@@ -166,11 +166,11 @@ public class EndpointEntity {
     public  void atualiza(String ip) throws IOException, InterruptedException {
         this.ping =getCmd(ip);
         this.Status =statusIp(ip);
-        if("DOWN".contains(statusIp(ip))){
-            this.ultimaVezOnline = LocalDateTime.now();
-            return;
-        }
-        this.ultimaVezOnline = null;
+//        if("DOWN".contains(statusIp(ip))){
+//            this.ultimaVezOnline = LocalDateTime.now();
+//            return;
+//        }
+//        this.ultimaVezOnline = null;
 
     }
     public  void update(Endpoin update) throws IOException, InterruptedException {
@@ -215,5 +215,9 @@ public class EndpointEntity {
 
     public LocalDateTime getUltimaVezOnline() {
         return ultimaVezOnline;
+    }
+
+    public void setUltimaVezOnline(LocalDateTime ultimaVezOnline) {
+        this.ultimaVezOnline = ultimaVezOnline;
     }
 }

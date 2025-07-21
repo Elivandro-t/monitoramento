@@ -2,7 +2,7 @@ var socket = new SockJS('/ws');  // Ponto de entrada do WebSocket
 var stompClient = Stomp.over(socket);
 let indexs;
 stompClient.debug = ()=>{};
-const endpoint = "http://localhost:8080";
+const endpoint = "http://192.168.88.70:8080";
 
 function connectToWebSocket() {
    let clientId = 'client-' + Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 5);
@@ -67,12 +67,12 @@ function connectToWebSocket() {
             });
 
             const output = `
-                <span>OFF : <small>${countDown}</small></span>
+                <span class="txt-status">OFF : <small>${countDown}</small></span>
                 <section class="ls">
                     ${downContent}
                 </section>
 
-                <span>ON : <small>${countUp}</small></span>
+                <span class="txt-status">ON : <small>${countUp}</small></span>
                 <section class="ls">
                     ${upContent}
                 </section>
@@ -83,7 +83,6 @@ function connectToWebSocket() {
         });
         buscarMacLocal;
         setInterval(buscarMacLocal, 1000);  
-        setInterval(mudaEnp,50000)
 
     }, function (error) {
         reconnect();
@@ -94,31 +93,11 @@ socket.onclose = function () {
     reconnect();
   };
 function reconnect(){
-
     setTimeout(() => {
       console.log("Conectando so serviço");
       connectToWebSocket();
     }, 3000)
   }
-function mudaEnp(){
-   
-    var itens = localStorage.getItem("ReceiveGrupoId")
-     if(itens==="AP-SERVICE"){
-        localStorage.setItem("ReceiveGrupoId", "SW-SERVICE");
-        return;
-     
-     }
-     if(itens === "SW-SERVICE"){
-        localStorage.setItem("ReceiveGrupoId", "LINK SERVICE");
-        return;
-
-     }else{
-        localStorage.setItem("ReceiveGrupoId", "AP-SERVICE");
-        return;
-
-     }
-}
-  
 
 function buscarMac() {
     const select = document.getElementById("stc");
@@ -157,7 +136,7 @@ function buscarMacLocal(){
 }
 
 function latencia(localizacao,hostid,itemid,ip) {
-    let url = `${endpoint}/char?hostname=${localizacao}&interfaceIp=${ip}&hostid=${hostid}&itemid=${itemid}&limit=0`;
+    let url = `${endpoint}/endpoint/char?hostname=${localizacao}&interfaceIp=${ip}&hostid=${hostid}&itemid=${itemid}&limit=0`;
     window.open(url);
 }
 
