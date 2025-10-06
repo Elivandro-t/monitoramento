@@ -1,17 +1,64 @@
-function visual(button) {
-      let ping = button.getAttribute("data-ping")
-      // Find the modal related to this row
-      let modal = button.closest('tr').querySelector('.modal');
-      modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
+let cliente = null;
+let ipContent = null
+function iniciarConexao(ip) {
+    const socket = new SockJS("/ws");
+    cliente = Stomp.over(socket);
+    ipContent = ip
+    cliente.connect({}, function () {
+        let div = document.getElementById("modals-container");
 
+        cliente.subscribe("/topic/cmd", function (response) {
+            ipContent = null;
+            const respostaItens = response.body;
+            div.innerHTML += "<pre>" + respostaItens + "</pre>"
+            setTimeout(() => {
+                div.scrollHeight=  div.scrollTop;
+            }, 0);
+            console.log("Recebido do backend:", response.body);
+        });
+
+        if (ipContent != null) {
+            cliente.send("/app/cmd", {}, ipContent);
+        }
+    });
+}
+function fecharModal(button) {
+    const modal = button.closest('tr').querySelector('.modal');
+    modal.style.display = "none";
+
+    if (cliente && cliente.connected) {
+        cliente.disconnect(() => {
+            cliente = null
+            pContent = null
+            window.location.reload()
+        });
+    }
+}
+function ativaCMD(ip) {
+    if (cliente && cliente.connected) {
+        cliente.disconnect(() => {
+            cliente = null
+            ipContent = null
+        });
+    } else {
+        iniciarConexao(ip);
+    }
+}
+function visual(button) {
+    let modal = button.closest('tr').querySelector('.modal');
+    if (modal) {
+        modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
+        const ipElement = modal.querySelector(".area-propt");
+        const ip = ipElement.textContent.trim();
+        ativaCMD(ip)
+    }
 
 }
+
 document.addEventListener("DOMContentLoaded", function (e) {
     e.preventDefault();
-
     let movin = false; // Flag para controlar o movimento
     let offsetX, offsetY; // Variáveis para armazenar o deslocamento do mouse
-
     // Função para o movimento do modal
     function getmove(e, modal) {
         if (movin) {
@@ -19,7 +66,6 @@ document.addEventListener("DOMContentLoaded", function (e) {
             modal.style.top = (e.clientY - offsetY) + "px";
         }
     }
-
     // Atribuindo evento de arrastar a cada modal
     const modals = document.querySelectorAll('.modal');
     modals.forEach(modal => {
@@ -28,10 +74,8 @@ document.addEventListener("DOMContentLoaded", function (e) {
             offsetX = event.clientX - modal.getBoundingClientRect().left;
             offsetY = event.clientY - modal.getBoundingClientRect().top;
             movin = true;
-
             // Adiciona o evento de movimento do mouse
             document.addEventListener("mousemove", (e) => getmove(e, modal));
-
             // Para o movimento quando o mouse for solto
             modal.onmouseup = function () {
                 movin = false;
@@ -45,32 +89,28 @@ document.addEventListener("DOMContentLoaded", function (e) {
     window.addEventListener('focus', function () {
         movin = false;
     });
-
     window.addEventListener('blur', function () {
         movin = false;
     });
 });
 
 function toggleFullscreen() {
-            let element = document.getElementById("meuContainer");
-                let container = document.getElementById("container_banner");
-
-            if (!document.fullscreenElement) {
-                if (element.requestFullscreen) {
-                    element.requestFullscreen();
-                } else if (element.mozRequestFullScreen) { // Firefox
-                    element.mozRequestFullScreen();
-                } else if (element.webkitRequestFullscreen) { // Chrome, Safari e Opera
-                    element.webkitRequestFullscreen();
-                } else if (element.msRequestFullscreen) { // IE/Edge
-                    element.msRequestFullscreen();
-                }
-                document.body.style.overflow = 'auto'; 
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                }
-                document.body.style.overflow = ''; // Restaurando o comportamento padrão do overflow
-
-            }
+    let element = document.getElementById("meuContainer");
+    if (!document.fullscreenElement) {
+        if (element.requestFullscreen) {
+            element.requestFullscreen();
+        } else if (element.mozRequestFullScreen) { // Firefox
+            element.mozRequestFullScreen();
+        } else if (element.webkitRequestFullscreen) { // Chrome, Safari e Opera
+            element.webkitRequestFullscreen();
+        } else if (element.msRequestFullscreen) { // IE/Edge
+            element.msRequestFullscreen();
         }
+        document.body.style.overflow = 'auto';
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+        document.body.style.overflow = ''; // Restaurando o comportamento padrão do overflow
+    }
+}

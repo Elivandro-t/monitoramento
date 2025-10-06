@@ -28,12 +28,9 @@ public class ControlerEndpoint {
         this.endepoint = endepointBuscadosService;
     }
     public ControlerEndpoint(){};
-
     @GetMapping("/item/lista")
     public ResponseEntity<List<EndpointDTO>> gel() throws Exception {
-
         return ResponseEntity.ok(listas);
     }
-
 }
 

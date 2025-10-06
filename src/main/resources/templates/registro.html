@@ -12,13 +12,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
 
 </head>
-
 <body>
     <script src="../static/css/group.js"></script>
-
     <script th:src="@{/css/group.js}"></script>
     <script th:src="@{/css/javascript.js}"></script>
-
     <div class="area_table">
         <section id="form">
             <form method="post" action="/endpoint" >
@@ -63,7 +60,7 @@
             <input type="checkbox" id="checkbox" name="check">
 
         </div>
-        <form method="post" action="/mult" id="arquivo" enctype="multipart/form-data" class="arquivo">
+        <form method="post" action="/endpoint/mult" id="arquivo" enctype="multipart/form-data" class="arquivo">
             <div class="group-name">
                 <select  required name="nome">
                     <option>Selecione um complexo</option>

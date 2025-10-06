@@ -7,14 +7,15 @@
 
 <body>
   <main>
-    <script src="../static/css/javascrip.js"></script>
-    <script th:src="@{/css/javascrip.js}"></script>
-    <p>Informatica</p>
+    <div class="titulo">
+      <h2 >Informatica CD-116</h2>
+      <p id="status">Verificando...</p>
+    </div>
+    
     <div class="container_ints in">
       <button onclick="app('/endpoint/pagina',this);" data-route="/pagina">Mac Search</button>
       <button onclick="app('/endpoint/lista',this);" data-route="/lista">Interface List</button>
       <button onclick="app('/endpoint/antenas',this);" data-route="/antenas">Host List</button>
-      <button onclick="app('/endpoint/sw',this);" data-route="/sw">SW List</button>
       <button onclick="app('/group/registro',this);" data-route="/group/registro">Host Group</button>
       <button onclick="app2('/endpoint/monitoramento/char',this);">Monitor 1</button>
       <button onclick="app2('/endpoint/web',this);" >Monitor 2</button>
@@ -24,7 +25,17 @@
     <div class="area_view">
         <iframe src="/endpoint/lista" width="100%" id="iframe"></iframe>
     </div>
+    <footer>
+      <span>@developed by Elivandro  </span>
+      <small>V 1.2 JVM 21</small>
+    </footer>
+
 </main>
+<script src="../static/css/javascrip.js"></script>
+<script th:src="@{/css/onserver.js}"></script>
+
+<script th:src="@{/css/javascrip.js}"></script>
+   
 </body>
 
 </html>

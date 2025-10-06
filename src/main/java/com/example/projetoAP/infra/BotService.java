@@ -42,11 +42,12 @@ public class BotService extends TelegramLongPollingBot {
 📍 Localização: [%s]
 🏘️ Rua: [%s]
 🌐 IP: [%s]
+🖥️ MAC: [%s]
 ⏱️ Offline desde: [%s]
 
-""".formatted(endpoin.getGrupo().replace("_SERVICE",""),endpoin.getNome(),endpoin.getLocal(),endpoin.getIp(),endpoin.getUltimaVezOnline().format(formatter));
+""".formatted(endpoin.getGrupo().replace("_SERVICE",""),endpoin.getNome(),endpoin.getLocal(),endpoin.getIp(),endpoin.getMac(),endpoin.getUltimaVezOnline().format(formatter));
         SendMessage message = new SendMessage();
-        message.setChatId("-4984280260");
+        message.setChatId("-4930867289");
         message.setText(alerta);
         message.enableMarkdown(true);
         CompletableFuture.runAsync(()->{
@@ -61,7 +62,7 @@ public class BotService extends TelegramLongPollingBot {
     public void notificationTelegramS(){
 
         SendMessage message = new SendMessage();
-        message.setChatId("-4984280260");
+        message.setChatId("-4930867289");
         message.setText("Atualizando dados...");
         message.enableMarkdown(true);
         CompletableFuture.runAsync(()->{

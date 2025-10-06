@@ -260,3 +260,23 @@ small{
 
 }
 }
+.mn{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#status{
+  font-size: 18px;
+  font-weight: bold;
+  padding:4px 10px;
+  border-radius: 5px;
+  display: inline-block;
+}
+.online {
+   color: white;
+  background-color: #61c061;
+  }
+.offline {
+   color: white;
+   background-color: rgb(250, 111, 76);
+}

@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org"
->
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
     <meta charset="UTF-8">
@@ -13,18 +12,15 @@
 </head>
 
 <body>
-    <script src="../static/css/javascrip.js"></script>
-    <script src="../static/css/lista_mac.js"></script>
 
-    <script th:src="@{/css/javascrip.js}"></script>
     <script th:src="@{/css/javascript.js}"></script>
-    <script th:src="@{/css/visual.js}"></script>
-    <script th:src="@{/css/lista_mac.js}"></script>
 
 
     <section class="area_container" id="sumi">
         <div class="container_int container_registro">
-            <a th:href="@{/endpoint/registro}" class="btn-a" onclick="app2('/registro/registro',this );" >Novo</a>
+            <a th:href="@{/endpoint/registro}" class="btn-a" onclick="app2('/registro/registro',this );">Novo</a>
+            <a th:href="@{/setores}" class="btn-a" onclick="app2('/setores',this );">Filial</a>
+
         </div>
         <!-- <div id="modals"></div> -->
         <p th:text="'Total '+${#lists.size(lista)}"></p>
@@ -122,13 +118,16 @@
                     <td th:text="${item.nomeComplexo}"></td>
                     <td th:text="${item.grupo}">EM PROCESSO</td>
                     <td>
-                        <button onclick="visual(this);" th:data-ping="${item.ping}"> Visualizar</button>
+                        <button onclick="visual(this);" th:data-ip="${item.ip}" th:data-ping="${item.ping}">
+                            Visualizar</button>
                         <div id="modal" class="modal">
                             <div>
-                                <button onclick="visual(this);">X</button>
+                                <button onclick="fecharModal(this)">X</button>
                             </div>
                             <div class="area-propt" th:text="${item.ip}"></div>
-                            <div th:text="${item.ping}" class="area-propt"></div>
+                            <div id="modals-container" class="area-propt">
+
+                            </div>
                         </div>
                     </td>
 
@@ -137,8 +136,13 @@
             </tbody>
         </table>
 
-</div>
+    </div>
+    <script src="../static/css/javascrip.js"></script>
+    <script src="../static/css/lista_mac.js"></script>
 
+    <script th:src="@{/css/javascrip.js}"></script>
+    <script th:src="@{/css/visual.js}"></script>
+    <script th:src="@{/css/lista_mac.js}"></script>
 </body>
 
 </html>

@@ -28,7 +28,7 @@ stompClient.debug = () => {};
         }
       })
       // rodaStoP()
-      setInterval(rodaStoP, 20000);  
+      setInterval(rodaStoP, 5000);  
     }, function (error) {
       reconnect();
     })
@@ -43,7 +43,7 @@ stompClient.debug = () => {};
     setTimeout(() => {
       console.log("Conectando ao serviço");
       fetchDados();
-    }, 5000)
+    }, 1000)
   }
   function rodaStoP(){
     const client = localStorage.getItem("client");
@@ -213,7 +213,7 @@ function graficoICMPSec(dados,ipv4,labelsclock,labelss){
       }, 
       scales: {
         y: {
-          max: 8000,
+          max: 100000,
           beginAtZero: true,
           ticks: {
             color: 'white',

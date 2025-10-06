@@ -11,8 +11,6 @@ import jakarta.persistence.Table;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
@@ -25,7 +23,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -34,8 +31,7 @@ import java.util.concurrent.ExecutionException;
 @RequestMapping("/endpoint")
 @CrossOrigin(origins = "*")
 public class ApControler {
-    @Value("endpoint")
-    private String endereco;
+
     @Autowired
     CalcularPerdas calcularPerdas;
     @Autowired
@@ -87,11 +83,11 @@ public class ApControler {
           l.addAll(lista);
         }else if(re!=null){
             var lista = endpointService.getLista().stream()
-                    .filter(e -> e.grupo().contains(re.toString())).toList();
+                    .filter(e -> e.grupo().equals(re.toString())).toList();
             l.addAll(lista);
         }
         else {
-            model.addAttribute("off",endpointService.getLista().stream().filter(e->e.status().contains("DOWN")).toList());
+            model.addAttribute("off",endpointService.getLista().stream().filter(e->e.status().equals("DOWN") ).toList());
             l.addAll( endpointService.getLista());
         }
         var lista = groupService.findAll();
@@ -139,7 +135,8 @@ public class ApControler {
 
     @PostMapping("/mult")
     public String mult(@RequestParam(value = "file",required = false) MultipartFile file,Model red, String ReceiveGrupoId,String nome) throws IOException, InterruptedException {
-        String caminho = endereco+file.getOriginalFilename();
+        String End = "/home/grupomateus/Área de trabalho/monitoramento/arquivos/";
+        String caminho = End+file.getOriginalFilename();
         file.transferTo(new File(caminho));
         endpointService.salvaMultPartAsync(caminho,ReceiveGrupoId,nome);
         red.addAttribute("mensagem","Processando dados...");

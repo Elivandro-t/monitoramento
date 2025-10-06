@@ -9,7 +9,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             const localizacao = b.getAttribute("data-location")
             const hostid = b.getAttribute("data-id")
             const hostIp = b.getAttribute("data-ip");
-    
             let section = `
                           <section class="menud">
                                 <ul class="ul-name" >
@@ -18,21 +17,20 @@ document.addEventListener("DOMContentLoaded", async function () {
                                     <li onclick="Deletar('${hostid}')">Excluir</li>
                                 </ul>
                           </section>
-                                         `;
+                                       `;
             // Remove menu atual, se existir
             if (currentMenu) {
                 currentMenu.remove();
                 currentMenu = null;
             }
-
             // Cria novo menu
             const menu = document.createElement("div");
             menu.classList.add("td");
             menu.innerHTML = section;
             menu.style.position = "absolute";
-    menu.style.top = `${e.pageY}px`;
-    menu.style.left = `${e.pageX}px`;
-    menu.style.zIndex = 9999;
+            menu.style.top = `${e.pageY}px`;
+            menu.style.left = `${e.pageX}px`;
+            menu.style.zIndex = 9999;
             // Adiciona o menu à TR clicada
             b.appendChild(menu);
             currentMenu = menu;
@@ -41,7 +39,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         // Adiciona o evento de clique direito na TR
         b.addEventListener("contextmenu", contextMenuHandler);
 
-});
+    });
     // Fecha o menu ao clicar fora
     document.addEventListener("click", (e) => {
         if (currentMenu && !currentMenu.contains(e.target)) {
@@ -52,16 +50,16 @@ document.addEventListener("DOMContentLoaded", async function () {
 
 });
 
-function metricas(localizacao,hostid,ip) {
+function metricas(localizacao, hostid, ip) {
     let url = `${base}/endpoint/monitoramento/char?hostname=${localizacao}&interfaceIp=${ip}&hostid=${hostid}&limit=0&itemid=0`;
     window.location.href = url;
 }
 
 function Deletar(id) {
-    alert("EM desenvolvimento "+id)
+    alert("EM desenvolvimento " + id)
 
 }
 function Atualizar(id) {
-   window.location.href = `${base}/endpoint/registro?id=${id}`
+    window.location.href = `${base}/endpoint/registro?id=${id}`
 
 }

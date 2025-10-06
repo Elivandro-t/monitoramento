@@ -20,7 +20,6 @@ stompClient.debug = () => {};
         fetchDados();
       }, 5000)
     })
-  
   };
   function rodaStoP(){
     const url = new URLSearchParams(window.location.search);
@@ -106,7 +105,6 @@ stompClient.debug = () => {};
     if (chartInstance2) {
       chartInstance2.destroy()
     }
-
     chartInstance2 = new Chart(ctxf, {
       type: 'doughnut',
       data: {

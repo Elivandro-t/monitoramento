@@ -2,12 +2,16 @@ package com.example.projetoAP.repository;
 
 import com.example.projetoAP.domain.model.Endpoin;
 import jakarta.persistence.*;
+import org.apache.poi.ss.usermodel.DataFormat;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -166,13 +170,14 @@ public class EndpointEntity {
     public  void atualiza(String ip) throws IOException, InterruptedException {
         this.ping =getCmd(ip);
         this.Status =statusIp(ip);
-//        if("DOWN".contains(statusIp(ip))){
+//       if("DOWN".contains(statusIp(ip))){
 //            this.ultimaVezOnline = LocalDateTime.now();
-//            return;
-//        }
-//        this.ultimaVezOnline = null;
+//           return;
+//      }
+//      this.ultimaVezOnline = null;
 
     }
+
     public  void update(Endpoin update) throws IOException, InterruptedException {
         this.hostname = update.getNome();
         this.profile = update.getLocal();
@@ -208,16 +213,22 @@ public class EndpointEntity {
 
     public void atualizaEndpoint(String ip) {
     }
-
     public String getHostname() {
         return hostname;
     }
-
     public LocalDateTime getUltimaVezOnline() {
         return ultimaVezOnline;
     }
 
     public void setUltimaVezOnline(LocalDateTime ultimaVezOnline) {
         this.ultimaVezOnline = ultimaVezOnline;
+    }
+    public String ConverteHora(){
+        if(ultimaVezOnline!=null){
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+            String formatado = ultimaVezOnline.format(formatter);
+            return  formatado;
+        }
+        return null;
     }
 }

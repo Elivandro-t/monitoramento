@@ -26,10 +26,8 @@ public class SheduledService {
     private RepositoryEntity entityRepository;
     @Autowired
     EndpointService endpointService;
-
     // Defina um ThreadPoolExecutor com controle de número de threads
     private final ExecutorService executorService = Executors.newFixedThreadPool(50); // Aqui você limita a 10 threads simultâneas.
-
     public SheduledService(RepositoryEntity repository){
         this.entityRepository = repository;
     }
@@ -44,13 +42,10 @@ public class SheduledService {
     public void shutdownExecutor() {
         executorService.shutdown();
     }
-
     @Transactional
     @Scheduled(cron = "*/20 * * * * *")
     public void gerar() throws IOException, InterruptedException {
-
         var endpoints = entityRepository.findAll();
-
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (var endpoint : endpoints) {
             futures.add(rodar(endpoint));
@@ -59,7 +54,6 @@ public class SheduledService {
                 process =  endpoints.size();
             }
         }
-
         // Espera todas as tarefas assíncronas terminarem
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
@@ -74,13 +68,12 @@ public class SheduledService {
                     endpoint.setUltimaVezOnline(null);
                 }
                 if(endpoint.getStatus().equals("DOWN") && endpoint.getUltimaVezOnline()==null){
-                    endpoint.setUltimaVezOnline(LocalDateTime.now());
+                        endpoint.setUltimaVezOnline(LocalDateTime.now());
                 }
-                endpoint.atualiza(endpoint.getIp()); // Atualiza o ping também
+                endpoint.atualiza(endpoint.getIp());
                 entityRepository.save(endpoint);
                 linhas++;
                 double processo = Math.abs((double) linhas / process * 100);
-
                 if(process<linhas){
                     linhas = 0;
                 }
@@ -90,7 +83,6 @@ public class SheduledService {
 
                 }else{
                     mensagem = String.format("Processando... %d/%d ( %.0f%% )",linhas, process,processo);
-
                 }
                 EnvidoSoquet(mensagem);
             } catch (Exception e) {
@@ -98,7 +90,6 @@ public class SheduledService {
             }
         }, executorService);  // Usando o executorService para controlar o número de threads
     }
-
     // Shutdown do executorService após o processamento
     public void shutdown() {
         try {
@@ -117,14 +108,10 @@ public class SheduledService {
         messagingTemplate.convertAndSend("/topic/processamento", mensagem );
 //        messagingTemplate.convertAndSend("/off", lista.stream().filter(e->e.status().equals("DOWN")).toList() );
     }
-
     @Scheduled(cron = "* * * * * *")
     public void getVierListPage(){
         // Filtra a lista baseado no MAC
         var lista = endpointService.getLista().stream().toList();
         messagingTemplate.convertAndSend("/lista", lista);
-
     }
-
-
 }

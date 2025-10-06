@@ -17,9 +17,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.*;
@@ -105,6 +103,16 @@ public class EndpointService {
         String ipv4 = String.valueOf(texto.getCell(4));
         String modelo = String.valueOf(texto.getCell(5));
         String sn = String.valueOf(texto.getCell(6));
+
+        String json = """
+                localization: %s
+                Mac: %s
+                hostname: %s
+                String: %s
+                String: %s
+                sn: %s
+                """.formatted(localization,mac,hostname,ipv4,modelo,sn);
+        System.out.println(json);
         var setorw = repositorySetor.findById(setor.getId()).get();
         EndpointInterfaceDTO ed = new EndpointInterfaceDTO(hostname.replace("GM-",""), modelo.toUpperCase(), sn, localization.replace("SLZ-",""),mac, ipv4, "", "", "20/10/2023", "",this.id, setor.getFilial(),setor.getNameComplexo(),setor.getId());
         var l = groupService.findById(Long.parseLong(ed.ReceiveGrupoId())).orElseThrow(()->new RuntimeException("nenhum resultado"));
@@ -129,6 +137,27 @@ public class EndpointService {
     }
     public EndpointDTO findOneById(Long id) {
        return salvaEndPoint.findOneById(id);
+    }
+
+
+    public void CMDPing(String ip) throws IOException {
+        while (true) {
+            Process p = Runtime.getRuntime().exec("ping -c 1 " + ip); // Para Linux/macOS
+            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            String line;
+            while ((line = input.readLine()) != null) {
+                if (line.contains("ttl=") || line.contains("TTL=")) {
+                    messagingTemplate.convertAndSend("/topic/cmd",line);
+
+                }
+            }
+            try {
+                Thread.sleep(1000); // Aguarda 1 segundo entre pings
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+        }
     }
 
 

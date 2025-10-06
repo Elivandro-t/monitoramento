@@ -10,6 +10,7 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,12 +46,23 @@ public class ControlerMetrias {
             messagingTemplate.convertAndSend("/topic/grafico/" + filter.clientId(), future);
 
     };
+    @MessageMapping("/cmd")
+    public  void  CMD(@Payload String ip) throws IOException {
+        new Thread(() -> {
+            try {
+                endpointService.CMDPing(ip);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }).start();
+
+    }
     @MessageMapping("/mestricasM")
     public void getVierListPageSocket(@Payload Dados receiveGrupoId){
         List<EndpointDTO> l = new ArrayList<>();
         if(receiveGrupoId.ReceiveGrupoId()!=null && !receiveGrupoId.ReceiveGrupoId().isEmpty()){
             var lista = endpointService.getLista().stream()
-                    .filter(e -> e.grupo().contains(receiveGrupoId.ReceiveGrupoId())).toList();
+                    .filter(e -> e.grupo().equals(receiveGrupoId.ReceiveGrupoId())).toList();
            l.addAll(lista);
         }
         else {

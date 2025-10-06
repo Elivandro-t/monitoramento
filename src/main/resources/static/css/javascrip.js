@@ -5,19 +5,17 @@ document.getElementById("form").addEventListener("submit",function(){
 })
 let btn = document.getElementById("btn")
 btn.addEventListener("click", () => {
-  alert("deu veryo")
+  alert("Deu certo")
 })
 document.querySelectorAll("[id^='item-']").forEach(function(element) {
 element.addEventListener("click",function(){
          let sing = true;
           if(sing){
-          alert("deu certo")
           sing=false;
           }else{
-          alert("deu errdo")
            sing=true;
           }
-       })
+      })
 });
 function app(pagina, bt) {
   let iframe = document.getElementById("iframe");
@@ -25,7 +23,6 @@ function app(pagina, bt) {
   document.querySelectorAll(".in button").forEach(button => {
     button.classList.remove("botao");
 });
-
   bt.classList.add("botao");
 }
 function app2(pagina, bt) {
@@ -33,10 +30,7 @@ function app2(pagina, bt) {
     button.classList.remove("botao");
 });
 window.location.href = pagina;
-
   bt.classList.add("botao")
-
-
 }
 function atualizarBotaoAtivo(){
   document.querySelectorAll(".in button").forEach(btn => {
@@ -44,13 +38,9 @@ function atualizarBotaoAtivo(){
       btn.classList.add("botao");
     }else{
       btn.classList.remove("botao");
-  
     }
  })
- 
 }
-
-
 
 
 
