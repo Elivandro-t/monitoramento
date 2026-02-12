@@ -107,23 +107,25 @@ public class ApControler {
            var hpst = endpointService.findOneById(id);
             model.addAttribute("form",hpst);
         }
-          var lista = groupService.findAll();
+        var lista = groupService.findAll();
         var listaSetor = setorService.getLista();
           model.addAttribute("groups",lista);
         model.addAttribute("setor",listaSetor);
         return "registro";
     }
-    @PostMapping
+    @PostMapping("/registro")
+    @Transactional
     public String setRegistros(RedirectAttributes redirectAttributes,Model model, EndpointInterfaceDTO e) throws IOException, InterruptedException {
+        System.out.println("chegou aqui");
        try {
           endpointService.setRegistro(e);
           redirectAttributes.addFlashAttribute("mensagem", "Registrado");
-           return "redirect:/registro";
+           return "redirect:/endpoint/registro";
 
        }catch (RuntimeException ex){
            redirectAttributes.addFlashAttribute("form",e);
            redirectAttributes.addFlashAttribute("erro", "Ocorreu um erro: " + ex.getMessage());
-           return "redirect:/registro";
+           return "redirect:/endpoint/registro";
        }
 
     }
@@ -160,12 +162,17 @@ public class ApControler {
         model.addAttribute("data",lista.get());
         return "char";
     }
-    @PutMapping
+    @PutMapping("/registro")
+    public String atualizaDados(UpdateDTO e,Model red){
+        endpointService.atualizaEndpoint(e);
+        return "redirect:/endpoint/lista";
+    }
+    @DeleteMapping("/delete")
     @Transactional
-    public String atualizaDados(UpdateDTO e){
-       endpointService.atualizaEndpoint(e);
-       System.out.println("Meus dados chegaram aqui");
-       return "registro";
+    public String deletar(@RequestParam Long id){
+        System.out.println("deletado "+id);
+        endpointService.delete(id);
+        return "redirect:/registro";
     }
 }
 ///sudo docker run --name mysql -e MYSQL_DATABASE=informatica -e MYSQL_ROOT_PASSWORD=Tgfhvbnm1@ -p 3306:3306 -d mysql:latest

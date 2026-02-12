@@ -2,7 +2,7 @@ var socket = new SockJS('/ws');  // Ponto de entrada do WebSocket
 var stompClient = Stomp.over(socket);
 let indexs;
 stompClient.debug = () => { };
-const endpoint = "http://192.168.88.70:8080";
+const endpoint = "http://192.168.88.239:8080";
 
 function connectToWebSocket() {
     let clientId = 'client-' + Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 5);

@@ -77,7 +77,6 @@ public class Host {
 
 
     }
-
     public Host(UpdateDTO update) {
         this.hostname = update.nome();
         this.profile = update.localizacao();

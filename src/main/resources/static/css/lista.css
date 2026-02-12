@@ -112,7 +112,6 @@ td {
 }
 
 .area-propt {
-    padding: 20px;
     overflow: auto;
 }
 
@@ -128,19 +127,33 @@ td {
 }
 
 .modal {
-    display: block !important; /* força o modal a ficar visível */
+    display: none;
     top: 0;
     left: 50%;
-    width: 40%;
+    width: 20%;
     background-color: black;
     border: 2px solid #00ff00;
     box-shadow: 0 0 10px #00ff00;
-    font-family: "Courier New", monospace;
-    color: #00ff00;
-    height: 300px;
-    overflow-y: auto;
     font-family: monospace;
     white-space: pre-wrap;
+    flex-direction: column;
+    padding:0 20px;
+    margin: 0;
+
+
+}
+.btn-as{
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+}
+
+.modal_s{
+    font-family: "Courier New", monospace;
+    color: #00ff00;
+    height: 20%;
+    overflow-y: auto;
 
 
 }

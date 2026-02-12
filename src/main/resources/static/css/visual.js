@@ -1,24 +1,23 @@
 let cliente = null;
 let ipContent = null
+const lista = []
 function iniciarConexao(ip) {
+    const client = localStorage.getItem("client");
+
     const socket = new SockJS("/ws");
     cliente = Stomp.over(socket);
     ipContent = ip
     cliente.connect({}, function () {
-        let div = document.getElementById("modals-container");
-
-        cliente.subscribe("/topic/cmd", function (response) {
+        cliente.subscribe(`/topic/cmd/${client}`, function (response) {
             ipContent = null;
-            const respostaItens = response.body;
-            div.innerHTML += "<pre>" + respostaItens + "</pre>"
-            setTimeout(() => {
-                div.scrollHeight=  div.scrollTop;
-            }, 0);
-            console.log("Recebido do backend:", response.body);
+            lista.push(response.body)   
+            let s1 =  document.getElementById("container12");
+            s1.innerHTML += "elivanro"      
+
         });
 
         if (ipContent != null) {
-            cliente.send("/app/cmd", {}, ipContent);
+            cliente.send("/app/cmd", {}, JSON.stringify({ ip: ipContent, hostID: client }));
         }
     });
 }
@@ -29,7 +28,7 @@ function fecharModal(button) {
     if (cliente && cliente.connected) {
         cliente.disconnect(() => {
             cliente = null
-            pContent = null
+            ipContent = null
             window.location.reload()
         });
     }
@@ -44,14 +43,17 @@ function ativaCMD(ip) {
         iniciarConexao(ip);
     }
 }
+
+
 function visual(button) {
     let modal = button.closest('tr').querySelector('.modal');
-    if (modal) {
-        modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
-        const ipElement = modal.querySelector(".area-propt");
-        const ip = ipElement.textContent.trim();
-        ativaCMD(ip)
-    }
+    modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
+    const ipElement = modal.querySelector(".area-propt");
+    const ip = ipElement.textContent.trim();
+   
+
+
+    ativaCMD(ip);
 
 }
 

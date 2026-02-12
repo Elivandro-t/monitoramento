@@ -1,16 +1,13 @@
 package com.example.projetoAP.repository;
 
-import com.example.projetoAP.domain.model.Endpoin;
+import com.example.projetoAP.domain.model.Endpoint;
+import com.example.projetoAP.domain.model.UpdateDTO;
 import jakarta.persistence.*;
-import org.apache.poi.ss.usermodel.DataFormat;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.InetAddress;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,7 +23,7 @@ public class EndpointEntity {
     private String macAdress;
     private String profile;
     private String ipv4;
-    private String Status;
+    private String status;
     private String ping;
     private String link;
     private String data;
@@ -38,13 +35,13 @@ public class EndpointEntity {
     private String NomeComplexo;
     private LocalDateTime ultimaVezOnline;
     public EndpointEntity(){}
-    public EndpointEntity(Endpoin e){
+    public EndpointEntity(Endpoint e){
         this.hostname = e.getNome();
         this.model = e.getModelo();
         this.macAdress = e.getMac();
         this.profile = e.getLocal();
         this.ipv4 = e.getIp();
-        this.Status = e.getStatus();
+        this.status = e.getStatus();
         this.ping = e.getPing();
         this.link = e.getLink();
         this.data = e.getData();
@@ -81,11 +78,11 @@ public class EndpointEntity {
     }
 
     public String getStatus() {
-        return Status;
+        return status;
     }
 
     public void setStatus(String status) {
-        Status = status;
+        status = status;
     }
 
     public String getIp() {
@@ -128,57 +125,56 @@ public class EndpointEntity {
         return id;
     }
 
-    public String getCmd(String  host) throws IOException, InterruptedException {
-        String linha = null;
-        String os = System.getProperty("os.name").toLowerCase();
-        String pingCmd = os.contains("win") ? "ping -n 4 " + host : "ping -c 4 " + host;
-        Process process = Runtime.getRuntime().exec(pingCmd);
-        StringBuilder result = new StringBuilder();
-        String line;
-        Pattern pattern = Pattern.compile("icmp_seq=(\\d+) ttl=(\\d+) time=([\\d.]+) ms");
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        while ((line = bufferedReader.readLine())!=null){
-            Matcher matcher = pattern.matcher(line);
-            if (matcher.find()) {
-                String icmpSeq = matcher.group(1);
-                String ttl = matcher.group(2);
-                String time = matcher.group(3);
-                result.append("ICMP Seq: ").append(icmpSeq)
-                        .append(", TTL: ").append(ttl)
-                        .append(", Tempo: ").append(time).append(" ms\n");
-            }
-        }
-        process.waitFor();
-        return result.toString().trim();
-    }
-    public String statusIp(String host) throws IOException {
-//        InetAddress inet = InetAddress.getByName(host);
-//        boolean isReactive = inet.isReachable(300);
-        Process p = Runtime.getRuntime().exec("ping -c 1 " + host); // No Windows, use "ping -n 1"
-        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        String line;
-        boolean isReactive = false;
-        while ((line = input.readLine()) != null) {
-            if (line.contains("ttl=") || line.contains("TTL=")) {
-                isReactive = true;
-                break;
-            }
-        }
-        input.close();
-        return isReactive ? "UP":"DOWN";
-    }
-    public  void atualiza(String ip) throws IOException, InterruptedException {
-        this.ping =getCmd(ip);
-        this.Status =statusIp(ip);
+//    public String getCmd(String  host) throws IOException, InterruptedException {
+//        String linha = null;
+//        String os = System.getProperty("os.name").toLowerCase();
+//        String pingCmd = os.contains("win") ? "ping -n 4 " + host : "ping -c 4 " + host;
+//        Process process = Runtime.getRuntime().exec(pingCmd);
+//        StringBuilder result = new StringBuilder();
+//        String line;
+//        Pattern pattern = Pattern.compile("icmp_seq=(\\d+) ttl=(\\d+) time=([\\d.]+) ms");
+//        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+//        while ((line = bufferedReader.readLine())!=null){
+//            Matcher matcher = pattern.matcher(line);
+//            if (matcher.find()) {
+//                String icmpSeq = matcher.group(1);
+//                String ttl = matcher.group(2);
+//                String time = matcher.group(3);
+//                result.append("ICMP Seq: ").append(icmpSeq)
+//                        .append(", TTL: ").append(ttl)
+//                        .append(", Tempo: ").append(time).append(" ms\n");
+//            }
+//        }
+//        process.waitFor();
+//        return result.toString().trim();
+//    }
+//    public String statusIp(String host) throws IOException {
+////        InetAddress inet = InetAddress.getByName(host);
+////        boolean isReactive = inet.isReachable(300);
+//        Process p = Runtime.getRuntime().exec("ping -c 1 " + host); // No Windows, use "ping -n 1"
+//        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+//        String line;
+//        boolean isReactive = false;
+//        while ((line = input.readLine()) != null) {
+//            if (line.contains("ttl=") || line.contains("TTL=")) {
+//                isReactive = true;
+//                break;
+//            }
+//        }
+//        input.close();
+//        return isReactive ? "UP":"DOWN";
+//    }
+//    public  void atualiza(String ip) throws IOException, InterruptedException {
+//        this.ping =getCmd(ip);
+//        this.Status =statusIp(ip);
 //       if("DOWN".contains(statusIp(ip))){
 //            this.ultimaVezOnline = LocalDateTime.now();
 //           return;
 //      }
 //      this.ultimaVezOnline = null;
-
-    }
-
-    public  void update(Endpoin update) throws IOException, InterruptedException {
+//
+//    }
+    public  void update(Endpoint update) throws IOException, InterruptedException {
         this.hostname = update.getNome();
         this.profile = update.getLocal();
         this.link = update.getLink();
@@ -230,5 +226,14 @@ public class EndpointEntity {
             return  formatado;
         }
         return null;
+    }
+
+    public void update(UpdateDTO update) {
+        this.hostname = update.nome();
+        this.macAdress = update.mac();
+        this.ipv4 = update.ip();
+        this.profile = update.localizacao();
+        this.model = update.modelo();
+        this.sn = update.sn();
     }
 }

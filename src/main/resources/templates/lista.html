@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lista de APs</title>
     <link rel="stylesheet" th:href="@{/css/lista.css}">
-    <link rel="stylesheet" href="../static/css/lista.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
 </head>
@@ -14,6 +13,8 @@
 <body>
 
     <script th:src="@{/css/javascript.js}"></script>
+    <script th:src="@{/css/visual.js}"></script>
+
 
 
     <section class="area_container" id="sumi">
@@ -95,7 +96,7 @@
                             <div>
                                 <button onclick="visual(this);">X</button>
                             </div>
-                            <div class="area-propt" th:text="${item.ip}"></div>
+                            <div id="area-prop" class="area-propt" th:text="${item.ip}"></div>
                             <div th:text="${item.ping}" class="area-propt"></div>
                         </div>
                     </td>
@@ -118,15 +119,16 @@
                     <td th:text="${item.nomeComplexo}"></td>
                     <td th:text="${item.grupo}">EM PROCESSO</td>
                     <td>
-                        <button onclick="visual(this);" th:data-ip="${item.ip}" th:data-ping="${item.ping}">
+                        <button onclick="visual(this);" th:data-ip="${item.ip}">
                             Visualizar</button>
                         <div id="modal" class="modal">
-                            <div>
+                            <div class="btn-as">
                                 <button onclick="fecharModal(this)">X</button>
                             </div>
-                            <div class="area-propt" th:text="${item.ip}"></div>
-                            <div id="modals-container" class="area-propt">
-
+                            <section class="modal_s">
+                                <div class="area-propt" th:text="${item.ip}"></div>
+                                <div id="container12" ></div>
+                            </section>
                             </div>
                         </div>
                     </td>
@@ -137,11 +139,7 @@
         </table>
 
     </div>
-    <script src="../static/css/javascrip.js"></script>
-    <script src="../static/css/lista_mac.js"></script>
-
     <script th:src="@{/css/javascrip.js}"></script>
-    <script th:src="@{/css/visual.js}"></script>
     <script th:src="@{/css/lista_mac.js}"></script>
 </body>
 

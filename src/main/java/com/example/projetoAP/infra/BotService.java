@@ -1,6 +1,6 @@
 package com.example.projetoAP.infra;
 
-import com.example.projetoAP.domain.model.Endpoin;
+import com.example.projetoAP.domain.model.Endpoint;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -34,7 +34,7 @@ public class BotService extends TelegramLongPollingBot {
 
 
     }
-    public void notificationTelegram(Endpoin endpoin){
+    public void notificationTelegram(Endpoint endpoint){
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
         String alerta = """
 [ALERTA] Equipamento 🔴 DOWN
@@ -45,7 +45,7 @@ public class BotService extends TelegramLongPollingBot {
 🖥️ MAC: [%s]
 ⏱️ Offline desde: [%s]
 
-""".formatted(endpoin.getGrupo().replace("_SERVICE",""),endpoin.getNome(),endpoin.getLocal(),endpoin.getIp(),endpoin.getMac(),endpoin.getUltimaVezOnline().format(formatter));
+""".formatted(endpoint.getGrupo().replace("_SERVICE",""), endpoint.getNome(), endpoint.getLocal(), endpoint.getIp(), endpoint.getMac(), endpoint.getUltimaVezOnline().format(formatter));
         SendMessage message = new SendMessage();
         message.setChatId("-4930867289");
         message.setText(alerta);

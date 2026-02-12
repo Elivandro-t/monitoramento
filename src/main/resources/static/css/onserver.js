@@ -3,7 +3,7 @@ async function Onlw(){
     const statusDiv = document.getElementById("status")
   
     try {
-      const resposta  = await fetch("http://192.168.88.70:8080/endpoint/monitoramento",{
+      const resposta  = await fetch("https://192.168.88.239:8080/endpoint/monitoramento",{
         method:"GET",
       })
       if(resposta.status === 200){
@@ -23,3 +23,18 @@ async function Onlw(){
     Onlw()
   }, 3000);
   })
+
+  async function downloads(){
+    try {
+      const resposta  = await fetch("https://192.168.88.70:8443/app-downLoads",{
+        method:"GET",
+      })
+      const json = await resposta.json()
+      if(json.name!==null){
+          window.open(json.url)
+      }
+    } catch (error) {
+      alert("Erro ao baixar app")
+    }
+  
+  }

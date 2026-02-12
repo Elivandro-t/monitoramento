@@ -3,6 +3,7 @@ package com.example.projetoAP.controler;
 import com.example.projetoAP.EndpointDTO;
 import com.example.projetoAP.controler.service.*;
 import com.example.projetoAP.domain.vo.*;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -46,15 +47,20 @@ public class ControlerMetrias {
             messagingTemplate.convertAndSend("/topic/grafico/" + filter.clientId(), future);
 
     };
+
+
     @MessageMapping("/cmd")
-    public  void  CMD(@Payload String ip) throws IOException {
+    public  void  CMD(@RequestBody  @Valid cmdDTO dto) throws IOException {
         new Thread(() -> {
             try {
-                endpointService.CMDPing(ip);
+                endpointService.CMDPing(dto);
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
         }).start();
+
+
+
 
     }
     @MessageMapping("/mestricasM")

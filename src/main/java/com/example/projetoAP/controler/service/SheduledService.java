@@ -9,7 +9,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -18,6 +20,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Component
 public class SheduledService {
@@ -63,15 +67,15 @@ public class SheduledService {
             try {
                 // Verifica o status e atualiza o endpoint
                 String status = statusIpAsync(endpoint.getIp()).get(); // Espera o status para cada IP
-                endpoint.setStatus(status);
+                String ping = getCmd(endpoint.getIp());
+                String statusOn = statusIp(endpoint.getIp());
+                LocalDateTime dataUltimaVez = endpoint.getUltimaVezOnline();;
                 if(endpoint.getStatus().equals("UP")){
-                    endpoint.setUltimaVezOnline(null);
+                    dataUltimaVez = LocalDateTime.now();
                 }
-                if(endpoint.getStatus().equals("DOWN") && endpoint.getUltimaVezOnline()==null){
-                        endpoint.setUltimaVezOnline(LocalDateTime.now());
-                }
-                endpoint.atualiza(endpoint.getIp());
-                entityRepository.save(endpoint);
+                endpoint.setStatus(status);
+
+                endpointService.atualizarStatusParcial(endpoint.getId(), statusOn, ping,dataUltimaVez);
                 linhas++;
                 double processo = Math.abs((double) linhas / process * 100);
                 if(process<linhas){
@@ -108,10 +112,49 @@ public class SheduledService {
         messagingTemplate.convertAndSend("/topic/processamento", mensagem );
 //        messagingTemplate.convertAndSend("/off", lista.stream().filter(e->e.status().equals("DOWN")).toList() );
     }
-    @Scheduled(cron = "* * * * * *")
+    @Scheduled(cron = "*/10 * * * * *")
     public void getVierListPage(){
         // Filtra a lista baseado no MAC
         var lista = endpointService.getLista().stream().toList();
         messagingTemplate.convertAndSend("/lista", lista);
+    }
+    public String getCmd(String  host) throws IOException, InterruptedException {
+        String linha = null;
+        String os = System.getProperty("os.name").toLowerCase();
+        String pingCmd = os.contains("win") ? "ping -n 4 " + host : "ping -c 4 " + host;
+        Process process = Runtime.getRuntime().exec(pingCmd);
+        StringBuilder result = new StringBuilder();
+        String line;
+        Pattern pattern = Pattern.compile("icmp_seq=(\\d+) ttl=(\\d+) time=([\\d.]+) ms");
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        while ((line = bufferedReader.readLine())!=null){
+            Matcher matcher = pattern.matcher(line);
+            if (matcher.find()) {
+                String icmpSeq = matcher.group(1);
+                String ttl = matcher.group(2);
+                String time = matcher.group(3);
+                result.append("ICMP Seq: ").append(icmpSeq)
+                        .append(", TTL: ").append(ttl)
+                        .append(", Tempo: ").append(time).append(" ms\n");
+            }
+        }
+        process.waitFor();
+        return result.toString().trim();
+    }
+    public String statusIp(String host) throws IOException {
+//        InetAddress inet = InetAddress.getByName(host);
+//        boolean isReactive = inet.isReachable(300);
+        Process p = Runtime.getRuntime().exec("ping -c 1 " + host); // No Windows, use "ping -n 1"
+        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        String line;
+        boolean isReactive = false;
+        while ((line = input.readLine()) != null) {
+            if (line.contains("ttl=") || line.contains("TTL=")) {
+                isReactive = true;
+                break;
+            }
+        }
+        input.close();
+        return isReactive ? "UP":"DOWN";
     }
 }

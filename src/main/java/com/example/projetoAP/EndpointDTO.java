@@ -1,10 +1,8 @@
 package com.example.projetoAP;
 
-import com.example.projetoAP.domain.model.Endpoin;
+import com.example.projetoAP.domain.model.Endpoint;
 import com.example.projetoAP.repository.EndpointEntity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
-import java.time.LocalDateTime;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record EndpointDTO(
@@ -15,7 +13,7 @@ public record EndpointDTO(
         String ping, String data, String link, String ReceiveGrupoId, Integer grupoId, String grupo, Integer filial, String nomeComplexo,
         String dataUltimaVezOnline){
 
-    public EndpointDTO(Endpoin response) {
+    public EndpointDTO(Endpoint response) {
         this(response.getId(),response.getNome()
                 ,response.getModelo(),response.getSn(),
                 response.getLocal(),response.getMac(),response.getIp(),response.getStatus(),response.getPing(),response.getData(),response.getLink(),"",response.getGrupoId(),response.getGrupo(),response.getFilialName(),response.getNomeCompleto(),"s");

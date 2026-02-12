@@ -1,4 +1,4 @@
-let base = "http://192.168.88.70:8080"
+let base = "http://192.168.88.239:8080"
 document.addEventListener("DOMContentLoaded", async function () {
     let currentMenu = null; // menu atualmente aberto
     let dados = /*[[${lista}]]*/[];
@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                                 <ul class="ul-name" >
                                     <li onclick="metricas('${localizacao}','${hostid}','${hostIp}')">Metricas</li>
                                     <li onclick="Atualizar('${hostid}')">Editar</li>
-                                    <li onclick="Deletar('${hostid}')">Excluir</li>
+                                     <li onclick="deletar('${hostid}')">Deletar</li>
                                 </ul>
                           </section>
                                        `;
@@ -55,11 +55,21 @@ function metricas(localizacao, hostid, ip) {
     window.location.href = url;
 }
 
-function Deletar(id) {
-    alert("EM desenvolvimento " + id)
 
-}
 function Atualizar(id) {
     window.location.href = `${base}/endpoint/registro?id=${id}`
 
 }
+
+const deletar = async (id) => {
+    const response = await fetch(`/endpoint/delete?id=${id}`, {
+        method: 'DELETE'
+    });
+
+    if (response.ok) {
+        alert('Registro deletado com sucesso!');
+        location.reload(); // Atualiza a página
+    } else {
+        alert('Erro ao deletar o registro');
+    }
+};

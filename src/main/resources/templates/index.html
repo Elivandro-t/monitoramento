@@ -2,7 +2,6 @@
 
 <head>
   <link rel="stylesheet" th:href="@{/css/index.css}">
-  <link rel="stylesheet" href="../static/css/index.css">
 </head>
 
 <body>
@@ -19,6 +18,7 @@
       <button onclick="app('/group/registro',this);" data-route="/group/registro">Host Group</button>
       <button onclick="app2('/endpoint/monitoramento/char',this);">Monitor 1</button>
       <button onclick="app2('/endpoint/web',this);" >Monitor 2</button>
+      <button onclick="downloads()" >Android app</button>
 
 
     </div>
@@ -31,9 +31,7 @@
     </footer>
 
 </main>
-<script src="../static/css/javascrip.js"></script>
 <script th:src="@{/css/onserver.js}"></script>
-
 <script th:src="@{/css/javascrip.js}"></script>
    
 </body>

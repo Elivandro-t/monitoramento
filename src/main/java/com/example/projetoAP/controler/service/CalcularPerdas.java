@@ -1,6 +1,6 @@
 package com.example.projetoAP.controler.service;
 
-import com.example.projetoAP.domain.model.Endpoin;
+import com.example.projetoAP.domain.model.Endpoint;
 import com.example.projetoAP.domain.model.Metricas;
 import com.example.projetoAP.domain.vo.Filter;
 import com.example.projetoAP.domain.vo.FilterHost;
@@ -10,13 +10,11 @@ import com.example.projetoAP.infra.BotService;
 import com.example.projetoAP.repository.*;
 import jakarta.annotation.PreDestroy;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import javax.swing.text.html.parser.Entity;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -29,12 +27,11 @@ import java.util.concurrent.*;
 @Service
 public class CalcularPerdas {
     private BotService service;
-     private RepositoryEntity repository;
-     private ICMPRepository icmpRepository;
-     private MetricasRepository metricasRepository;
-   private final String os = System.getProperty("os.name").toLowerCase();
+    private RepositoryEntity repository;
+    private ICMPRepository icmpRepository;
+    private MetricasRepository metricasRepository;
+    private final String os = System.getProperty("os.name").toLowerCase();
     //Código omitido
-
     ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
     @PreDestroy
     public void shutdownExecutor() {
@@ -60,11 +57,8 @@ public class CalcularPerdas {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Equipamento não encontrado");
         }
         for (var equipamentos:equipamento) {
-            String ip = equipamentos.getIp();
             lista.add(runFuntion(equipamentos.getIp(),icmp,equipamentos.getId()));
-//            long time = calculaTempo(equipamentos);
         }
-        System.out.print("Thread: "+Thread.currentThread().getName());
         CompletableFuture.allOf(lista.toArray(new CompletableFuture[0])).join();
     }
     private CompletableFuture<String> calcularPerdas(String ip)  {
@@ -80,7 +74,6 @@ public class CalcularPerdas {
            var resposta  = String.valueOf(((pacotesEnviado - pacotesRecebidos)*100) / pacotesEnviado);
            return CompletableFuture.completedFuture(resposta);
        }catch (IOException e){
-           e.printStackTrace();
            return CompletableFuture.completedFuture(String.valueOf(100));
        }
     }
@@ -117,21 +110,12 @@ public class CalcularPerdas {
         return CompletableFuture.completedFuture(latenciaMedia);
     }
 
-//    private long calculaTempo(EndpointEntity endpointDTO){
-//        LocalDateTime localDateTime = LocalDateTime.now();
-//        if("UP".equalsIgnoreCase(endpointDTO.getStatus())){
-//            return 0;
-//        }
-//        return Duration.between(endpointDTO.getUltimaVezOnline(),localDateTime).toMinutes();
-//    }
-
     public CompletableFuture<Void> runFuntion(String ip,List<ItemsICMPEntity> icmp,long hostid){
         return CompletableFuture.runAsync(()->{
             try {
                 double latencia = CalcularLatencia(ip).get();
                 String Perda = calcularPerdas(ip).get();
                 List<MetricasEntity> batch = new ArrayList<>();
-
                 for(int i = 0;i < icmp.size();i++) {
                     if(icmp.get(i).getKey_().equals("icmppingsec")){
                         MetricasDTO m = new MetricasDTO(String.valueOf(latencia),icmp.get(i).getItemid(),hostid,icmp.get(i).getName(),0l,"");;
@@ -148,57 +132,24 @@ public class CalcularPerdas {
                 if (!batch.isEmpty()) {
                     metricasRepository.saveAll(batch);  // Salva todas as métricas de uma vez
                 }
-            } catch (IOException e) {
+            } catch (IOException | InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
-            } catch (ExecutionException a) {
-                throw new RuntimeException(a);
-            } catch (InterruptedException s) {
-                throw new RuntimeException(s);
             }
         },executor);
     }
 //   @Scheduled(cron = "0 0 1 */2 * *")
-@Scheduled(cron = "0 * * * * *")
+@Scheduled(cron = "0 0 0 * * *")
 @Transactional
 public void deletedByTimestamp(){
         LocalDateTime timeDay = LocalDateTime.now().minus(2, ChronoUnit.DAYS);
        var listaBuscada = metricasRepository.findAllByTimestampBefore(timeDay);
-    for (var lista:listaBuscada){
-        System.out.println("itens da lista "+lista.getTimestamp() + " "+ lista.getIcmpName());
-    }
        if(!listaBuscada.isEmpty()){
            metricasRepository.deleteAll(listaBuscada);
-           System.out.println("Deletado com sucesso ");
-           return;
        }
-    System.out.println("Sem dados encontrados ");
 };
     private final Map<Long,LocalDateTime> notfication = new ConcurrentHashMap<>();
-//    @Scheduled(cron = "*/20 * * * * *")
-//    public void enviarRespostaTeste(){
-//        var equipamento = repository.findAllByStatusDown("DOWN");
-//        if(equipamento==null){
-//            this.service.notificationTelegramS();
-//        }
-//        equipamento.forEach(e->{
-//            Long id = e.getId();
-//                    LocalDateTime ultimaOnline = e.getUltimaVezOnline();
-//                    Duration tempoOffline = Duration.between(ultimaOnline, LocalDateTime.now());
-//                    // Verifica se está offline há mais de 1 minuto e múltiplos de 1 hora
-//            if(tempoOffline.toMinutes() < 2)
-//                    if ((tempoOffline.toMinutes() <= 2 || tempoOffline.toMinutes() % 60 == 0 && notfication.contains(e.getId()))) {
-//                        try {
-//                            service.notificationTelegram(new Endpoin(e));
-//                            notfication.add(e.getId());
-//                        } catch (IOException | InterruptedException ex) {
-//                            throw new RuntimeException(ex);
-//                        }
-//                    }
-//        });
-//
-//    }
 
-    @Scheduled(cron = "*/20 * * * * *")
+    @Scheduled(cron = "*/30 * * * * *")
     public void enviarRespostaTeste(){
         var equipamento = repository.findAllByStatusDown("DOWN");
         if(equipamento==null){
@@ -211,9 +162,9 @@ public void deletedByTimestamp(){
             // Verifica se está offline há mais de 1 minuto e múltiplos de 1 hora
             if(tempoOffline.toMinutes() < 2) continue;
                 LocalDateTime ultimaHoraNotificada = notfication.get(id);
-                if (ultimaHoraNotificada !=null && Duration.between(ultimaHoraNotificada,LocalDateTime.now()).toMinutes()< 30) continue;
+                if (ultimaHoraNotificada !=null && Duration.between(ultimaHoraNotificada,LocalDateTime.now()).toMinutes()< 60) continue;
                     try {
-                        service.notificationTelegram(new Endpoin(e));
+                        service.notificationTelegram(new Endpoint(e));
                         notfication.put(id,LocalDateTime.now());
                     } catch (IOException | InterruptedException ex) {
                         throw new RuntimeException(ex);

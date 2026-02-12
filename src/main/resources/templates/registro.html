@@ -5,20 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <link rel="stylesheet" href="../static/css/registro.css">
-
     <link rel="stylesheet" th:href="@{/css/registro.css}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
 
 </head>
 <body>
-    <script src="../static/css/group.js"></script>
     <script th:src="@{/css/group.js}"></script>
     <script th:src="@{/css/javascript.js}"></script>
     <div class="area_table">
         <section id="form">
-            <form method="post" action="/endpoint" >
+            <form method="post" action="/endpoint/registro" >
                 <input type="hidden" name="_method" value="put" th:if="${form!=null}">
                 <input type="hidden" name="id" th:value="${form?.id}">
                 <label>Nome</label>
@@ -39,13 +36,13 @@
                 <input type="text" name="link" th:value="${form?.link}" />
                 <select  required name="setorID" th:if="${form==null}">
                     <option>Selecione uma Opção</option>
-                    <option th:each="item:${setor}" th:value="${item.id}" th:text="|${item.nome}  ${item.filial}|"
+                    <option th:each="item:${setor}" th:value="${item?.id}" th:text="|${item?.nome}  ${item?.filial}|"
                             ></option>
 
                 </select>
                 <select name="ReceiveGrupoId" required th:if="${form==null}">
                     <option>Selecione uma Opção</option>
-                    <option th:each="item:${groups}" th:value="${item.id}" th:text="|${item.id} ${item.nome}|"
+                    <option th:each="item:${groups}" th:value="${item?.id}" th:text="|${item?.id} ${item?.nome}|"
                         th:selected="${item.id == selectedGroupId}"></option>
 
                 </select>
@@ -64,15 +61,15 @@
             <div class="group-name">
                 <select  required name="nome">
                     <option>Selecione um complexo</option>
-                    <option th:each="item:${setor}" th:value="${item.nome}" th:text="|${item.nome}  ${item.filial}|"
+                    <option th:each="item:${setor}" th:value="${item.nome}" th:text="|${item.nome}  ${item?.filial}|"
                             th:selected="${item.nome == nome}"
                     ></option>
 
                 </select>
                 <select name="ReceiveGrupoId" id="host" required>
                     <option>Selecione uma Opção</option>
-                    <option th:each="item:${groups}" th:value="${item.id}" th:text="|${item.id} ${item.nome}|"
-                        th:selected="${item.id == selectedGroupId}"></option>
+                    <option th:each="item:${groups}" th:value="${item?.id}" th:text="|${item.id} ${item?.nome}|"
+                        th:selected="${item?.id == selectedGroupId}"></option>
     
                 </select>
                 <label for="host">group name</label>
