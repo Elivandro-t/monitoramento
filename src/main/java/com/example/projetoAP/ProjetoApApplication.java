@@ -8,7 +8,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableAsync
 @EnableScheduling
-@ComponentScan
 @SpringBootApplication
 public class ProjetoApApplication {
 

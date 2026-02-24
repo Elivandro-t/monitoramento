@@ -1,32 +1,42 @@
 package com.example.projetoAP.controler.service;
 
-import com.example.projetoAP.domain.model.Endpoint;
-import com.example.projetoAP.domain.model.Metricas;
-import com.example.projetoAP.domain.vo.Filter;
-import com.example.projetoAP.domain.vo.FilterHost;
-import com.example.projetoAP.domain.vo.LostDTO;
-import com.example.projetoAP.domain.vo.MetricasDTO;
-import com.example.projetoAP.infra.BotService;
-import com.example.projetoAP.repository.*;
-import jakarta.annotation.PreDestroy;
-import jakarta.transaction.Transactional;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.concurrent.*;
+import com.example.projetoAP.domain.model.Metricas;
+import com.example.projetoAP.domain.vo.Filter;
+import com.example.projetoAP.domain.vo.FilterHost;
+import com.example.projetoAP.domain.vo.LostDTO;
+import com.example.projetoAP.domain.vo.MetricasDTO;
+import com.example.projetoAP.repository.ICMPRepository;
+import com.example.projetoAP.repository.ItemsICMPEntity;
+import com.example.projetoAP.repository.MetricasEntity;
+import com.example.projetoAP.repository.MetricasRepository;
+import com.example.projetoAP.repository.RepositoryEntity;
+
+import jakarta.annotation.PreDestroy;
+import jakarta.transaction.Transactional;
 
 @Service
 public class CalcularPerdas {
-    private BotService service;
+    // private BotService service;
     private RepositoryEntity repository;
     private ICMPRepository icmpRepository;
     private MetricasRepository metricasRepository;
@@ -40,12 +50,12 @@ public class CalcularPerdas {
     //Código omitido
     public CalcularPerdas(RepositoryEntity repository,
                           ICMPRepository icmpRepository,
-                          MetricasRepository metricasRepository,
-                          BotService service
+                          MetricasRepository metricasRepository
+                        //   BotService service
     ){
         this.repository = repository;
         this.icmpRepository = icmpRepository;
-        this.service = service;
+        // this.service = service;
         this.metricasRepository = metricasRepository;
     }
     @Scheduled(fixedDelay = 1000)  // Executa a cada 30 segundos após o término da execução anterior
@@ -149,28 +159,28 @@ public void deletedByTimestamp(){
 };
     private final Map<Long,LocalDateTime> notfication = new ConcurrentHashMap<>();
 
-    @Scheduled(cron = "*/30 * * * * *")
-    public void enviarRespostaTeste(){
-        var equipamento = repository.findAllByStatusDown("DOWN");
-        if(equipamento==null){
-            this.service.notificationTelegramS();
-        }
-        assert equipamento != null;
-        for (EndpointEntity e:equipamento){           Long id = e.getId();
-            LocalDateTime ultimaOnline = e.getUltimaVezOnline();
-            Duration tempoOffline = Duration.between(ultimaOnline, LocalDateTime.now());
-            // Verifica se está offline há mais de 1 minuto e múltiplos de 1 hora
-            if(tempoOffline.toMinutes() < 2) continue;
-                LocalDateTime ultimaHoraNotificada = notfication.get(id);
-                if (ultimaHoraNotificada !=null && Duration.between(ultimaHoraNotificada,LocalDateTime.now()).toMinutes()< 60) continue;
-                    try {
-                        service.notificationTelegram(new Endpoint(e));
-                        notfication.put(id,LocalDateTime.now());
-                    } catch (IOException | InterruptedException ex) {
-                        throw new RuntimeException(ex);
-                    }
+    // @Scheduled(cron = "*/30 * * * * *")
+    // public void enviarRespostaTeste(){
+    //     var equipamento = repository.findAllByStatusDown("DOWN");
+    //     // if(equipamento==null){
+    //     //     this.service.notificationTelegramS();
+    //     // }
+    //     assert equipamento != null;
+    //     for (EndpointEntity e:equipamento){           Long id = e.getId();
+    //         LocalDateTime ultimaOnline = e.getUltimaVezOnline();
+    //         Duration tempoOffline = Duration.between(ultimaOnline, LocalDateTime.now());
+    //         // Verifica se está offline há mais de 1 minuto e múltiplos de 1 hora
+    //         if(tempoOffline.toMinutes() < 2) continue;
+    //             LocalDateTime ultimaHoraNotificada = notfication.get(id);
+    //             if (ultimaHoraNotificada !=null && Duration.between(ultimaHoraNotificada,LocalDateTime.now()).toMinutes()< 60) continue;
+    //                 try {
+    //                     // service.notificationTelegram(new Endpoint(e));
+    //                     notfication.put(id,LocalDateTime.now());
+    //                 } catch (IOException | InterruptedException ex) {
+    //                     throw new RuntimeException(ex);
+    //                 }
 
-        }
+    //     }
 
-    }
+    // }
 };

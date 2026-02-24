@@ -1,21 +1,19 @@
 package com.example.projetoAP.infra;
 
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
 import com.example.projetoAP.controler.ControlerEndpoint;
-import com.example.projetoAP.controler.SetorControler.SetorControler;
 import com.example.projetoAP.controler.SetoresService.SetorService;
-import com.example.projetoAP.controler.service.*;
+import com.example.projetoAP.controler.service.EndepointBuscadosService;
+import com.example.projetoAP.controler.service.EndpointService;
+import com.example.projetoAP.controler.service.ItensMetricasService;
+import com.example.projetoAP.controler.service.SnmpService;
 import com.example.projetoAP.repository.EntitySetor.FactureSetor;
 import com.example.projetoAP.repository.EntitySetor.RepositorySetor;
 import com.example.projetoAP.repository.ICMPRepository;
-import com.example.projetoAP.repository.MetricasRepository;
 import com.example.projetoAP.repository.RepositoryEntity;
 import com.example.projetoAP.repository.SalvaEndPoint;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.http.ResponseEntity;
-import org.telegram.telegrambots.meta.TelegramBotsApi;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 @Configuration
 public class ConfigurationEndpoint {
@@ -67,13 +65,13 @@ public class ConfigurationEndpoint {
     public SetorService setorService(FactureSetor factureSetor){
        return new SetorService(factureSetor);
     }
-    @Bean
-    public BotService botService() throws TelegramApiException {
-        BotService botService = new BotService("Elivandro_bot",token);
-       var telegram = new TelegramBotsApi(DefaultBotSession.class);
-       telegram.registerBot(botService);
-       return botService;
-    }
+    // @Bean
+    // public BotService botService() throws TelegramApiException {
+    //     BotService botService = new BotService("Elivandro_bot",token);
+    //    var telegram = new TelegramBotsApi(DefaultBotSession.class);
+    //    telegram.registerBot(botService);
+    //    return botService;
+    // }
 
 
 

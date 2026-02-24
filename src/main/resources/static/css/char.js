@@ -1,198 +1,122 @@
-var socket = new SockJS('/ws');  // Ponto de entrada do WebSocket
+var socket = new SockJS('/ws');
 var stompClient = Stomp.over(socket);
-let indexs;
 stompClient.debug = () => { };
 const endpoint = "http://192.168.88.239:8080";
 
 function connectToWebSocket() {
-    let clientId = 'client-' + Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 5);
+    let clientId = 'client-' + Date.now().toString(36);
     localStorage.setItem("client", clientId);
-    const client = localStorage.getItem("client");
 
     stompClient.connect({}, function (frame) {
         let loading = document.getElementById("overlay-loader");
-        stompClient.subscribe(`/topic/monitor/${client}`, function (response) {
+        let grid = document.getElementById("device-grid");
+        let summary = document.getElementById("summary-counters");
+
+        stompClient.subscribe(`/topic/monitor/${clientId}`, function (response) {
             var data = JSON.parse(response.body);
-            let downContent = '';
-            let upContent = '';
-            let countDown = 0;
+            let htmlContent = '';
             let countUp = 0;
-            if (data.length < 0) {
-                loading.style.display = "block";
+            let countDown = 0;
+
+            if (!data || data.length === 0) {
+                loading.style.display = "none";
+                document.getElementById("overlay").innerHTML = "Grupo vazio ou inexistente.";
                 return;
             }
-            else if (data.length === 0) {
-                loading.style.display = "block";
-                loading.style.innerHTML = "Sem itens!";
-            }
+
             loading.style.display = "none";
-            data.forEach(function (item, index) {
-                const status = item.status.toUpperCase();
-                indexs = index;
-                const content = `
-                    <div class="area1">
+            document.getElementById("overlay").style.display = "none";
+            summary.style.display = "flex";
+
+            // Ordena para mostrar os OFFLINE primeiro (Prioridade de atenção)
+            data.sort((a, b) => a.status === 'UP' ? 1 : -1);
+
+            data.forEach(function (item) {
+                const isUp = item.status.toUpperCase() === 'UP';
+                isUp ? countUp++ : countDown++;
+
+                htmlContent += `
+                    <div class="area1 ${isUp ? 'status-up-card' : 'status-down-card'}">
                         <div class="area-header">
-                             <div class="log_ip ms">
+                            <div>
                                 <p id="profile">${item.localizacao}</p>
-
-                            <a id="data" class="data">
-                                <span class="material-symbols-outlined">
-                                    error
-                                </span>
-                            </a>
-                            <section class="data_ip exibir" id="exibir ">${item.ip}</section>
+                                <span class="ip-box">${item.ip}</span>
                             </div>
-                            <a onclick="latencia('${item.localizacao}','${item.id}','1','${item.ip}')"><span class="material-symbols-outlined">
-                                open_in_new
-                                </span></a>
+                            <span class="material-symbols-outlined" 
+                                  style="cursor:pointer; color:var(--primary); font-size: 20px;" 
+                                  onclick="latencia('${item.localizacao}','${item.id}','1','${item.ip}')">
+                                  monitoring
+                            </span>
                         </div>
-                        <div class="area-header">
-                             <p id="profile">${item.dataUltimaVezOnline !== null ? "Ultimo visto: " + item.dataUltimaVezOnline : ""}</p>
-                        </div>
-                        <div class="gauge-container">
-                            <div class="gauge-arc ${status === 'UP' ? 'percent-label' : 'percent-labelRED'}">
-                                <div class="gauge-fill" style="width: 100%;"></div>
-                            </div>
-                            <div class="gauge-text ${status === 'UP' ? 'clildrenOn' : 'clildrenOff'}">${status}</div>
-
+                        <div style="display:flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                            <span style="font-size: 10px; color: #8b949e;">
+                                ${isUp && item.dataUltimaVezOnline  ? 'Verificado: ' + item.dataUltimaVezOnline : 'Ultimo Visto '+item.dataUltimaVezOnline}
+                            </span>
+                            <span style="font-weight: bold; font-size: 11px; color: ${isUp ? '#39d353' : '#f85149'}">
+                                ${isUp ? '● ONLINE' : '● OFFLINE'}
+                            </span>
                         </div>
                     </div>
                 `;
-
-                if (status === 'UP') {
-                    upContent += content;
-                    countUp++;
-                } else {
-                    downContent += content;
-                    countDown++;
-                }
             });
-            const output = `
-                <span class="txt-status">OFF : <small>${countDown}</small></span>
-                <section class="ls">
-                    ${downContent}
-                </section>
-                <span class="txt-status">ON : <small>${countUp}</small></span>
-                <section class="ls">
-                    ${upContent}
-                </section>
-            `;
-            document.getElementById("main").innerHTML = output;
 
+            document.getElementById("count-up-total").innerText = countUp;
+            document.getElementById("count-down-total").innerText = countDown;
+            grid.innerHTML = htmlContent;
         });
-        buscarMacLocal;
+
         setInterval(buscarMacLocal, 1000);
-    }, function (error) {
-        reconnect();
     });
-}
-socket.onclose = function () {
-    console.warn("Conexão fechada. Tentando reconectar...");
-    reconnect();
-};
-function reconnect() {
-    setTimeout(() => {
-        console.log("Conectando so serviço");
-        connectToWebSocket();
-    }, 3000)
-}
-async function Onlw() {
-
-    const statusDiv = document.getElementById("status")
-
-    try {
-
-        const resposta = await fetch(`${endpoint}/endpoint/monitoramento`, {
-            method: "GET",
-        })
-        if (resposta.status === 200) {
-            statusDiv.innerHTML = "ON"
-            statusDiv.className = "online"
-        } else {
-            statusDiv.textContent = "Erro de Servidor"
-            statusDiv.className = "offline"
-        }
-    } catch (error) {
-        statusDiv.textContent = " DOWN"
-        statusDiv.className = "offline"
-        window.location.reload()
-
-    }
 }
 
 function buscarMac() {
-    const select = document.getElementById("stc");
+    const val = document.getElementById("stc").value;
     const client = localStorage.getItem("client");
-
-    const ReceiveGrupoId = select.value;
-    if (ReceiveGrupoId != null && ReceiveGrupoId.trim() !== "") {
-        localStorage.setItem("ReceiveGrupoId", ReceiveGrupoId);
-
-        stompClient.send(`/app/mestricasM/${client}`, {}, JSON.stringify({
-            clientId: client,
-            ReceiveGrupoId: ReceiveGrupoId
-        }));
+    if (val) {
+        localStorage.setItem("ReceiveGrupoId", val);
+        stompClient.send(`/app/mestricasM/${client}`, {}, JSON.stringify({clientId: client, ReceiveGrupoId: val}));
     }
 }
+
 function buscarMacLocal() {
-    let titule = document.getElementById("Monitoramento");
-
-    let loading2 = document.getElementById("overlay-loader");
-    let loading = document.getElementById("overlay");
     const client = localStorage.getItem("client");
-
     const item = localStorage.getItem("ReceiveGrupoId");
-    if (item && item.trim() !== "") {
-        titule.innerHTML = `Monitoramento de ${item?.replace("-", " ")}`
-        stompClient.send("/app/mestricasM", {}, JSON.stringify({
-            clientId: client,
-            ReceiveGrupoId: item
-        }));
+    const titule = document.getElementById("Monitoramento");
+    if (item) {
+        titule.innerHTML = "Monitorando: " + item;
+        stompClient.send("/app/mestricasM", {}, JSON.stringify({clientId: client, ReceiveGrupoId: item}));
     } else {
-        titule.style.display = "none"
-        loading.style.display = "block";
-        loading2.style.display = "none";
-        loading.innerHTML = "Selecione um grupo de monitoramento!"
+        document.getElementById("overlay").innerHTML = "Aguardando seleção de grupo...";
+        document.getElementById("overlay-loader").style.display = "none";
     }
-
 }
 
-function latencia(localizacao, hostid, itemid, ip) {
-    let url = `${endpoint}/endpoint/char?hostname=${localizacao}&interfaceIp=${ip}&hostid=${hostid}&itemid=${itemid}&limit=0`;
-    window.open(url);
+async function Onlw() {
+    const statusDiv = document.getElementById("status");
+    try {
+        const resp = await fetch(`${endpoint}/endpoint/monitoramento`);
+        statusDiv.innerHTML = resp.status === 200 ? "● SISTEMA OK" : "● ERRO API";
+        statusDiv.className = resp.status === 200 ? "online" : "offline";
+    } catch (e) {
+        statusDiv.innerHTML = "● OFFLINE";
+        statusDiv.className = "offline";
+    }
 }
 
-
-document.addEventListener("mouseenter", function (event) {
-    if (event.target.matches(".data")) {
-        const exibir = event.target.closest(".ms").querySelector(".exibir");
-        if (exibir) {
-            exibir.style.display = "block";
-        }
-    }
-}, true);
-window.addEventListener("DOMContentLoaded", () => {
-    itensICMP();
-});
+function latencia(loc, hostid, itemid, ip) {
+    window.open(`${endpoint}/endpoint/char?hostname=${loc}&interfaceIp=${ip}&hostid=${hostid}&itemid=${itemid}&limit=0`);
+}
 
 async function itensICMP() {
-    let section = document.getElementById("stc")
-    const response = await fetch(`${endpoint}/itens/group`);
-    const itens = await response.json();
-    let option = '<option value="">Selecione o grupo</option>';;
-    itens.forEach(e => {
-        option += `
-        <option value="${e.nome}">${e.nome}</option>
-
-    `;
-    })
-    section.innerHTML = option;
-    ;
-
+    const resp = await fetch(`${endpoint}/itens/group`);
+    const itens = await resp.json();
+    let option = '<option value="">Selecionar Grupo...</option>';
+    itens.forEach(e => option += `<option value="${e.nome}">${e.nome}</option>`);
+    document.getElementById("stc").innerHTML = option;
 }
-connectToWebSocket();
+
 window.addEventListener("DOMContentLoaded", () => {
-    setInterval(() => {
-        Onlw()
-    }, 1000);
-})
+    itensICMP();
+    connectToWebSocket();
+    setInterval(Onlw, 2000);
+});
