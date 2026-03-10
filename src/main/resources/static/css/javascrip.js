@@ -5,8 +5,8 @@ document.getElementById("form").addEventListener("submit",function(){
 })
 let btn = document.getElementById("btn")
 btn.addEventListener("click", () => {
-  alert("Deu certo")
-})
+  alert("Deu certo");
+});
 document.querySelectorAll("[id^='item-']").forEach(function(element) {
 element.addEventListener("click",function(){
          let sing = true;

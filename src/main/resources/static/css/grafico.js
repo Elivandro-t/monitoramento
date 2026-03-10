@@ -2,7 +2,7 @@ let chartInstance = null;
 let chartInstance2 = null;
 let lenght = 0;
 let chartInstance3= null;
-const endpoint = "http://192.168.88.239:8080";
+const endpoint = "http://10.220.112.112:80801";
 async function itensICMP() {
   const response = await fetch(`${endpoint}/itens`);
   const itens = await response.json();
