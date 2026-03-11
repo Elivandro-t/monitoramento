@@ -1,102 +1,51 @@
-@keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
+body {
+  background-color: #0d1117;
+  color: #c9d1d9;
+  font-family: 'Segoe UI', sans-serif;
+  margin: 0;
+  padding: 20px;
+}
 
-    100% {
-      transform: rotate(360deg);
-    }
-  }
+.dashboard { max-width: 1200px; margin: auto; }
 
-  body {
-    background-color: #1e1e1e;
-    color: #fff;
-    scrollbar-color: #3a3939;
-    font-family: Arial, sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0 20px;
-    scrollbar-width: thin;
-  }
+.header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 20px; border-bottom: 1px solid #30363d; padding-bottom: 10px;
+}
 
-  .chart-container {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    height: 500px;
-    margin-top: 5px;
-  }
-  .chart-containerw {
-    width: 75px;
-    height: 70px;
-    position: relative;
-  }
+.grid-container {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  grid-template-rows: 250px 250px;
+  gap: 15px;
+}
 
-  #icmpChart,
-  #latencyChart {
-    max-width: 100%;
-    max-height: 400px;
-    background-color: #1e1e2f;
-    /* color: #fff;
-    scrollbar-color: #3a3939; */
-  }
+.card {
+  background: #161b22; border: 1px solid #30363d;
+  border-radius: 10px; padding: 15px; display: flex; flex-direction: column;
+}
 
-  .ls {
-    display: flex;
-    padding: 0 25px;
-    justify-content: center;
-    align-items: center;
-    margin: 0;
-    padding-right: 100px;
-  }
+.gauge-card { grid-row: span 2; justify-content: center; align-items: center; }
 
-  #overlay-loader {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.4);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-  }
-  .spinner {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width:28px;
-    border:4px solid #f3f3f3;
-    border-top: 4px solid #79c0f0;
-    height: 28px;
-    border-radius:50%;
-    animation:  ping 700ms infinite linear;
-  }
+.label { color: #8b949e; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 10px; }
 
-  .percent-label {
-    position: absolute;
-    top: 65%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 16px;
-    color: #81c784;
-    font-family: sans-serif;
-    pointer-events: none;
-  }
+.chart-wrapper { width: 100%; height: 100%; position: relative; flex-grow: 1; }
 
-  h1 {
-    margin: 0;
-    padding: 0;
-  }
+.gauge-value {
+  position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%);
+  font-size: 2.2rem; font-weight: bold;
+}
 
-  .container {
-    width: 100%;
-    display: flex;
-    gap: 25px;
-    justify-content: space-between;
-  }
-  #timestamp{
-    background-color: #81c784;
-  }
+.badge { background: #21262d; padding: 5px 12px; border-radius: 15px; font-size: 0.85rem; border: 1px solid #30363d; }
+
+#overlay-loader {
+  position: fixed; inset: 0; background: rgba(13,17,23,0.9);
+  display: flex; justify-content: center; align-items: center; z-index: 100;
+}
+
+.spinner {
+  width: 40px; height: 40px; border: 3px solid #30363d;
+  border-top: 3px solid #58a6ff; border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

@@ -1,203 +1,179 @@
+/* ==========================================================
+   BASE
+   ========================================================== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+    height: 100%; /* Necessário para o cálculo do scroll da tabela */
+    background-color: #1a1d21;
+    color: #fff;
+    font-family: 'Segoe UI', sans-serif;
+    overflow: hidden; /* Evita scroll duplo no body */
+}
+
+/* ==========================================================
+   HEADER (FIXADO NO TOPO)
+   ========================================================== */
+.area_container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 20px;
+    background-color: #111317;
+    border-bottom: 1px solid #333;
+    gap: 10px;
+
+    /* Faz o header ficar fixo no topo */
+    position: sticky;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+}
+
+.container_registro .btn-a {
+    background: transparent;
+    color: #4a69bd;
+    border: none;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+}
+
 .container {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
 }
 
-body {
-    overflow: hidden;
-    background-color: #2C2F33;
+.container form {
+    display: flex;
+    align-items: center;
+    background: #000;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding-left: 10px;
+    overflow: hidden; /* Garante que o botão ENVIAR não vaze a borda */
+}
+
+.container label {
+    font-size: 12px;
+    color: #888;
+    margin-right: 5px;
+}
+
+.container input {
+    background: transparent;
+    border: none;
     color: #fff;
+    padding: 8px;
+    font-family: monospace;
+    outline: none;
+    width: 180px;
 }
 
+/* Select estilo Zabbix */
+.container select {
+    background-color: #fff;
+    color: #000;
+    border: none;
+    padding: 6px;
+    margin: 0 5px;
+    border-radius: 2px;
+    font-size: 13px;
+    outline: none;
+    font-weight: bold;
+}
+
+#enviar {
+    background-color: #2e5bff;
+    color: white;
+    border: none;
+    padding: 9px 15px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+
+/* ==========================================================
+   TABELA (COM SCROLL INDEPENDENTE)
+   ========================================================== */
 .area_table {
+    padding: 0 10px;
+    /* Calcula a altura: 100% da tela menos a altura aproximada do header */
+    height: calc(100vh - 70px);
+    overflow-y: auto; /* O scroll acontece aqui dentro agora */
+    overflow-x: auto;
 }
 
 table {
-
     width: 100%;
-    border-collapse: collapse;
-    color: white;
+    border-collapse: separate;
+    border-spacing: 0 2px;
+}
+
+thead th {
+    color: #3498db;
     text-align: left;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-#meuContainer {
+    padding: 10px;
+    font-size: 11px;
+    background: #1a1d21;
+    position: sticky; /* Faz os títulos da tabela também ficarem fixos ao rolar */
     top: 0;
-    padding: 0;
-    height: calc(100vh - 70px);
-    overflow: auto;
-    scrollbar-width: thin;
-    scrollbar-color: #888282 #383d52;
-    margin-top: 0;
+    z-index: 50;
+    text-transform: uppercase;
 }
 
-thead {
-    position: relative;
-    width: 100%;
-}
-
-th {
-    background-color: #2C2F33;
-    /* Cor da borda das células */
-    padding: 2px 5px;
-    font-size: 15px;
-
-}
-
-tbody {
-    overflow: auto;
-    border: 1px solid #383d52;
-    background-color: rgb(117.3, 117.3, 117.3);
-
-
-
-
-}
-
-tr {
-    border: 1px solid rgb(117.3, 117.3, 117.3);
-    padding: 5px;
-    transition: background-color 0.1s ease;
-    /* Suaviza a transição */
-    background-color: #2a2e3f;
-    cursor: pointer;
-}
-
-.tr:hover {
-    background-color: rgba(92, 94, 95, 0.3);    
-    color: white;
-
-
-}
-
-.btn-a {
-    padding: 5px 10px;
-    border-radius: 5px;
-    background-color: rgb(78, 146, 235);
-    cursor: pointer;
-    list-style: none;
-    text-decoration: none;
-    color: white;
-    transition: all 1s;
-}
-
-.btn-a:hover {
-    background-color: rgb(115, 173, 248);
-
-}
-
-select {
-    width: 100%;
-    border: 0;
-    outline: none;
-}
+tr { background-color: #212429; }
+tr:hover { background-color: #2a2e35; }
 
 td {
-    padding: 3px 4px;
-    font-size: 13px;
-    color: #888;
-    font-family: Arial, Helvetica, sans-serif;
-
-
-
+    padding: 8px 10px;
+    font-size: 12px;
+    color: #bdc3c7;
+    white-space: nowrap; /* Evita quebra de linha em telas menores */
 }
 
-.area_container {
-    display: flex;
-    align-Items: center;
-    justify-content: space-between;
-    padding: 5px 0;
-}
-
-.area-propt {
-    overflow: auto;
-}
-
-#modal {
-    position: absolute;
-    border: 1px solid #383d52;
-
-}
-
-.modal_2 {
-    display: flex;
-    gap: 10px;
-}
-
-.modal {
-    display: none;
-    top: 0;
-    left: 50%;
-    width: 20%;
-    background-color: black;
-    border: 2px solid #00ff00;
-    box-shadow: 0 0 10px #00ff00;
-    font-family: monospace;
-    white-space: pre-wrap;
-    flex-direction: column;
-    padding:0 20px;
-    margin: 0;
-
-
-}
-.btn-as{
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    width: 100%;
-}
-
-.modal_s{
-    font-family: "Courier New", monospace;
-    color: #00ff00;
-    height: 20%;
-    overflow-y: auto;
-
-
-}
-
-.th-text {
-    color: #FFF;
-}
-
-.td {
-    background-color: rgb(50, 50, 51);
-
-}
-
-.td ul {
-    margin: 0;
-    padding: 0;
-
-}
-
-.ad {
+/* Colunas Coloridas */
+td:nth-child(6) { color: #2ecc71 !important; font-weight: bold; } /* MAC VERDE */
+td:nth-child(7) {
+    background-color: #721c24;
+    color: #fff;
     text-align: center;
+    font-weight: bold;
+    min-width: 70px;
 }
 
-.td ul li {
-    list-style: none;
-}
-
+/* ==========================================================
+   MENU E MODAL
+   ========================================================== */
 .menud {
-    background-color: rgb(50, 50, 51);
+    background-color: #2c2f33;
     position: absolute;
-    left: 50%;
     z-index: 9999;
-
+    border: 1px solid #444;
+    box-shadow: 2px 2px 10px rgba(0,0,0,0.5);
 }
 
 .ul-name li {
-    transition: 0.5s ease;
-    padding: 5px 10px;
-    font-size: 14px;
-
+    padding: 10px 20px;
+    color: white;
+    list-style: none;
+    cursor: pointer;
+    font-size: 13px;
 }
 
-.ul-name li:hover {
-    background-color: #fce5e5;
-    color: #2C2F33;
-    opacity: 0.8;
+.ul-name li:hover { background-color: #007ACC; }
+
+#modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Centraliza exato na tela */
+    z-index: 10000;
+    display: none;
+    background: #000;
+    border: 1px solid #00ff00;
+    padding: 20px;
+    min-width: 300px;
 }

@@ -3,7 +3,7 @@ async function Onlw(){
     const statusDiv = document.getElementById("status")
   
     try {
-      const resposta  = await fetch("http://10.220.112.112:8080/endpoint/monitoramento",{
+      const resposta  = await fetch("http://10.220.112.112:8083/endpoint/monitoramento",{
         method:"GET",
       })
       if(resposta.status === 200){

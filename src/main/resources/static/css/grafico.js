@@ -1,252 +1,163 @@
-let chartInstance = null;
-let chartInstance2 = null;
-let lenght = 0;
-let chartInstance3= null;
-const endpoint = "http://10.220.112.112:80801";
-async function itensICMP() {
-  const response = await fetch(`${endpoint}/itens`);
-  const itens = await response.json();
-  return {itens};
-}
-var socket = new SockJS('/ws');
-var stompClient = Stomp.over(socket);
-stompClient.debug = () => {};
- function fetchDados() {
-  const client = localStorage.getItem("client");
-  const url = new URLSearchParams(window.location.search);
-  const ipv4 = url.get("interfaceIp");
-  const hostname = url.get("hostname");
-  let loading = document.getElementById('overlay-loader')
-    stompClient.connect({}, function (frame) {
-      stompClient.subscribe(`/topic/grafico/${client}`, function (response) {
-        var data = JSON.parse(response.body);
-        if(data.result.length<0){
-          loading.style.display = "block"
-        }else{
-          atualizarGrafico(data,hostname,ipv4);
-          loading.style.display = "none"
-        }
-      })
-      // rodaStoP()
-      setInterval(rodaStoP, 5000);  
-    }, function (error) {
-      reconnect();
-    })
-  
-  };
-  socket.onclose = function () {
-    console.warn("Conexão fechada. Tentando reconectar...");
-    reconnect();
-  };
+let charts = { lat: null, his: null, gau: null };
+let stompClient = null;
 
-  function reconnect(){
-    setTimeout(() => {
-      console.log("Conectando ao serviço");
-      fetchDados();
-    }, 1000)
-  }
-  function rodaStoP(){
+// Configuração para performance extrema e fim do flicker
+Chart.defaults.animation.duration = 0;
+Chart.defaults.responsive = true;
+
+function fetchDados() {
+  const socket = new SockJS('/ws');
+  stompClient = Stomp.over(socket);
+  stompClient.debug = null;
+
+  stompClient.connect({}, function (frame) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const hostId = urlParams.get("hostid");
     const client = localStorage.getItem("client");
 
-    const url = new URLSearchParams(window.location.search);
-        const host = url.get("hostid")
-        stompClient.send("/app/metricas", {}, JSON.stringify({
-          hostid: host,
-          clientId:client
-        }));
+    stompClient.subscribe(`/topic/grafico/${client}/${hostId}`, function (response) {
+      const data = JSON.parse(response.body);
+      if (data.result && data.result.length > 0) {
+        const loader = document.getElementById('overlay-loader');
+        if (loader) loader.style.display = "none";
+        atualizarInterface(data);
+      }
+    });
+
+    rodaStoP();
+    setInterval(rodaStoP, 100); // 1 segundo para tempo real
+  }, () => setTimeout(fetchDados, 1000));
+}
+
+function rodaStoP() {
+  const params = new URLSearchParams(window.location.search);
+  if (stompClient?.connected) {
+    stompClient.send("/app/metricas", {}, JSON.stringify({
+      hostid: params.get("hostid"),
+      clientId: localStorage.getItem("client")
+    }));
   }
-  async  function atualizarGrafico(dataNames,hostname,ipv4) {
-  const dadosName = dataNames;
-  let titule = document.getElementById('titule')
-  let dados = dadosName?.result;
-  const {itens} = await itensICMP();
-  const itemICMP0 = dados[0].itemId;
-  const itemICMP1 = dados[1].itemId;
-  const dadosPerda = dados.filter(e => e.icmpName === "ICMP loss");
-  const dadosLatencia = dados.filter(e => e.icmpName === "ICMP response time");
-  titule.innerHTML = hostname;
-  const labelsclock = dadosLatencia.map(e => {
-    const ts = new Date(e.clock * 1000).toLocaleString("pt-BR");
-    return ts;
-  });
-  const labelsclocke = dadosPerda.map(e => {
-    const ts = new Date(e.clock * 1000).toLocaleString("pt-BR");
-    return ts;
-  });
+}
 
-itens.item.map(element => {
-  if(element.itemid==itemICMP1){
-    graficoICMPPerdas(dadosPerda.map(e => Number(e.value)),ipv4,dados);
+function atualizarInterface(data) {
+  const urlParams = new URLSearchParams(window.location.search);
+  const dados = data.result;
 
-  }if(element.itemid==itemICMP0){
-    graficoICMPSec(dadosLatencia,ipv4,labelsclock,element.name);
-
+  // --- LOGICA PARA EXIBIR O IP NO BADGE ---
+  const ipElement = document.getElementById('ip-badge');
+  if (ipElement) {
+    const ipDaUrl = urlParams.get("interfaceIp");
+    const ipDoJson = dados[0]?.hostIp || dados[0]?.ip || dados[0]?.interfaceIp;
+    ipElement.innerText = `IP: ${ipDaUrl || ipDoJson || "0.0.0.0"}`;
   }
-});
 
+  const titleElement = document.getElementById('titule');
+  if (titleElement) {
+    titleElement.innerText = urlParams.get("hostname") || "Equipamento";
+  }
 
-function graficoICMPPerdas(datas,ipv4,dados){
-  const data = {
-    labels: labelsclocke.reverse(),
-    datasets: [{
-      label: "Perdas" ,
-      data: datas.reverse(),
-      fill: false,
-      borderColor: 'rgba(35, 192, 192, 0.3)',
-      backgroundColor: 'rgba(81, 207, 207, 0.2)',
-      borderWidth:2,
-      pointRadius: 2
-    }]
+  // Ordenação e Filtragem
+  const latSet = dados.filter(e => e.icmpName === "ICMP response time").sort((a,b) => a.clock - b.clock);
+  const lossSet = dados.filter(e => e.icmpName === "ICMP loss").sort((a,b) => a.clock - b.clock);
+
+  const formatarHora = (timestamp) => {
+    return new Date(timestamp * 1000).toLocaleTimeString("pt-BR", {
+      timeZone: 'America/Sao_Paulo', // Resolve o atraso de 1 hora
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+    });
   };
 
-  const config = {
-    type: 'line',
-    data: data,
-    options: {
-      responsive: true,
-      layout: {
-        padding: {
-          right: 1
-        }
-      }, 
-      scales: {
-        y: {
-          beginAtZero: true,
-          min:0,
-          max:100,
-          title: {
-            display: true,
-            text: 'Perda'
-          }
-        },
-        x: {
-          title: {
-            display: true,
-            text: 'Amostra'
-          },
-          display: true
-        }
-      },
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: function (context) {
-              return context.parsed.y + '%' + " IPV4 "+ipv4;
-            }
-          }
-        }
-      }
-    }
-  };
-  if (chartInstance3) {
-    chartInstance3.destroy()
-  }
-  chartInstance3 = new Chart(document.getElementById('icmpChart'), config);
-  const percent = dados[1].value;
-  const ctxf = document.getElementById('gaugeChart').getContext('2d');
-  const percentLabel = document.getElementById('percentLabel');
-  if (chartInstance2) {
-    chartInstance2.destroy()
+  // PERFORMANCE: Mostra 15 pontos para o gráfico correr fluido
+  const maxPontos = 15;
+
+  if (latSet.length > 0) {
+    const slice = latSet.slice(-maxPontos);
+    const labels = slice.map(e => formatarHora(e.clock));
+    const values = slice.map(v => (v.value * 1000).toFixed(2));
+    renderQueFlui('lat', 'latencyChart', values, labels, '#58a6ff', 'rgba(88, 166, 255, 0.1)', false);
   }
 
-  chartInstance2 = new Chart(ctxf, {
-    type: 'doughnut',
-    data: {
-      datasets: [{
-        data: [percent, 100 - percent],
-        backgroundColor: percent < 50
-          ? ['#81c784', '#2e2e2e'] // verde se for menor que 50
-          : ['#e57373', '#2e2e2e'],
-        borderWidth: 0
-      }]
-    },
-    options: {
-      rotation: -90,
-      circumference: 180,
-      cutout: '80%',
-      responsive: true,
-      plugins: {
-        tooltip: { enabled: false },
-        legend: { display: false }
-      }
-    }
-  });
-  if (percent > 50) {
-    percentLabel.style.color = "#f12011";
+  if (lossSet.length > 0) {
+    const slice = lossSet.slice(-maxPontos);
+    const labels = slice.map(e => formatarHora(e.clock));
+
+    // CORREÇÃO: Arredonda para inteiro para ficar "0%" e não "0.00%"
+    const values = slice.map(e => Math.round(Number(e.value)));
+
+    renderQueFlui('his', 'icmpChart', values, labels, '#f85149', 'transparent', true);
+    renderGaugeChart(values[values.length - 1]);
+  }
+}
+
+function renderQueFlui(key, canvasId, newData, newLabels, color, fill, isPercentage) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+
+  if (charts[key]) {
+    charts[key].data.labels = newLabels;
+    charts[key].data.datasets[0].data = newData;
+    charts[key].update('none'); // Update seco para não ter delay
   } else {
-    percentLabel.style.color = "#61c061";
-  }
-
-  percentLabel.textContent = `${percent}%`;
- }
-}
-
-function graficoICMPSec(dados,ipv4,labelsclock,labelss){
-
-  const valuesInMs = dados.map(v => parseFloat((v.value*1000).toFixed(2)));
-
-  const ctx = document.getElementById('latencyChart').getContext('2d');
-  if (chartInstance) {
-    chartInstance.destroy()
-  }
-  chartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labelsclock.reverse(),
-      datasets: [{
-        label: labelss,
-        data: valuesInMs.reverse(),
-        borderColor: 'green',
-        backgroundColor: 'rgba(0, 255, 0, 0.3)', // preenchimento verde claro
-        fill: true,
-        tension: 0.3,
-        pointRadius: 1,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      layout: {
-        padding: {
-          right:1
-        }
-      }, 
-      scales: {
-        y: {
-          max: 100000,
-          beginAtZero: true,
-          ticks: {
-            color: 'white',
-            callback: (value) => value + ' ms'
-          }
-        },
-        x: {
-          display: false
-        }
+    charts[key] = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: newLabels,
+        datasets: [{
+          data: newData,
+          borderColor: color,
+          backgroundColor: fill,
+          fill: fill !== 'transparent',
+          tension: 0.3, pointRadius: 0, borderWidth: 2
+        }]
       },
-
-      plugins: {
-        legend: {
-          labels: {
-            color: 'white'
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        scales: {
+          x: { display: true, grid: { display: false } },
+          y: {
+            beginAtZero: true,
+            min: isPercentage ? 0 : undefined,
+            max: isPercentage ? 100 : undefined,
+            grid: { color: '#30363d' }
           }
         },
-        tooltip: {
-          callbacks: {
-            label: function (context) {
-              return context.parsed.y + 'ms' + " " + ipv4;
-            }
-          }
-        },
-        title: {
-          display: true,
-          text: 'ICMP Response Time',
-          color: 'white'
-        }
+        plugins: { legend: { display: false } }
       }
-    }
-  });
-
+    });
+  }
 }
 
-fetchDados();
+function renderGaugeChart(percent) {
+  const ctx = document.getElementById('gaugeChart').getContext('2d');
+
+  // CORREÇÃO: Apenas números inteiros
+  const p = Math.round(percent);
+  const color = p > 10 ? '#f85149' : '#3fb950';
+
+  if (charts.gau) {
+    charts.gau.data.datasets[0].data = [p, 100 - p];
+    charts.gau.data.datasets[0].backgroundColor = [color, '#30363d'];
+    charts.gau.update('none');
+  } else {
+    charts.gau = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [p, 100 - p],
+          backgroundColor: [color, '#30363d'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        rotation: -90,
+        circumference: 180,
+        cutout: '80%',
+        animation: false,
+        events: [] // Otimiza performance
+      }
+    });
+  }
+  document.getElementById('percentLabel').innerText = `${p}%`;
+  document.getElementById('percentLabel').style.color = color;
+}
+
+window.addEventListener('load', fetchDados);

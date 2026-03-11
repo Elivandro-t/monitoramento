@@ -12,6 +12,151 @@
 
 <body>
 
+<script th:src="@{/css/javascript.js}"></script>
+<script th:src="@{/css/visual.js}"></script>
+
+
+
+<section class="area_container" id="sumi">
+    <div class="container_int container_registro">
+        <a th:href="@{/endpoint/registro}" class="btn-a" onclick="app2('/registro/registro',this );">Novo</a>
+        <a th:href="@{/setores}" class="btn-a" onclick="app2('/setores',this );">Filial</a>
+
+    </div>
+    <!-- <div id="modals"></div> -->
+    <p th:text="'Total '+${#lists.size(lista)}"></p>
+    <div th:if="${off}" th:text="'OFF '+${#lists.size(off)}"></div>
+    <div class="container">
+        <form method="get" class="modal_2" action="/endpoint/lista">
+            <label for="mac">Busca</label>
+            <input type="text" id="mac" name="mac" placeholder="00:00:00:00:00:00">
+            <select name="ReceiveGrupoId" id="stc">
+                <option value="">Selecione o grupo</option>
+                <option th:each="item:${groups}" th:value="${item.nome}" th:text="${item.nome}"></option>
+            </select>
+            <button id="enviar">enviar</button>
+        </form>
+    </div>
+    <div><button onclick="toggleFullscreen()">Tela Cheia</button></div>
+</section>
+<div class="area_table" id="meuContainer">
+    <table>
+        <thead>
+        <tr>
+            <th>
+                STATUS
+            </th>
+            <th>
+                PROFILE
+            </th>
+            <th>
+
+                HOSTNAME
+
+            </th>
+            <th>
+                MODEL
+            </th>
+            <th>
+                S/N
+            </th>
+
+            <th>
+                MAC_ADRESS
+            </th>
+            <th>
+                IPv4
+            </th>
+            <th>CPD</th>
+            <th>FILIAL</th>
+            <th>COMPLEXO</th>
+            <th>GROUP</th>
+            <th>ICM PING</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="item:${lista}" class="tr" th:data-location="${item.localizacao}" th:data-id="${item.id}"
+            th:data-ip="${item.ip}" th:if="${item.status.toUpperCase() == 'DOWN'}">
+            <td th:text="${item.status}" th:id="ad" class="th-text ad"
+                th:style="'background-color: ' + (${item.status != null && item.status.toUpperCase() == 'UP'} ? 'rgba(0, 128, 0, 0.8)' : 'rgba(255, 0, 0, 0.5)')">
+            </td>
+            <td th:text="${item.localizacao}"></td>
+            <td th:text="${item.nome}"></td>
+            <td th:text="${item.modelo}"></td>
+            <td th:text="${item.sn}"></td>
+            <td th:text="${item.mac}"></td>
+            <td th:text="${item.ip}"></td>
+            <td>EM DESENVOLVIMENTO</td>
+            <td th:text="${item.filial}"></td>
+            <td th:text="${item.nomeComplexo}"></td>
+            <td th:text="${item.grupo}"></td>
+            <td>
+                <button onclick="visual(this);" th:data-ping="${item.ping}"> Visualizar</button>
+                <div th:id="modal" class="modal ">
+                    <div>
+                        <button onclick="visual(this);">X</button>
+                    </div>
+                    <div id="area-prop" class="area-propt" th:text="${item.ip}"></div>
+                    <div th:text="${item.ping}" class="area-propt"></div>
+                </div>
+            </td>
+
+
+        </tr>
+        <tr th:each="item:${lista}" class="tr" th:data-location="${item.localizacao}" th:data-id="${item.id}"
+            th:data-ip="${item.ip}" th:if="${item.status.toUpperCase() == 'UP'}">
+            <td th:text="${item.status}" id="ad" class="th-text ad"
+                th:style="'background-color: ' + (${item.status != null && item.status.toUpperCase() == 'UP'} ? '#51c061' : '#f12011')">
+            </td>
+            <td th:text="${item.localizacao}"></td>
+            <td th:text="${item.nome}"></td>
+            <td th:text="${item.modelo}"></td>
+            <td th:text="${item.sn}"></td>
+            <td th:text="${item.mac}"></td>
+            <td th:text="${item.ip}"></td>
+            <td>EM PROCESSO</td>
+            <td th:text="${item.filial}"></td>
+            <td th:text="${item.nomeComplexo}"></td>
+            <td th:text="${item.grupo}">EM PROCESSO</td>
+            <td>
+                <button onclick="visual(this);" th:data-ip="${item.ip}">
+                    Visualizar</button>
+                <div id="modal" class="modal">
+                    <div class="btn-as">
+                        <button onclick="fecharModal(this)">X</button>
+                    </div>
+                    <section class="modal_s">
+                        <div class="area-propt" th:text="${item.ip}"></div>
+                        <div id="container12" ></div>
+                    </section>
+                </div>
+</div>
+</td>
+
+
+</tr>
+</tbody>
+</table>
+
+</div>
+<script th:src="@{/css/javascrip.js}"></script>
+<script th:src="@{/css/lista_mac.js}"></script>
+</body>
+
+</html> muda isso ai o header<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de APs</title>
+    <link rel="stylesheet" th:href="@{/css/lista.css}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
+</head>
+
+<body>
+
     <script th:src="@{/css/javascript.js}"></script>
     <script th:src="@{/css/visual.js}"></script>
 

@@ -52,10 +52,10 @@ button:active{
 }
 button:checked{
         background-color: #4A90E2;
-    
+
 }
 .area_view{
-    color: #fff;    
+    color: #fff;
     /* border:1px dotted #8f7676; */
     margin-top: 5px;
     border-top-left-radius: 2px;

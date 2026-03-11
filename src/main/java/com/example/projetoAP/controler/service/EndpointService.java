@@ -79,7 +79,7 @@ public class EndpointService {
         return "Processando...";
     }
     @Transactional
-    private void processarDados() {
+    protected void processarDados() {
         while (!filaDeProcessamento.isEmpty()) {
             try {
                 Row row = filaDeProcessamento.poll(10, TimeUnit.SECONDS); // Aguarda até 10s por uma nova linha

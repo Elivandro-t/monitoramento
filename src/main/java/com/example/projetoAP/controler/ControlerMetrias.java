@@ -41,13 +41,21 @@ public class ControlerMetrias {
           messagingTemplate.convertAndSend("/grafico",result);
       });
     }
-    @MessageMapping("/metricas")
-    public void listaMestricas(@Payload  FilterHost filter){
+    @MessageMapping("/metricassss")
+    public void listaMestricas1(@Payload  FilterHost filter){
         Map<String, List<MetricasDTO>> future = calcularPerdas.ListaMestricasSemID(filter);
-            messagingTemplate.convertAndSend("/topic/grafico/" + filter.clientId(), future);
+        messagingTemplate.convertAndSend("/topic/grafico/" + filter.clientId(), future);
 
     };
 
+    @MessageMapping("/metricas")
+    public void listaMestricas(@Payload FilterHost filter) {
+        CompletableFuture.runAsync(() -> {
+            Map<String, List<MetricasDTO>> future = calcularPerdas.ListaMestricasSemID(filter);
+            // Enviando para um tópico específico do CLIENTE + HOST
+            messagingTemplate.convertAndSend("/topic/grafico/" + filter.clientId() + "/" + filter.hostid(), future);
+        });
+    }
 
     @MessageMapping("/cmd")
     public  void  CMD(@RequestBody  @Valid cmdDTO dto) throws IOException {

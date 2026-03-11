@@ -9,17 +9,25 @@
 </head>
 <body>
 <script th:src="@{/css/javascrip.js}"></script>
-   <section class="area_container">
-       <div class="container_int container_registro">
-           <button onclick="app2('/endpoint',this );" data-route="/registro">Novo</button>
-       </div>
-       <div class="container">
-           <form method="post" action="/endpoint/pagina">
-               <label for="mac">Busca</label>
-               <input type="text" id="mac" name="mac" placeholder="00:00:00:00:00:00">
-               <button id="enviar">enviar</button>
-       </div>
-   </section>
+<section class="area_container">
+    <div class="container_registro">
+        <button class="btn-a" onclick="app2('/endpoint',this );" data-route="/registro">NovoFilial</button>
+    </div>
+
+    <div class="container">
+        <form method="post" action="/endpoint/pagina">
+            <label for="mac">Busca</label>
+            <input type="text" id="mac" name="mac" placeholder="00:00:00:00:00:00">
+
+            <select name="grupo" id="grupo">
+                <option value="">Selecione o grupo</option>
+                <option value="1">AP-SERVICE</option>
+            </select>
+
+            <button type="submit" id="enviar">ENVIAR</button>
+        </form>
+    </div>
+</section>
     <div class="area_table">
         <table>
             <thead>
@@ -29,7 +37,7 @@
                                 NOME
                             </option>
                     </th>
-                    <th> 
+                    <th>
                         <option>
                                 MODELO
                             </option>
