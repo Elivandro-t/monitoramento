@@ -1,99 +1,160 @@
-#modal{
-width:10%;
-box-sizing: border-box;
-background-color:#F5F5F5;
-color: #FF6B6B;
-animation:3s;
-border-radius: 5px;
-position: fixed;
-right:25em;
-margin-top: -5rem;
-padding:10px;
-
+/* Reset e Base */
+* {
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Roboto, -apple-system, sans-serif;
 }
-body{
+
+body {
     margin: 0;
     padding: 0;
-    background-color: #1e1e1e;
-    color: #fff;
-    scrollbar-color: #3a3939;
+    background-color: #121212;
+    color: #eeeeee;
 }
+
 .area_table {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-    padding: 20px 10px 56px;
+    padding: 40px 15px;
+    gap: 25px;
+}
 
+/* --- FORMULÁRIO DE CADASTRO MANUAL (Otimizado) --- */
+#form form {
+    width: 100%;
+    max-width: 650px; /* Aumentado levemente para caber as 2 colunas */
+    background-color: #1e1e1e;
+    padding: 30px;
+    border-radius: 12px;
+    border: 1px solid #333;
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Criando duas colunas */
+    gap: 15px 20px; /* Espaço entre linhas e colunas */
 }
-form{
-    width: 450px;
-    display:flex;
-    gap: 6px;
-    flex-direction: column;
-    background-color: #252323;
-    padding:20px 40px;
-    border-radius: 5px;
-}
-select{
-    padding:6px ;
-    outline-style:blue;
-    border-radius: 5px;
-}
-input{
-    padding:6px 5px;
-    background-color: #c5c2c2;
-    border-radius: 5px;
-    border: 1px solid #888;
-}
-label{
-    gap:5px;
-    font-size: 14px;
-    font-family:Arial, Helvetica, sans-serif;
 
+/* Campos que devem ocupar a linha inteira (Nome e Link) */
+#form label[for="nome"], #form input[name="nome"],
+#form label[for="link"], #form input[name="link"],
+#form select, #form button, #form div[id^="modal"] {
+    grid-column: span 2;
 }
-button{
-    padding: 10px 0;
+
+/* Estilo dos Labels */
+label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: -10px;
+}
+
+/* Inputs e Selects */
+input[type="text"],
+input[type="password"],
+select {
+    width: 100%;
+    padding: 12px;
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 15px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+input:focus, select:focus {
+    border-color: #4e92eb;
+    background-color: #333;
+    box-shadow: 0 0 0 2px rgba(78, 146, 235, 0.2);
+}
+
+/* Botões */
+button, .file-btn {
+    padding: 14px;
+    background-color: #4e92eb;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
     cursor: pointer;
-    border-radius: 5px;
-    background-color: rgb(78, 146, 235);
-    border: 1px solid #999;
+    text-transform: uppercase;
+    transition: 0.2s;
+    margin-top: 10px;
 }
-button:hover{
-   transform-style: preserve-3d;
-   background-color: rgb(128, 175, 236);
-   color: #FFF;
+
+button:hover, .file-btn:hover {
+    background-color: #3b7dd8;
+    transform: translateY(-1px);
 }
-.file-btn{
-    padding:8px 10px;
-    cursor: pointer;
-    border-radius: 5px;
-    background-color: rgb(78, 146, 235);
-    border: 1px solid #999;
-    color: #FFF;
-}
-.file-btn:hover{
-    transform-style: preserve-3d;
-    background-color: rgb(128, 175, 236);
-    color: #FFF;
- }
-.arquivo{
-    display: none;
-}
-.group-name{
+
+/* --- CHECKBOX AREA --- */
+.area_table > div:has(#checkbox) {
+    width: 100%;
+    max-width: 650px;
+    background: #1e1e1e;
+    padding: 15px 25px;
+    border-radius: 8px;
+    border: 1px solid #333;
     display: flex;
-    gap: 10px;
     align-items: center;
-    padding: 10px 20px;
+    gap: 12px;
+}
 
+#checkbox {
+    width: 20px;
+    height: 20px;
+    accent-color: #4e92eb;
+    cursor: pointer;
 }
-.group-name label{
-   font-size: 13px;
-   word-wrap: break-word;
+
+/* --- FORMULÁRIO DE ARQUIVO (Mantendo o que gostou) --- */
+.arquivo {
+    display: none; /* Controlado pelo JS */
+    max-width: 650px;
 }
-.group-name select{
-    width: 100%;
+
+.arquivo .group-name {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    padding: 0;
 }
-#arquivo input{
-    width: 100%;
+
+.arquivo .group-name:last-of-type {
+    display: flex;
+    flex-direction: column;
+    margin-top: 15px;
+    grid-column: span 2;
+}
+
+/* Modais de Erro/Sucesso */
+#modal, #modals {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 30px;
+    border-radius: 8px;
+    z-index: 1000;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    animation: slideIn 0.3s ease-out;
+}
+
+#modal { background-color: #e53e3e; color: white; border-left: 5px solid #fff; }
+#modals { background-color: #38a169; color: white; border-left: 5px solid #fff; }
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* Responsividade: Volta para 1 coluna em telas pequenas */
+@media (max-width: 600px) {
+    #form form, .arquivo .group-name {
+        grid-template-columns: 1fr;
+    }
+    #form label, #form input, #form select, .arquivo .group-name label {
+        grid-column: span 1;
+    }
 }
