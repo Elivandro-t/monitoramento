@@ -1,45 +1,48 @@
-let base = "http://10.220.112.112:8083"
-document.addEventListener("DOMContentLoaded", async function () {
-    let currentMenu = null; // menu atualmente aberto
-    let dados = /*[[${lista}]]*/[];
-    let lista = dados.map(e => e.status)
-    document.querySelectorAll(".tr").forEach(async (b) => {
-        const contextMenuHandler = async function (e) {
+let base = "http://10.220.112.112:8083";
+
+document.addEventListener("DOMContentLoaded", function () {
+    let currentMenu = null;
+
+    // 1. Lógica do Menu de Contexto (Botão Direito)
+    document.querySelectorAll(".tr").forEach((b) => {
+        b.addEventListener("contextmenu", function (e) {
             e.preventDefault();
-            const localizacao = b.getAttribute("data-location")
-            const hostid = b.getAttribute("data-id")
+            const localizacao = b.getAttribute("data-location");
+            const hostid = b.getAttribute("data-id");
             const hostIp = b.getAttribute("data-ip");
-            let section = `
-                          <section class="menud">
-                                <ul class="ul-name" >
-                                    <li onclick="metricas('${localizacao}','${hostid}','${hostIp}')">Metricas</li>
-                                    <li onclick="Atualizar('${hostid}')">Editar</li>
-                                     <li onclick="deletar('${hostid}')">Deletar</li>
-                                </ul>
-                          </section>
-                                       `;
-            // Remove menu atual, se existir
-            if (currentMenu) {
-                currentMenu.remove();
-                currentMenu = null;
-            }
-            // Cria novo menu
+
+            if (currentMenu) currentMenu.remove();
+
             const menu = document.createElement("div");
-            menu.classList.add("td");
-            menu.innerHTML = section;
+            menu.classList.add("context-container");
+            menu.innerHTML = `
+                <section class="menud">
+                    <ul class="ul-name">
+                        <li onclick="metricas('${localizacao}','${hostid}','${hostIp}')">Métricas</li>
+                        <li onclick="Atualizar('${hostid}')">Editar</li>
+                        <li onclick="deletar('${hostid}')">Deletar</li>
+                    </ul>
+                </section>`;
+
             menu.style.position = "absolute";
-            menu.style.top = `${e.pageY}px`;
-            menu.style.left = `${e.pageX}px`;
-            menu.style.zIndex = 9999;
-            // Adiciona o menu à TR clicada
-            b.appendChild(menu);
+            menu.style.zIndex = "10000";
+            document.body.appendChild(menu);
+
+            // Ajuste para o menu não sair da tela
+            let posX = e.pageX;
+            let posY = e.pageY;
+            const menuWidth = menu.offsetWidth;
+            const menuHeight = menu.offsetHeight;
+
+            if (posX + menuWidth > window.innerWidth + window.scrollX) posX -= menuWidth;
+            if (posY + menuHeight > window.innerHeight + window.scrollY) posY -= menuHeight;
+
+            menu.style.top = `${posY}px`;
+            menu.style.left = `${posX}px`;
             currentMenu = menu;
-        };
-
-        // Adiciona o evento de clique direito na TR
-        b.addEventListener("contextmenu", contextMenuHandler);
-
+        });
     });
+
     // Fecha o menu ao clicar fora
     document.addEventListener("click", (e) => {
         if (currentMenu && !currentMenu.contains(e.target)) {
@@ -48,28 +51,62 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     });
 
+    // 2. Lógica de Ordenação da Tabela
+    document.querySelectorAll("th").forEach((headerCell, index) => {
+        headerCell.style.cursor = "pointer";
+        headerCell.addEventListener("click", () => {
+            const tableElement = headerCell.closest("table");
+            const tbody = tableElement.querySelector("tbody");
+            const currentIsAscending = headerCell.classList.contains("th-sort-asc");
+
+            sortDataTable(tbody, index, !currentIsAscending);
+
+            tableElement.querySelectorAll("th").forEach(th => th.classList.remove("th-sort-asc", "th-sort-desc"));
+            headerCell.classList.toggle("th-sort-asc", !currentIsAscending);
+            headerCell.classList.toggle("th-sort-desc", currentIsAscending);
+        });
+    });
 });
 
-function metricas(localizacao, hostid, ip) {
-    let url = `${base}/endpoint/monitoramento/char?hostname=${localizacao}&interfaceIp=${ip}&hostid=${hostid}&limit=0&itemid=0`;
-    window.location.href = url;
+/**
+ * Ordenação otimizada para Texto, Números e IPs
+ */
+function sortDataTable(tbody, columnIndex, asc = true) {
+    const dirModifier = asc ? 1 : -1;
+    const rows = Array.from(tbody.querySelectorAll("tr.tr"));
+
+    const sortedRows = rows.sort((a, b) => {
+        const aText = a.children[columnIndex].textContent.trim();
+        const bText = b.children[columnIndex].textContent.trim();
+
+        // Usa localeCompare com numeric:true para ordenar IPs e números corretamente (Ex: 2 < 10)
+        return aText.localeCompare(bText, undefined, { numeric: true, sensitivity: 'base' }) * dirModifier;
+    });
+
+    // AppendChild em um loop remove o elemento da posição antiga e coloca na nova automaticamente
+    sortedRows.forEach(row => tbody.appendChild(row));
 }
 
+// 3. Funções Globais de Ação
+function metricas(localizacao, hostid, ip) {
+    window.location.href = `${base}/endpoint/monitoramento/char?hostname=${localizacao}&interfaceIp=${ip}&hostid=${hostid}&limit=0&itemid=0`;
+}
 
 function Atualizar(id) {
-    window.location.href = `${base}/endpoint/registro?id=${id}`
-
+    window.location.href = `${base}/endpoint/registro?id=${id}`;
 }
 
 const deletar = async (id) => {
-    const response = await fetch(`/endpoint/delete?id=${id}`, {
-        method: 'DELETE'
-    });
-
-    if (response.ok) {
-        alert('Registro deletado com sucesso!');
-        location.reload(); // Atualiza a página
-    } else {
-        alert('Erro ao deletar o registro');
+    if (!confirm("Deseja realmente deletar este registro?")) return;
+    try {
+        const response = await fetch(`/endpoint/delete?id=${id}`, { method: 'DELETE' });
+        if (response.ok) {
+            alert('Registro deletado!');
+            location.reload();
+        } else {
+            alert('Erro ao deletar');
+        }
+    } catch (err) {
+        console.error("Erro na requisição:", err);
     }
 };

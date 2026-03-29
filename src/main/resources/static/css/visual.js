@@ -1,118 +1,103 @@
 let cliente = null;
-let ipContent = null
-const lista = []
-function iniciarConexao(ip) {
-    const client = localStorage.getItem("client");
-
-    const socket = new SockJS("/ws");
-    cliente = Stomp.over(socket);
-    ipContent = ip
-    cliente.connect({}, function () {
-        cliente.subscribe(`/topic/cmd/${client}`, function (response) {
-            ipContent = null;
-            lista.push(response.body)   
-            let s1 =  document.getElementById("container12");
-            s1.innerHTML += "elivanro"      
-
-        });
-
-        if (ipContent != null) {
-            cliente.send("/app/cmd", {}, JSON.stringify({ ip: ipContent, hostID: client }));
-        }
-    });
-}
-function fecharModal(button) {
-    const modal = button.closest('tr').querySelector('.modal');
-    modal.style.display = "none";
-
-    if (cliente && cliente.connected) {
-        cliente.disconnect(() => {
-            cliente = null
-            ipContent = null
-            window.location.reload()
-        });
-    }
-}
-function ativaCMD(ip) {
-    if (cliente && cliente.connected) {
-        cliente.disconnect(() => {
-            cliente = null
-            ipContent = null
-        });
-    } else {
-        iniciarConexao(ip);
-    }
-}
-
 
 function visual(button) {
-    let modal = button.closest('tr').querySelector('.modal');
-    modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
-    const ipElement = modal.querySelector(".area-propt");
-    const ip = ipElement.textContent.trim();
-   
+    console.log("1. Clique detectado no botão");
 
+    const tr = button.closest('tr');
+    if (!tr) {
+        console.error("Erro: Não encontrei a linha (TR)");
+        return;
+    }
 
-    ativaCMD(ip);
+    const modal = tr.querySelector('.modal');
+    if (!modal) {
+        console.error("Erro: Não encontrei a classe .modal");
+        return;
+    }
 
+    console.log("2. Exibindo modal centralizado...");
+
+    // Configurações para garantir que o modal sobreponha tudo e centralize
+    Object.assign(modal.style, {
+        display: "block",
+        position: "fixed",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        zIndex: "10000", // Valor alto para ficar na frente de tudo
+        backgroundColor: "#1a1a1a", // Cor de fundo para não ficar transparente
+        padding: "10px",
+        borderRadius: "5px",
+        boxShadow: "0px 0px 20px rgba(0,0,0,0.5)"
+    });
+
+    const ip = tr.getAttribute("data-ip");
+    ativaCMD(ip, modal);
 }
 
-document.addEventListener("DOMContentLoaded", function (e) {
-    e.preventDefault();
-    let movin = false; // Flag para controlar o movimento
-    let offsetX, offsetY; // Variáveis para armazenar o deslocamento do mouse
-    // Função para o movimento do modal
-    function getmove(e, modal) {
-        if (movin) {
-            modal.style.left = (e.clientX - offsetX) + "px";
-            modal.style.top = (e.clientY - offsetY) + "px";
+function iniciarConexao(ip, modalAtual) {
+    const client = localStorage.getItem("client");
+    const socket = new SockJS("/ws");
+    cliente = Stomp.over(socket);
+
+    // Opcional: Desativar logs do console para limpar o terminal
+    cliente.debug = null;
+
+    cliente.connect({}, function (frame) {
+        console.log("Socket Conectado");
+        let logContainer = modalAtual.querySelector("#container12") || modalAtual.querySelector(".area-propt");
+
+        if (logContainer) {
+            logContainer.innerHTML = `<div style="color: #00ff00">> Conectado a ${ip}. Aguardando...</div>`;
         }
-    }
-    // Atribuindo evento de arrastar a cada modal
-    const modals = document.querySelectorAll('.modal');
-    modals.forEach(modal => {
-        modal.onmousedown = function (event) {
-            event.preventDefault();
-            offsetX = event.clientX - modal.getBoundingClientRect().left;
-            offsetY = event.clientY - modal.getBoundingClientRect().top;
-            movin = true;
-            // Adiciona o evento de movimento do mouse
-            document.addEventListener("mousemove", (e) => getmove(e, modal));
-            // Para o movimento quando o mouse for solto
-            modal.onmouseup = function () {
-                movin = false;
-                document.removeEventListener("mousemove", (e) => getmove(e, modal));
-                modal.onmouseup = null;
+
+        cliente.subscribe(`/topic/cmd/${client}`, function (response) {
+            if (logContainer) {
+                logContainer.innerHTML += `<div>${response.body}</div>`;
+                logContainer.scrollTop = logContainer.scrollHeight;
             }
-        };
-    });
+        });
 
-    // Reinicializa o movimento quando a janela ganhar ou perder o foco
-    window.addEventListener('focus', function () {
-        movin = false;
-    });
-    window.addEventListener('blur', function () {
-        movin = false;
-    });
-});
-
-function toggleFullscreen() {
-    let element = document.getElementById("meuContainer");
-    if (!document.fullscreenElement) {
-        if (element.requestFullscreen) {
-            element.requestFullscreen();
-        } else if (element.mozRequestFullScreen) { // Firefox
-            element.mozRequestFullScreen();
-        } else if (element.webkitRequestFullscreen) { // Chrome, Safari e Opera
-            element.webkitRequestFullscreen();
-        } else if (element.msRequestFullscreen) { // IE/Edge
-            element.msRequestFullscreen();
+        cliente.send("/app/cmd", {}, JSON.stringify({ ip: ip, hostID: client }));
+    }, function(err) {
+        console.error("Erro de conexão:", err);
+        let logContainer = modalAtual.querySelector("#container12") || modalAtual.querySelector(".area-propt");
+        if (logContainer) {
+            logContainer.innerHTML = `<div style="color: #ff4444">> Dispositivo ${ip} offline ou erro de rede.</div>`;
         }
-        document.body.style.overflow = 'auto';
+        cliente = null;
+    });
+}
+
+function ativaCMD(ip, modal) {
+    if (cliente && cliente.connected) {
+        cliente.disconnect(() => {
+            cliente = null;
+            iniciarConexao(ip, modal);
+        });
     } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
+        iniciarConexao(ip, modal);
+    }
+}
+
+// ESTA FUNÇÃO É A QUE FECHA O MODAL
+function fecharModal(button) {
+    // 1. Localiza o modal subindo a árvore do DOM a partir do botão clicado
+    const modal = button.closest('.modal');
+
+    if (modal) {
+        modal.style.display = "none";
+        console.log("Modal fechado visualmente.");
+    }
+
+    // 2. Desconecta o socket se existir, mas sem bloquear o fechamento
+    if (cliente) {
+        try {
+            cliente.disconnect();
+        } catch (e) {
+            console.warn("Erro ao desconectar:", e);
+        } finally {
+            cliente = null;
         }
-        document.body.style.overflow = ''; // Restaurando o comportamento padrão do overflow
     }
 }

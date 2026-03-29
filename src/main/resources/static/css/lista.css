@@ -1,29 +1,31 @@
 /* ==========================================================
-   BASE
+   CONFIGURAÇÕES GERAIS E RESET
    ========================================================== */
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
 html, body {
-    height: 100%; /* Necessário para o cálculo do scroll da tabela */
+    height: 100%;
     background-color: #1a1d21;
     color: #fff;
-    font-family: 'Segoe UI', sans-serif;
-    overflow: hidden; /* Evita scroll duplo no body */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden; /* Evita scroll na página inteira, o scroll será na tabela */
 }
 
 /* ==========================================================
-   HEADER (FIXADO NO TOPO)
+   HEADER / BARRA DE FERRAMENTAS (FIXA)
    ========================================================== */
 .area_container {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 15px 20px;
+    padding: 10px 20px;
     background-color: #111317;
     border-bottom: 1px solid #333;
-    gap: 10px;
-
-    /* Faz o header ficar fixo no topo */
+    gap: 15px;
     position: sticky;
     top: 0;
     width: 100%;
@@ -34,17 +36,19 @@ html, body {
     background: transparent;
     color: #4a69bd;
     border: none;
-    text-decoration: underline;
+    text-decoration: none;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: bold;
+    margin-right: 10px;
 }
 
-.container {
-    display: flex;
-    align-items: center;
+.container_registro .btn-a:hover {
+    color: #6a89cc;
+    text-decoration: underline;
 }
 
+/* Estilo do Formulário de Busca */
 .container form {
     display: flex;
     align-items: center;
@@ -52,12 +56,13 @@ html, body {
     border: 1px solid #444;
     border-radius: 4px;
     padding-left: 10px;
-    overflow: hidden; /* Garante que o botão ENVIAR não vaze a borda */
+    overflow: hidden;
 }
 
 .container label {
-    font-size: 12px;
+    font-size: 11px;
     color: #888;
+    text-transform: uppercase;
     margin-right: 5px;
 }
 
@@ -66,22 +71,21 @@ html, body {
     border: none;
     color: #fff;
     padding: 8px;
-    font-family: monospace;
+    font-family: 'Courier New', Courier, monospace;
     outline: none;
-    width: 180px;
+    width: 160px;
 }
 
-/* Select estilo Zabbix */
 .container select {
     background-color: #fff;
     color: #000;
     border: none;
-    padding: 6px;
+    padding: 5px;
     margin: 0 5px;
     border-radius: 2px;
-    font-size: 13px;
-    outline: none;
+    font-size: 12px;
     font-weight: bold;
+    outline: none;
 }
 
 #enviar {
@@ -89,20 +93,24 @@ html, body {
     color: white;
     border: none;
     padding: 9px 15px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: bold;
     cursor: pointer;
     text-transform: uppercase;
+    transition: background 0.2s;
+}
+
+#enviar:hover {
+    background-color: #1e40af;
 }
 
 /* ==========================================================
-   TABELA (COM SCROLL INDEPENDENTE)
+   TABELA DE DADOS
    ========================================================== */
 .area_table {
     padding: 0 10px;
-    /* Calcula a altura: 100% da tela menos a altura aproximada do header */
-    height: calc(100vh - 70px);
-    overflow-y: auto; /* O scroll acontece aqui dentro agora */
+    height: calc(100vh - 65px); /* Ajusta conforme a altura do seu header */
+    overflow-y: auto;
     overflow-x: auto;
 }
 
@@ -112,68 +120,166 @@ table {
     border-spacing: 0 2px;
 }
 
+/* Header da Tabela (Sticky) */
 thead th {
     color: #3498db;
     text-align: left;
-    padding: 10px;
+    padding: 12px 10px;
     font-size: 11px;
     background: #1a1d21;
-    position: sticky; /* Faz os títulos da tabela também ficarem fixos ao rolar */
+    position: sticky;
     top: 0;
     z-index: 50;
     text-transform: uppercase;
+    border-bottom: 2px solid #333;
 }
 
-tr { background-color: #212429; }
-tr:hover { background-color: #2a2e35; }
+/* Indicadores de Ordenação no Header */
+thead th.th-sort-asc::after {
+    content: " ▲";
+    font-size: 9px;
+    color: #4a69bd;
+}
+
+thead th.th-sort-desc::after {
+    content: " ▼";
+    font-size: 9px;
+    color: #4a69bd;
+}
+
+/* Linhas e Células */
+tr.tr {
+    background-color: #212429;
+    transition: background 0.1s;
+}
+
+tr.tr:hover {
+    background-color: #2a2e35;
+    cursor: default;
+}
 
 td {
-    padding: 8px 10px;
+    padding: 10px;
     font-size: 12px;
     color: #bdc3c7;
-    white-space: nowrap; /* Evita quebra de linha em telas menores */
+    white-space: nowrap;
+    border-bottom: 1px solid #1a1d21;
 }
 
-/* Colunas Coloridas */
-td:nth-child(6) { color: #2ecc71 !important; font-weight: bold; } /* MAC VERDE */
-td:nth-child(7) {
-    background-color: #721c24;
-    color: #fff;
+/* Colunas Especiais */
+td:nth-child(6) { /* MAC ADDRESS */
+    color: #2ecc71 !important;
+    font-weight: bold;
+    font-family: monospace;
+}
+
+/* Status (UP/DOWN) */
+.th-text.ad {
     text-align: center;
     font-weight: bold;
-    min-width: 70px;
+    color: #fff;
+    border-radius: 2px;
+    text-transform: uppercase;
+    font-size: 10px;
 }
 
 /* ==========================================================
-   MENU E MODAL
+   MENU DE CONTEXTO (Botão Direito)
    ========================================================== */
+.context-container {
+    box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+}
+
 .menud {
     background-color: #2c2f33;
-    position: absolute;
-    z-index: 9999;
     border: 1px solid #444;
-    box-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+    border-radius: 4px;
+    min-width: 150px;
+}
+
+.ul-name {
+    list-style: none;
 }
 
 .ul-name li {
-    padding: 10px 20px;
-    color: white;
-    list-style: none;
+    padding: 10px 15px;
+    color: #eee;
     cursor: pointer;
     font-size: 13px;
+    border-bottom: 1px solid #3e4146;
 }
 
-.ul-name li:hover { background-color: #007ACC; }
+.ul-name li:last-child {
+    border-bottom: none;
+}
 
-#modal {
+.ul-name li:hover {
+    background-color: #4a69bd;
+    color: #fff;
+}
+
+/* ==========================================================
+   MODAIS (Métricas / Detalhes)
+   ========================================================== */
+.modal {
     position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%); /* Centraliza exato na tela */
-    z-index: 10000;
+    background-color: #1a1d21;
+    border: 1px solid #4a69bd;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    z-index: 11000;
+    min-width: 400px;
     display: none;
-    background: #000;
-    border: 1px solid #00ff00;
+    color: #fff;
+}
+
+.modal_s {
     padding: 20px;
-    min-width: 300px;
+}
+
+.btn-as {
+    display: flex;
+    justify-content: flex-end;
+    padding: 5px;
+    background: #111317;
+    border-bottom: 1px solid #333;
+    border-radius: 8px 8px 0 0;
+}
+
+.btn-as button {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.area-propt {
+    background: #000;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    font-family: monospace;
+    color: #2ecc71;
+    border: 1px solid #333;
+}
+
+#container12 {
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 12px;
+    color: #fff;
+    line-height: 1.5;
+}
+
+/* ==========================================================
+   UTILITÁRIOS
+   ========================================================== */
+.botao {
+    background-color: #4a69bd !important;
+    color: white !important;
+    box-shadow: 0 0 5px rgba(74, 105, 189, 0.5);
 }
