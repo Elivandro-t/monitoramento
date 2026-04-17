@@ -4,7 +4,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -20,8 +19,8 @@ public interface RepositoryEntity extends JpaRepository<EndpointEntity,Long> {
 
 
     @Modifying
-    @Query("UPDATE EndpointEntity e SET e.status = :status, e.ping = :ping, e.ultimaVezOnline = :ultima WHERE e.id = :id")
+    @Query("UPDATE EndpointEntity e SET e.status = :status, e.ping = :ping, e.ultimaVezOnline = :ultima, e.agoraIntermitente = agoraIntermitente WHERE e.id = :id")
     void atualizarStatus(@Param("id") Long id, @Param("status") String status,
-                         @Param("ping") String ping,@Param("ultima") LocalDateTime ultima);
+                         @Param("ping") String ping, @Param("ultima") LocalDateTime ultima, boolean agoraIntermitente);
 
 }

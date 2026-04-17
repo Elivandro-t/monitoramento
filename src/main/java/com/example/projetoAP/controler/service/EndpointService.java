@@ -212,7 +212,7 @@ public class EndpointService {
         salvaEndPoint.delete(id);
     }
     @Transactional
-    public void atualizarStatusParcial(Long id, String status, String ping,LocalDateTime ultima) {
-        salvaEndPoint.atualizarStatus(id, status, ping,ultima);
+    public void atualizarStatusParcial(Long id, String status, String ping, LocalDateTime ultima, boolean agoraIntermitente) {
+        salvaEndPoint.atualizarStatus(id, status, ping,ultima,agoraIntermitente);
     }
 }

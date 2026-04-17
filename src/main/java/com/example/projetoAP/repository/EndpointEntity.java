@@ -34,6 +34,7 @@ public class EndpointEntity {
     private Integer filialName;
     private String NomeComplexo;
     private LocalDateTime ultimaVezOnline;
+    private boolean agoraIntermitente;
     public EndpointEntity(){}
     public EndpointEntity(Endpoint e){
         this.hostname = e.getNome();
@@ -235,5 +236,13 @@ public class EndpointEntity {
         this.profile = update.localizacao();
         this.model = update.modelo();
         this.sn = update.sn();
+    }
+
+    public boolean isIntermitente() {
+        return agoraIntermitente;
+    }
+
+    public void setIntermitente(boolean intermitente) {
+        this.agoraIntermitente = intermitente;
     }
 }

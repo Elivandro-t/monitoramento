@@ -69,7 +69,7 @@ public class SalvaEndPoint implements EntityRepository {
         repository.deleteById(id);
     }
 
-    public void atualizarStatus(Long id, String status, String ping,LocalDateTime ultima) {
-        repository.atualizarStatus(id,status,ping,ultima);
+    public void atualizarStatus(Long id, String status, String ping, LocalDateTime ultima, boolean agoraIntermitente) {
+        repository.atualizarStatus(id,status,ping,ultima,agoraIntermitente);
     }
 }

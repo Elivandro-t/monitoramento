@@ -1,99 +1,104 @@
-var socket = new SockJS('/ws');  // Ponto de entrada do WebSocket
+var socket = new SockJS('/ws');
 var stompClient = Stomp.over(socket);
-// Função para conectar ao WebSocket
-stompClient.debug = ()=>{}
+stompClient.debug = () => {}
+
 function connectToWebSocket() {
     stompClient.connect({}, function (frame) {
-        // Inscrever-se para o destino "/lista"
         stompClient.subscribe('/lista', function (response) {
-            let iteml = document.getElementById("item-lenght");
 
             var data = JSON.parse(response.body);
-            // Exibir a lista de endpoints na página
-            let output = `
-                <table>
-                    <thead>
-                        <tr>
-                            <th><select><option>STATUS</option></select></th>
-                            <th><select><option>PROFILE</option></select></th>
-                            <th><select><option>HOSTNAME</option></select></th>
-                            <th><select><option>MODEL</option></select></th>
-                            <th><select><option>S/N</option></select></th>
-                            <th><select><option>MAC_ADRESS</option></select></th>
-                            <th><select><option>IPv4</option></select></th>
-                            <th>CPD</th>
-                            <th>HOST GROUP</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            iteml = data.lenght
-            data.forEach(function (item) {
+            let container = document.getElementById("meuContainer");
+            let onlineCountEl = document.getElementById("online-count");
+            let offlineCountEl = document.getElementById("offline-count");
 
-                if(item.status.toUpperCase() === "DOWN"){
-                    iteml = data.length
-                    output += `
-                    <tr class="tr" data-name="${item.id}" >
-                        <td class="th-text"${item.status.toUpperCase() === 'DOWN' ? 'style="background-color: rgba(255, 0, 0, 0.5)"' : 'style="background-color: rgba(0, 128, 0, 0.8)"'}>${item.status}</td>
-                        <td>${item.localizacao}</td>
-                        <td>${item.nome}</td>
-                        <td>${item.modelo}</td>
-                        <td>${item.sn}</td>
-                        <td>${item.mac}</td>
-                        <td>${item.ip}</td>
-                        <td>EM PROCESSO</td>
-                        <td>${item.grupo}</td>
-                    </tr>
-                `;
-                }
-            });
-            data.forEach(function (item) {
-                if(item.status.toUpperCase() === "UP"){
-                    output += `
-                    <tr class="tr" data-name="${item.id}" >
-                        <td class="th-text"${item.status.toUpperCase() === 'DOWN' ? 'style="background-color: rgba(255, 0, 0, 0.5)"' : 'style="background-color: rgba(0, 128, 0, 0.8)"'}>${item.status}</td>
-                        <td>${item.localizacao}</td>
-                        <td>${item.nome}</td>
-                        <td>${item.modelo}</td>
-                        <td>${item.sn}</td>
-                        <td>${item.mac}</td>
-                        <td>${item.ip}</td>
-                        <td>EM PROCESSO</td>
-                        <td>${item.grupo}</td>
-                    </tr>
-                `;
-                }
-            });
-            output += `</tbody></table>`;
+            let output = '';
+            let onlineCount = 0;
+            let offlineCount = 0;
 
-            document.getElementById("meuContainer").innerHTML = output;
+            // Ordenação: Problemas (Offline) primeiro
+            data.sort((a, b) => (a.status === 'DOWN' || a.status === 'OFFLINE' ? -1 : 1));
+data.forEach(function (item) {
+    const isOffline = (item.status || "").toUpperCase() === 'DOWN' || (item.status || "").toUpperCase() === 'OFFLINE';
+    // Verifica se o item é intermitente (aceita boolean true ou 1 do banco)
+    const isIntermitente = item.isIntermitencia === 1 || item.isIntermitencia === true;
+     const pingBruto = item.ping || "";
+
+         // 2. Usa Regex para extrair apenas os números decimais que vêm após "Tempo:" ou "time="
+         // O [0] pega a primeira ocorrência, ou você pode usar matchAll para todas
+         const match = pingBruto.match(/(?:Tempo:|time=)\s*([\d.]+)/);
+
+         // 3. Se encontrar, armazena o valor (ex: "0.171"), senão coloca "---"
+         const apenasTempo = match ? match[1] + " ms" : "---";
+    isOffline ? offlineCount++ : onlineCount++;
+
+    // Lógica de definição de cores e rótulos
+    let statusClass = 'dot-online';
+    let statusLabel = 'ONLINE';
+    let pulseColor = '#3b82f6'; // Azul padrão
+
+    if (isOffline) {
+        statusClass = 'dot-offline';
+        statusLabel = 'OFFLINE';
+        pulseColor = '#ef4444'; // Vermelho
+    } else if (isIntermitente) {
+        statusClass = 'dot-warning'; // Amarelo
+        statusLabel = 'INTERMITENTE';
+        pulseColor = '#f1c40f'; // Amarelo para o pulso
+    }
+
+    output += `
+        <div class="card ${isOffline ? 'card-offline' : (isIntermitente ? 'card-warning' : '')}">
+            <div class="card-header">
+                <div class="header-main">
+                    <span class="hostname">${item.localizacao}</span>
+                    <span class="ip-tag">${item.ip || '0.0.0.0'}</span>
+                </div>
+                <svg class="chart-icon"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="${pulseColor}"
+                     stroke-width="1.5"
+                     style="width: 18px; height: 22px; opacity: 0.8;">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                </svg>
+            </div>
+
+            <div class="card-body">
+                <div class="info-row">
+                    <span class="label">MAC:</span>
+                    <span class="value mac-style">${item.mac || '---'}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">GRUPO:</span>
+                    <span class="value">${item.grupo}</span>
+                </div>
+            </div>
+
+            <div class="card-footer">
+                <div class="status-indicator">
+                    <div class="dot ${statusClass}"></div>
+                    <span class="status-text">${statusLabel}</span>
+                    <span >${apenasTempo}</span>
+                </div>
+                <span class="timestamp">${formatarData(item.checkOut)}</span>
+            </div>
+        </div>
+    `;
+});
+
+            if (container) container.innerHTML = output;
+            if (onlineCountEl) onlineCountEl.innerText = onlineCount;
+            if (offlineCountEl) offlineCountEl.innerText = offlineCount;
         });
-
-        // rodarWeb();
     }, function(error) {
-        setTimeout(connectToWebSocket, 5000);  // Tentar reconectar após 5 segundos
+        setTimeout(connectToWebSocket, 5000);
     });
 }
-connectToWebSocket();
 
-function toggleFullscreen() {
-    let element = document.getElementById("meuContainer");
-    if (!document.fullscreenElement) {
-        if (element.requestFullscreen) {
-            element.requestFullscreen();
-        } else if (element.mozRequestFullScreen) { // Firefox
-            element.mozRequestFullScreen();
-        } else if (element.webkitRequestFullscreen) { // Chrome, Safari e Opera
-            element.webkitRequestFullscreen();
-        } else if (element.msRequestFullscreen) { // IE/Edge
-            element.msRequestFullscreen();
-        }
-        document.body.style.overflow = 'auto'; 
-    } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        }
-        document.body.style.overflow = ''; 
-
-    }
+function formatarData(data) {
+    if (!data) return "--:--";
+    let date = new Date(data);
+    return date.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
 }
+
+connectToWebSocket();

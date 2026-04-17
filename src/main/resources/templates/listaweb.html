@@ -1,29 +1,38 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-
+<html lang="pt-br" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" th:href="@{/css/lista.css}">
+    <title>NOC - Monitoramento de Rede</title>
+    <link rel="stylesheet" th:href="@{/css/listaweb.css}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
 </head>
+<body>
 
-<body >
-    <script th:src="@{/css/javascrip.js}"></script>
-    <script th:src="@{/css/javascript.js}"></script>
-    <script th:src="@{/css/visualweb.js}"></script>
-    <script th:inline="javascript" th:src="@{/css/lista_mac.js}"></script>
+<header class="area_container" id="sumi">
+    <div style="display: flex; gap: 15px; align-items: center;">
+        <span style="color: #3498db; font-weight: bold; font-size: 16px;">MONITORANDO...</span>
 
+        <div class="counter-box online-box">
+            <span class="counter-label">Online</span>
+            <span class="counter-value" id="online-count">0</span>
+        </div>
 
-    <section class="area_container" id="sumi">
-        <div  id="item-lenght"></div>
-        <div><button onclick="toggleFullscreen()">Tela cheia</button></div>
-    </section>
-    <div class="area_table" id="meuContainer">
+        <div class="counter-box offline-box">
+            <span class="counter-label">Offline</span>
+            <span class="counter-value" id="offline-count">0</span>
+        </div>
     </div>
 
-</body>
+    <div>
+        <button id="enviar" onclick="toggleFullscreen()">Tela Cheia</button>
+    </div>
+</header>
 
+<main class="area_grid" id="meuContainer">
+</main>
+
+<script th:src="@{/css/visualweb.js}"></script>
+</body>
 </html>

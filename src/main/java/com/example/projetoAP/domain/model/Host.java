@@ -5,6 +5,7 @@ import com.example.projetoAP.Service.EndpointInterfaceDTO;
 import com.example.projetoAP.repository.EndpointEntity;
 import com.example.projetoAP.repository.EntitySetor.EntitySetores;
 import com.example.projetoAP.repository.GroupEntity;
+import jakarta.persistence.Column;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -27,6 +28,7 @@ public class Host {
     private String grupo;
     private String nomeCompleto;
     private LocalDateTime ultimaVezOnline;
+    private boolean intermitente;
     public Host(EndpointDTO e) throws IOException, InterruptedException {
         this.hostname = e.nome();
         this.model = e.modelo();
@@ -182,5 +184,13 @@ public class Host {
 
     public LocalDateTime getUltimaVezOnline() {
         return ultimaVezOnline;
+    }
+
+    public boolean isIntermitente() {
+        return intermitente;
+    }
+
+    public void setIntermitente(boolean intermitente) {
+        this.intermitente = intermitente;
     }
 }

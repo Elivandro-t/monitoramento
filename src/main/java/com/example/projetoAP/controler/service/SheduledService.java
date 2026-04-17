@@ -13,6 +13,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +31,7 @@ public class SheduledService {
     private RepositoryEntity entityRepository;
     @Autowired
     EndpointService endpointService;
+    private final String os = System.getProperty("os.name").toLowerCase();
     // Defina um ThreadPoolExecutor com controle de número de threads
     private final ExecutorService executorService = Executors.newFixedThreadPool(50); // Aqui você limita a 10 threads simultâneas.
     public SheduledService(RepositoryEntity repository){
@@ -62,37 +64,117 @@ public class SheduledService {
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
     // A execução assíncrona agora está usando o ExecutorService
-    public CompletableFuture<Void> rodar(EndpointEntity endpoint) {
+    public CompletableFuture<Void> rodars(EndpointEntity endpoint) {
         return CompletableFuture.runAsync(() -> {
             try {
-                // Verifica o status e atualiza o endpoint
-                String status = statusIpAsync(endpoint.getIp()).get(); // Espera o status para cada IP
+                // 1. Armazena o status que está no banco agora (antes de atualizar)
+                String statusAnterior = endpoint.getStatus();
+
+                // 2. Executa as verificações (mantendo seus métodos)
+                String status = statusIpAsync(endpoint.getIp()).get();
                 String ping = getCmd(endpoint.getIp());
-                String statusOn = statusIp(endpoint.getIp());
-                LocalDateTime dataUltimaVez = endpoint.getUltimaVezOnline();;
-                if(endpoint.getStatus().equals("UP")){
+                String statusOn = statusIp(endpoint.getIp()); // O status em tempo real
+
+                // 3. Lógica de Intermitência:
+                // Se o status no banco era diferente do que acabamos de ler, houve uma mudança.
+                boolean agoraIntermitente = false;
+                if (statusAnterior != null && !statusAnterior.equals(statusOn)) {
+                    agoraIntermitente = true;
+                }
+
+                LocalDateTime dataUltimaVez = endpoint.getUltimaVezOnline();
+                if(statusOn.equals("UP")){
                     dataUltimaVez = LocalDateTime.now();
                 }
-                endpoint.setStatus(status);
+                // 4. Atualiza o objeto com os novos valores
+                endpoint.setStatus(statusOn);
+                endpoint.setIntermitente(agoraIntermitente); // Define se oscilou
 
-                endpointService.atualizarStatusParcial(endpoint.getId(), statusOn, ping,dataUltimaVez);
+                // 5. Envia para o service salvar (Certifique-se de adicionar o novo parâmetro no seu Service)
+                endpointService.atualizarStatusParcial(endpoint.getId(), statusOn, ping, dataUltimaVez, agoraIntermitente);
+
+                // --- Restante da sua lógica de progresso e Socket (Mantida) ---
                 linhas++;
                 double processo = Math.abs((double) linhas / process * 100);
-                if(process<linhas){
-                    linhas = 0;
-                }
-                String mensagem;
-                if(linhas == process){
-                     mensagem = String.format("Processado %d/%d ( %.0f%% )",linhas, process,processo);
+                if(process < linhas) { linhas = 0; }
 
-                }else{
-                    mensagem = String.format("Processando... %d/%d ( %.0f%% )",linhas, process,processo);
-                }
+                String mensagem = (linhas == process)
+                        ? String.format("Processado %d/%d ( %.0f%% )", linhas, process, processo)
+                        : String.format("Processando... %d/%d ( %.0f%% )", linhas, process, processo);
+
                 EnvidoSoquet(mensagem);
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }, executorService);  // Usando o executorService para controlar o número de threads
+        }, executorService);
+    }
+    public CompletableFuture<Void> rodar(EndpointEntity endpoint) {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                Double latenciaMedia = CalcularLatencia(endpoint.getIp()).get();
+                String statusOn = statusIp(endpoint.getIp());
+                String pingDetalhado = getCmd(endpoint.getIp());
+
+                String statusAnterior = endpoint.getStatus();
+                LocalDateTime agora = LocalDateTime.now();
+                LocalDateTime ultimaVezOnline = endpoint.getUltimaVezOnline();
+
+                boolean agoraIntermitente = false;
+
+                if ("UP".equals(statusOn)) {
+
+                    if (latenciaMedia != null && latenciaMedia > 0.150) {
+                        agoraIntermitente = true;
+                    }
+                    else if ("DOWN".equals(statusAnterior) && ultimaVezOnline != null) {
+                        long segundosOffline = Duration.between(ultimaVezOnline, agora).getSeconds();
+                        if (segundosOffline <= 10) {
+                            agoraIntermitente = true;
+                        }
+                    }
+
+                    ultimaVezOnline = agora;
+
+                } else {
+
+                    if ("UP".equals(statusAnterior) && ultimaVezOnline != null) {
+                        long segundosOffline = Duration.between(ultimaVezOnline, agora).getSeconds();
+                        if (segundosOffline <= 10) {
+                            agoraIntermitente = true;
+                        }
+                    }
+                }
+
+                endpoint.setStatus(statusOn);
+                endpoint.setUltimaVezOnline(ultimaVezOnline);
+
+                endpointService.atualizarStatusParcial(
+                        endpoint.getId(),
+                        statusOn,
+                        pingDetalhado,
+                        ultimaVezOnline,
+                        agoraIntermitente
+                );
+
+                if ("DOWN".equals(statusOn) && ultimaVezOnline != null) {
+                    long segundosOffline = Duration.between(ultimaVezOnline, agora).getSeconds();
+                    System.out.println("IP: " + endpoint.getIp() + " offline há " + segundosOffline + " segundos");
+                }
+
+                linhas++;
+                double porcentagem = Math.abs((double) linhas / process * 100);
+
+                String mensagem = (linhas >= process)
+                        ? String.format("Processado %d/%d ( %.0f%% )", linhas, process, porcentagem)
+                        : String.format("Processando... %d/%d ( %.0f%% )", linhas, process, porcentagem);
+
+                EnvidoSoquet(mensagem);
+
+            } catch (Exception e) {
+                System.out.println("Erro no endpoint: " + endpoint.getIp());
+                e.printStackTrace();
+            }
+        }, executorService);
     }
     // Shutdown do executorService após o processamento
     public void shutdown() {
@@ -132,10 +214,11 @@ public class SheduledService {
             if (matcher.find()) {
                 String icmpSeq = matcher.group(1);
                 String ttl = matcher.group(2);
-                String time = matcher.group(3);
+                double timeMs = Double.parseDouble(matcher.group(3)); // em ms
+                double timeSec = timeMs / 1000.0; // converter para segundos
                 result.append("ICMP Seq: ").append(icmpSeq)
                         .append(", TTL: ").append(ttl)
-                        .append(", Tempo: ").append(time).append(" ms\n");
+                        .append(", Tempo: ").append(timeSec).append("nao seria melhor retornar sem 0s\n");
             }
         }
         process.waitFor();
@@ -156,5 +239,22 @@ public class SheduledService {
         }
         input.close();
         return isReactive ? "UP":"DOWN";
+    }
+    private CompletableFuture<Double> CalcularLatencia(String ip) throws IOException {
+        String pingCmd = os.contains("win") ? "ping -n 1 " + ip : "ping -c 4 " + ip;
+        Process process = Runtime.getRuntime().exec(pingCmd);
+        String linha;
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        double latenciaMedia = 0;
+        while ((linha = bufferedReader.readLine()) != null) {
+            if (linha.contains("rtt min/avg/max")) {
+                String[] partes = linha.split("=");
+                if (partes.length > 1) {
+                    String[] valores = partes[1].trim().split("/");
+                    latenciaMedia = Double.parseDouble(valores[1]);
+                }
+            }
+        }
+        return CompletableFuture.completedFuture(latenciaMedia);
     }
 }
