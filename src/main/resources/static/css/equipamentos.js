@@ -61,6 +61,29 @@ function carregarFiliais() {
         .catch(function(){});
 }
 
+function carregarMTsetores() {
+    return fetch('/mtsetores', { headers: authHeaders() })
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            var lista = Array.isArray(data) ? data : [];
+            var selFiltro = document.getElementById('f-mtsetor');
+            var selEq = document.getElementById('eq-mtsetor');
+            if (selFiltro) selFiltro.innerHTML = '<option value="">Todos</option>';
+            if (selEq) selEq.innerHTML = '<option value="">--</option>';
+            lista.forEach(function(s){
+                if (selFiltro) {
+                    var o1 = document.createElement('option'); o1.value = s.nome; o1.textContent = s.nome;
+                    selFiltro.appendChild(o1);
+                }
+                if (selEq) {
+                    var o2 = document.createElement('option'); o2.value = s.nome; o2.textContent = s.nome;
+                    selEq.appendChild(o2);
+                }
+            });
+        })
+        .catch(function(){});
+}
+
 // ===== RESUMO =====
 function atualizarResumo() {
     var total = todosEquipamentos.length;
@@ -82,7 +105,7 @@ function atualizarResumo() {
 // ===== FILTROS =====
 function aplicarFiltros() {
     var busca = (document.getElementById('f-busca').value || '').toLowerCase().trim();
-    var setor = document.getElementById('f-setor').value;
+    var setor = document.getElementById('f-mtsetor').value;
     var filial = document.getElementById('f-filial').value;
     var status = document.getElementById('f-status').value;
     var uso = document.getElementById('f-uso').value;
@@ -105,7 +128,7 @@ function aplicarFiltros() {
 }
 
 function limparFiltros() {
-    ['f-busca','f-setor','f-filial','f-status','f-uso','f-tipo'].forEach(function(id){
+    ['f-busca','f-mtsetor','f-filial','f-status','f-uso','f-tipo'].forEach(function(id){
         var el = document.getElementById(id); if (el) el.value = '';
     });
     aplicarFiltros();
@@ -177,7 +200,7 @@ function abrirModalNovo() {
         document.getElementById(id).value = '';
     });
     document.getElementById('eq-tipo').value = '';
-    document.getElementById('eq-setor').value = '';
+    document.getElementById('eq-mtsetor').value = '';
     document.getElementById('eq-filial').value = '';
     document.getElementById('eq-agentId').readOnly = false;
     abrirModal('modal-equip');
@@ -198,7 +221,7 @@ function editarEquip(id) {
     document.getElementById('eq-anydesk').value = a.anydesk || '';
     document.getElementById('eq-dominio').value = a.dominio || '';
     document.getElementById('eq-tipo').value = a.tipo || '';
-    document.getElementById('eq-setor').value = a.setor || '';
+    document.getElementById('eq-mtsetor').value = a.setor || '';
     document.getElementById('eq-filial').value = a.filial || '';
     document.getElementById('eq-dataCompra').value = a.dataCompra || '';
     document.getElementById('eq-garantia').value = a.garantiaExpiracao || '';
@@ -218,7 +241,7 @@ function salvarEquip() {
         anydesk: document.getElementById('eq-anydesk').value.trim(),
         dominio: document.getElementById('eq-dominio').value.trim(),
         tipo: document.getElementById('eq-tipo').value,
-        setor: document.getElementById('eq-setor').value,
+        setor: document.getElementById('eq-mtsetor').value,
         filial: document.getElementById('eq-filial').value,
         dataCompra: document.getElementById('eq-dataCompra').value,
         garantiaExpiracao: document.getElementById('eq-garantia').value,
@@ -491,7 +514,7 @@ function abrirModalSetores() { window.location.href = '/setores'; }
 
 // ===== EXPORTAR EXCEL =====
 function exportarExcel() {
-    var setor = document.getElementById('f-setor').value;
+    var setor = document.getElementById('f-mtsetor').value;
     var filial = document.getElementById('f-filial').value;
     var params = new URLSearchParams();
     if (setor) params.append('setor', setor);
@@ -536,6 +559,6 @@ window.addEventListener('DOMContentLoaded', function(){
     if (!AUTH_TOKEN) {
         toast('Faca login para acessar todos os recursos', 'err');
     }
-    carregarFiliais().then(function(){ carregar(); });
+    carregarFiliais().then(function(){ return carregarMTsetores(); }).then(function(){ carregar(); });
     setInterval(carregar, 15000);
 });

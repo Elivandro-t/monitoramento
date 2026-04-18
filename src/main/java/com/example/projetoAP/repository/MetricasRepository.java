@@ -20,5 +20,7 @@ public interface MetricasRepository extends JpaRepository<MetricasEntity,Long> {
     List<MetricasEntity> findTop5000ByHostidAndTimestampAfterOrderByTimestampDesc(Long hostid, LocalDateTime desde);
     List<MetricasEntity> findTop2000ByItemidAndHostidOrderByIdDesc(long itemid, long hostid);
 
+    List<MetricasEntity> findTop200000ByHostidAndTimestampAfterOrderByTimestampDesc(Long hostid, LocalDateTime desde);
+
     List<MetricasEntity> findAllByTimestampBefore(LocalDateTime timeDay);
 }

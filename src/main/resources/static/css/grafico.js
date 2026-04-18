@@ -1,27 +1,23 @@
 var charts = { lat: null, his: null, gau: null, jit: null, rng: null };
 var stompClient = null;
-var horasFiltro = 3;
-var secondsFiltro = 0;
+// Padrao: 1 minuto
+var horasFiltro = 0;
+var secondsFiltro = 60;
+var intervaloEnvio = null;
+var ultimoClockRecebido = 0;
+var ultimoTamanhoRecebido = 0;
+var ignorarProximaComparacao = false;
 
 Chart.defaults.animation.duration = 0;
 Chart.defaults.responsive = true;
 
 function fetchDados() {
-    // Restore filter from localStorage
-    var savedFilter = localStorage.getItem('chart_filter');
-    if (savedFilter) {
-        var parts = savedFilter.split(':');
-        horasFiltro = Number(parts[0]) || 0;
-        secondsFiltro = Number(parts[1]) || 0;
-    }
-
-    // Also check URL params (override localStorage)
     var urlParams = new URLSearchParams(window.location.search);
-    var paramLimit = urlParams.get("limit");
-    if (paramLimit !== null) {
-        horasFiltro = Number(paramLimit) || 0;
-        secondsFiltro = 0;
-    }
+
+    // Sempre inicia com 1m no carregamento da pagina (usuario pode trocar apos)
+    horasFiltro = 0;
+    secondsFiltro = 60;
+    localStorage.setItem('chart_filter', '0:60');
 
     adicionarFiltros();
 
@@ -57,24 +53,55 @@ function fetchDados() {
     stompClient.debug = null;
 
     stompClient.connect({}, function (frame) {
-        var urlParams = new URLSearchParams(window.location.search);
-        var hostId = urlParams.get("hostid");
+        var urlParams2 = new URLSearchParams(window.location.search);
+        var hostId2 = urlParams2.get("hostid");
         var client = localStorage.getItem("client");
 
-        stompClient.subscribe('/topic/grafico/' + client + '/' + hostId, function (response) {
+        stompClient.subscribe('/topic/grafico/' + client + '/' + hostId2, function (response) {
             var data = JSON.parse(response.body);
             if (data.result && Object.keys(data.result).length > 0) {
                 var loader = document.getElementById('overlay-loader');
                 if (loader) loader.style.display = "none";
+
+                // Evita re-render quando nada mudou (remove o "piscar")
+                var arr = data.result;
+                var maxClock = 0;
+                for (var k = 0; k < arr.length; k++) {
+                    var c = Number(arr[k].clock || 0);
+                    if (c > maxClock) maxClock = c;
+                }
+                if (!ignorarProximaComparacao
+                        && maxClock === ultimoClockRecebido
+                        && arr.length === ultimoTamanhoRecebido) {
+                    return; // dados identicos, nao atualiza nada
+                }
+                ultimoClockRecebido = maxClock;
+                ultimoTamanhoRecebido = arr.length;
+                ignorarProximaComparacao = false;
+
                 atualizarInterface(data);
             }
         });
 
         enviarMetricas();
-        setInterval(enviarMetricas, 1000);
+        reagendarPolling();
     }, function() {
         setTimeout(fetchDados, 1000);
     });
+}
+
+function reagendarPolling() {
+    if (intervaloEnvio) clearInterval(intervaloEnvio);
+    // Ajusta frequencia de polling conforme a janela de tempo selecionada
+    var totalSeg = (horasFiltro * 3600) + secondsFiltro;
+    var intervalMs;
+    if (totalSeg === 0) intervalMs = 10000;         // Todos: 10s
+    else if (totalSeg <= 60) intervalMs = 1000;     // <= 1m: 1s
+    else if (totalSeg <= 300) intervalMs = 2000;    // <= 5m: 2s
+    else if (totalSeg <= 3600) intervalMs = 5000;   // <= 1h: 5s
+    else if (totalSeg <= 21600) intervalMs = 15000; // <= 6h: 15s
+    else intervalMs = 30000;                        // > 6h: 30s
+    intervaloEnvio = setInterval(enviarMetricas, intervalMs);
 }
 
 function enviarMetricas() {
@@ -106,10 +133,14 @@ function adicionarFiltros() {
         var parts = this.value.split(':');
         horasFiltro = Number(parts[0]) || 0;
         secondsFiltro = Number(parts[1]) || 0;
-        // Save to localStorage
         localStorage.setItem('chart_filter', this.value);
         document.getElementById('overlay-loader').style.display = 'flex';
+        // forca render na proxima resposta (dados diferentes agora)
+        ignorarProximaComparacao = true;
+        ultimoClockRecebido = 0;
+        ultimoTamanhoRecebido = 0;
         enviarMetricas();
+        reagendarPolling();
     });
 }
 
@@ -255,21 +286,15 @@ function reduzirDados(labels, values, maxPoints) {
 
 function formatarHora(timestamp) {
     var date = new Date(timestamp * 1000);
-    var totalFiltro = (horasFiltro * 3600) + secondsFiltro;
-    if (horasFiltro >= 12) {
-        return date.toLocaleString('pt-BR', {
-            timeZone: 'America/Sao_Paulo',
-            day: '2-digit',
-            month: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-        });
-    }
-    return date.toLocaleTimeString('pt-BR', {
+    var data = date.toLocaleDateString('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        day: '2-digit', month: '2-digit'
+    });
+    var hora = date.toLocaleTimeString('pt-BR', {
         timeZone: 'America/Sao_Paulo',
         hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
     });
+    return data + ' ' + hora;
 }
 
 function setCanvasWidth(canvasId, labels) {
@@ -325,7 +350,7 @@ function renderLineChart(key, canvasId, newData, newLabels, color, fillColor, is
                     x: {
                         display: true,
                         grid: { display: false },
-                        ticks: { color: '#8b949e', font: { size: 9 }, maxRotation: 0, autoSkip: horasFiltro >= 12, maxTicksLimit: 20 }
+                        ticks: { color: '#8b949e', font: { size: 9 }, maxRotation: 45, minRotation: 30, autoSkip: true, maxTicksLimit: 10 }
                     },
                     y: {
                         beginAtZero: true,
@@ -406,7 +431,7 @@ function renderRangeChart(labels, minData, maxData) {
                     x: {
                         display: true,
                         grid: { display: false },
-                        ticks: { color: '#8b949e', font: { size: 9 }, maxRotation: 0, autoSkip: horasFiltro >= 12, maxTicksLimit: 20 }
+                        ticks: { color: '#8b949e', font: { size: 9 }, maxRotation: 45, minRotation: 30, autoSkip: true, maxTicksLimit: 10 }
                     },
                     y: {
                         beginAtZero: true,

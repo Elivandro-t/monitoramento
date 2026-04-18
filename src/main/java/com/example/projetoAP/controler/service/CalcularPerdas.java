@@ -573,7 +573,7 @@ public class CalcularPerdas {
     ) {}
 
     // 🔥 AGENDADOR PRINCIPAL
-    @Scheduled(fixedDelay = 20000)
+    @Scheduled(fixedDelay = 8000)
     public void CalcularMestricasDeEquipamento() {
 
         if (emExecucao) return;
@@ -617,8 +617,8 @@ public class CalcularPerdas {
         try {
             List<String> comando = new ArrayList<>();
             comando.add("fping");
-            comando.add("-c4");
-            comando.add("-t2000");
+            comando.add("-c2");
+            comando.add("-t1000");
             comando.add("-q");
 
             for (var eq : equipamentos) {
@@ -717,9 +717,12 @@ public class CalcularPerdas {
 
         long now = System.currentTimeMillis();
 
+        // Cache TTL dinamico: janelas maiores podem ficar em cache mais tempo
+        long ttl = cacheTtlFor(hours, seconds);
+
         CacheEntry cached = cache.get(cacheKey);
 
-        if (cached != null && now - cached.timestamp <= CACHE_TTL_MILLIS) {
+        if (cached != null && now - cached.timestamp <= ttl) {
             return cached.result;
         }
 
@@ -734,8 +737,14 @@ public class CalcularPerdas {
 
         } else if (hours > 0) {
             LocalDateTime desde = LocalDateTime.now().minusHours(hours);
-            resultado = metricasRepository
-                    .findTop5000ByHostidAndTimestampAfterOrderByTimestampDesc(filter.hostid(), desde);
+            // Para janelas longas (>1h), usa o limite maior para nao cortar dados
+            if (hours > 1) {
+                resultado = metricasRepository
+                        .findTop200000ByHostidAndTimestampAfterOrderByTimestampDesc(filter.hostid(), desde);
+            } else {
+                resultado = metricasRepository
+                        .findTop5000ByHostidAndTimestampAfterOrderByTimestampDesc(filter.hostid(), desde);
+            }
 
         } else {
             resultado = metricasRepository
@@ -746,11 +755,51 @@ public class CalcularPerdas {
                 .map(MetricasDTO::new)
                 .collect(Collectors.toList());
 
+        // Downsample para janelas longas: reduz volume mantendo granularidade suficiente para o grafico
+        lista = downsample(lista, hours, seconds);
+
         listaMap.put("result", lista);
 
         cache.put(cacheKey, new CacheEntry(listaMap, now));
 
         return listaMap;
+    }
+
+    private long cacheTtlFor(int hours, int seconds) {
+        int totalSec = (hours * 3600) + seconds;
+        if (totalSec == 0) return 10_000;        // Todos
+        if (totalSec <= 60) return 1_000;        // <= 1m
+        if (totalSec <= 300) return 2_000;       // <= 5m
+        if (totalSec <= 3600) return 5_000;      // <= 1h
+        if (totalSec <= 21600) return 15_000;    // <= 6h
+        return 30_000;                           // > 6h
+    }
+
+    private List<MetricasDTO> downsample(List<MetricasDTO> lista, int hours, int seconds) {
+        int totalSec = (hours * 3600) + seconds;
+
+        // Janelas muito curtas (<= 1m): mantem todos os pontos
+        if (totalSec > 0 && totalSec <= 60) return lista;
+
+        // Bucket em segundos conforme janela: mantem ~180-360 pontos por metrica
+        int bucketSec;
+        if (totalSec == 0) bucketSec = 60;                // Todos: bucket 1m
+        else if (totalSec <= 300) bucketSec = 5;          // <= 5m: bucket 5s
+        else if (totalSec <= 1800) bucketSec = 15;        // <= 30m: bucket 15s
+        else if (totalSec <= 3600) bucketSec = 30;        // <= 1h: bucket 30s
+        else if (totalSec <= 6 * 3600) bucketSec = 60;    // <= 6h: bucket 1m
+        else if (totalSec <= 12 * 3600) bucketSec = 120;  // <= 12h: bucket 2m
+        else bucketSec = 300;                             // 24h+: bucket 5m
+
+        // Agrupa por (icmpName, bucket) e mantem o primeiro (mais recente) de cada bucket
+        Map<String, MetricasDTO> vistos = new LinkedHashMap<>();
+        for (MetricasDTO m : lista) {
+            long clock = m.clock() != null ? m.clock() : 0L;
+            long bucket = clock / bucketSec;
+            String key = m.icmpName() + "|" + bucket;
+            vistos.putIfAbsent(key, m);
+        }
+        return new ArrayList<>(vistos.values());
     }
 
     public CompletableFuture<Map<String, List<MetricasDTO>>> listaMetricas(Filter filter) {

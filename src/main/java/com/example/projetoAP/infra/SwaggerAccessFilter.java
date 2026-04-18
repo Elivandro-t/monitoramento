@@ -6,6 +6,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
@@ -14,7 +15,7 @@ import java.io.IOException;
 
 /**
  * Bloqueia acesso ao Swagger UI e a documentacao OpenAPI
- * sem um token valido com permissao "acessoUsuarios".
+ * sem um token valido com perfil ADMIN.
  * O token pode vir por header Authorization OU query param ?token=...
  * (util para abrir o Swagger em nova aba).
  */
@@ -39,21 +40,41 @@ public class SwaggerAccessFilter implements Filter {
             if (token == null || token.isBlank()) {
                 token = req.getParameter("token");
             }
-            if (!authService.temPermissao(token, "acessoUsuarios")) {
+            if (token == null || token.isBlank()) {
+                token = lerCookie(req, "swagger_token");
+            }
+            if (!authService.isAdmin(token)) {
                 res.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 res.setContentType("text/html;charset=UTF-8");
                 res.getWriter().write(htmlAcessoNegado());
                 return;
+            }
+            // Persiste o token em cookie para as proximas chamadas do Swagger-UI
+            // (ex.: /v3/api-docs) que nao passam ?token=...
+            if (req.getParameter("token") != null && !req.getParameter("token").isBlank()) {
+                Cookie c = new Cookie("swagger_token", token);
+                c.setPath("/");
+                c.setHttpOnly(false);
+                c.setMaxAge(60 * 60 * 5);
+                res.addCookie(c);
             }
         }
 
         chain.doFilter(request, response);
     }
 
+    private String lerCookie(HttpServletRequest req, String nome) {
+        Cookie[] cookies = req.getCookies();
+        if (cookies == null) return null;
+        for (Cookie c : cookies) {
+            if (nome.equals(c.getName())) return c.getValue();
+        }
+        return null;
+    }
+
     private boolean isProtected(String uri) {
         if (uri == null) return false;
         return uri.startsWith("/swagger-ui")
-                || uri.startsWith("/v3/api-docs")
                 || uri.equals("/swagger-ui.html");
     }
 
@@ -66,7 +87,7 @@ public class SwaggerAccessFilter implements Filter {
                 + "a{color:#58a6ff;text-decoration:none;margin-top:16px;border:1px solid #30363d;padding:8px 16px;border-radius:6px;}"
                 + "a:hover{background:#30363d;}</style></head><body>"
                 + "<h1>403 - Acesso Negado</h1>"
-                + "<p>Voce precisa estar logado com permissao de usuario para acessar a documentacao.</p>"
+                + "<p>Apenas perfil ADMIN pode acessar a documentacao Swagger.</p>"
                 + "<a href=\"/endpoint/monitoramento\">Voltar ao sistema</a>"
                 + "</body></html>";
     }

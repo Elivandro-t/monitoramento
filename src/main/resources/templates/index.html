@@ -128,6 +128,7 @@
       <button onclick="abrirSetores()" data-route="/setores" id="btn-setores">Setores</button>
       <button onclick="abrirEquipamentos()" class="btn-admin" id="btn-equipamentos">Equipamentos</button>
       <button onclick="abrirMonitorEquipamentos()" id="btn-monitor-equip">Monitor Equipamentos</button>
+      <button onclick="abrirSwagger()" class="btn-admin" id="btn-swagger" style="display:none;">Swagger</button>
       <button onclick="abrirLoginModal()" id="btn-fazer-login">Fazer Login</button>
     </div>
 
@@ -189,6 +190,7 @@
       var btnHistorico = document.getElementById('btn-historico');
       var btnSetores = document.getElementById('btn-setores');
       var btnEquipamentos = document.getElementById('btn-equipamentos');
+      var btnSwagger = document.getElementById('btn-swagger');
 
       if (authToken && authUsername) {
           userArea.innerHTML =
@@ -200,6 +202,7 @@
           if (btnHistorico) btnHistorico.style.display = authPermissoes && authPermissoes.acessoHistorico ? '' : 'none';
           if (btnSetores) btnSetores.style.display = authPermissoes && authPermissoes.acessoSetores ? '' : 'none';
           if (btnEquipamentos) btnEquipamentos.style.display = authPermissoes && authPermissoes.acessoUsuarios ? '' : 'none';
+          if (btnSwagger) btnSwagger.style.display = authPerfil === 'ADMIN' ? '' : 'none';
       } else {
           userArea.innerHTML = '';
           btnLogin.style.display = '';
@@ -207,7 +210,16 @@
           if (btnHistorico) btnHistorico.style.display = 'none';
           if (btnSetores) btnSetores.style.display = 'none';
           if (btnEquipamentos) btnEquipamentos.style.display = 'none';
+          if (btnSwagger) btnSwagger.style.display = 'none';
       }
+  }
+
+  function abrirSwagger() {
+      if (!authToken || authPerfil !== 'ADMIN') {
+          mostrarPopup('Apenas ADMIN pode acessar Swagger');
+          return;
+      }
+      window.open('/swagger-ui/index.html?token=' + encodeURIComponent(authToken), '_blank');
   }
 
   // ===== LOGIN MODAL =====

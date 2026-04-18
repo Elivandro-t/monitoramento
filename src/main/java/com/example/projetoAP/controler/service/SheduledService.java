@@ -59,67 +59,42 @@ public class SheduledService {
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
 
+    @Transactional
+    public void processarEndpoint(EndpointEntity endpoint) throws IOException, InterruptedException {
+        // Lógica de banco de dados que precisa de transação
+        PingResult pingResult = executarPing(endpoint.getIp());
+
+        String statusAnterior = endpoint.getStatus();
+        LocalDateTime agora = LocalDateTime.now();
+        LocalDateTime ultimaVezOnline = endpoint.getUltimaVezOnline();
+
+        boolean agoraIntermitente = false;
+
+        if ("UP".equals(pingResult.status)) {
+            if (pingResult.latenciaMedia != null && pingResult.latenciaMedia > 150) {
+                agoraIntermitente = true;
+            } else if ("DOWN".equals(statusAnterior) && ultimaVezOnline != null) {
+                long segundosOffline = Duration.between(ultimaVezOnline, agora).getSeconds();
+                if (segundosOffline <= 60) {
+                    agoraIntermitente = true;
+                }
+            }
+        }
+
+        // Atualizar o status no banco de dados
+        endpoint.setStatus(pingResult.status);
+        endpoint.setUltimaVezOnline(agora);
+        entityRepository.save(endpoint);
+    }
+
     public CompletableFuture<Void> rodar(EndpointEntity endpoint) {
         return CompletableFuture.runAsync(() -> {
             try {
-                // Um único ping -c 4 para tudo: status, latência e detalhes
-                PingResult pingResult = executarPing(endpoint.getIp());
-
-                String statusAnterior = endpoint.getStatus();
-                LocalDateTime agora = LocalDateTime.now();
-                LocalDateTime ultimaVezOnline = endpoint.getUltimaVezOnline();
-
-                boolean agoraIntermitente = false;
-
-                if ("UP".equals(pingResult.status)) {
-                    // Latência alta = intermitente (usa a mesma latência que é salva no banco)
-                    if (pingResult.latenciaMedia != null && pingResult.latenciaMedia > 150) {
-                        agoraIntermitente = true;
-                    }
-                    // Estava DOWN e voltou UP rapidamente (dentro de 60s)
-                    else if ("DOWN".equals(statusAnterior) && ultimaVezOnline != null) {
-                        long segundosOffline = Duration.between(ultimaVezOnline, agora).getSeconds();
-                        if (segundosOffline <= 60) {
-                            agoraIntermitente = true;
-                        }
-                    }
-                    ultimaVezOnline = agora;
-                } else {
-                    // Estava UP e caiu agora
-                    if ("UP".equals(statusAnterior) && ultimaVezOnline != null) {
-                        long segundosDesdeUltimoUp = Duration.between(ultimaVezOnline, agora).getSeconds();
-                        if (segundosDesdeUltimoUp <= 60) {
-                            agoraIntermitente = true;
-                        }
-                    }
-                }
-
-                endpoint.setStatus(pingResult.status);
-                endpoint.setUltimaVezOnline(ultimaVezOnline);
-
-                endpointService.atualizarStatusParcial(
-                        endpoint.getId(),
-                        pingResult.status,
-                        pingResult.detalhes,
-                        ultimaVezOnline,
-                        agoraIntermitente
-                );
-
-                int processadas = linhasProcessadas.incrementAndGet();
-                int total = totalEndpoints.get();
-                double porcentagem = (double) processadas / total * 100;
-
-                String mensagem = (processadas >= total)
-                        ? String.format("Processado %d/%d ( %.0f%% )", processadas, total, porcentagem)
-                        : String.format("Processando... %d/%d ( %.0f%% )", processadas, total, porcentagem);
-
-                enviarSocket(mensagem);
-
-            } catch (Exception e) {
-                System.out.println("Erro no endpoint: " + endpoint.getIp());
-                e.printStackTrace();
+                processarEndpoint(endpoint);
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
             }
-        }, executorService);
+        });
     }
 
     /**

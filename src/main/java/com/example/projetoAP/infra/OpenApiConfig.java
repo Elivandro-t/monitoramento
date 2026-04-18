@@ -11,7 +11,6 @@ import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.tags.Tag;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 
 import java.util.List;
 
@@ -19,8 +18,7 @@ import java.util.List;
 public class OpenApiConfig {
 
     @Bean
-    @Primary
-    public OpenAPI informaticaOpenAPI() {
+    public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
                         .title("Informatica CD-116 - API de Monitoramento")
@@ -29,8 +27,11 @@ public class OpenApiConfig {
                                 + "Coleta em tempo real de CPU, memoria e disco via heartbeat. "
                                 + "Exportacao de relatorios em Excel e upload de laudos/imagens.")
                         .version("v2.1.23")
-                        .contact(new Contact().name("Elivandro").email("dev.log0775@gmail.com"))
-                        .license(new License().name("MIT")))
+                        .contact(new Contact()
+                                .name("Elivandro")
+                                .email("dev.log0775@gmail.com"))
+                        .license(new License().name("MIT"))
+                )
                 .servers(List.of(
                         new Server().url("/").description("Servidor atual"),
                         new Server().url("http://localhost:8083").description("Local")
@@ -44,27 +45,15 @@ public class OpenApiConfig {
                         new Tag().name("Usuarios").description("Gestao de usuarios e perfis"),
                         new Tag().name("Auditoria").description("Historico de acoes no sistema")
                 ))
-                .components(new Components().addSecuritySchemes("bearerAuth",
-                        new SecurityScheme()
-                                .type(SecurityScheme.Type.APIKEY)
-                                .in(SecurityScheme.In.HEADER)
-                                .name("Authorization")
-                                .description("Token retornado pelo endpoint /auth/login")))
+                .components(new Components()
+                        .addSecuritySchemes("bearerAuth",
+                                new SecurityScheme()
+                                        .name("Authorization")
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("bearer")
+                                        .bearerFormat("JWT")
+                        )
+                )
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"));
-    }
-
-    @Bean
-    public OpenAPI customOpenAPI() {
-        return new OpenAPI()
-                .info(new Info()
-                        .title("API Documentation")
-                        .description("Detailed API documentation for the monitoring system.")
-                        .version("1.0.0"))
-                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
-                .components(new Components().addSecuritySchemes("bearerAuth",
-                        new SecurityScheme()
-                                .type(SecurityScheme.Type.HTTP)
-                                .scheme("bearer")
-                                .bearerFormat("JWT")));
     }
 }

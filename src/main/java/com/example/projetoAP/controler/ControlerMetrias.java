@@ -17,6 +17,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @RestController
 @RequestMapping
@@ -48,12 +50,25 @@ public class ControlerMetrias {
 
     };
 
+    // Guarda 'in-flight' por (clientId + hostid) para evitar empilhar envios
+    // quando o cliente ainda nao consumiu o anterior.
+    private final ConcurrentHashMap<String, AtomicBoolean> emVoo = new ConcurrentHashMap<>();
+
     @MessageMapping("/metricas")
     public void listaMestricas(@Payload FilterHost filter) {
+        String key = filter.clientId() + ":" + filter.hostid();
+        AtomicBoolean flag = emVoo.computeIfAbsent(key, k -> new AtomicBoolean(false));
+        if (!flag.compareAndSet(false, true)) {
+            // ja existe um envio em andamento para esse cliente/host; descarta este
+            return;
+        }
         CompletableFuture.runAsync(() -> {
-            Map<String, List<MetricasDTO>> future = calcularPerdas.ListaMestricasSemID(filter);
-            // Enviando para um tópico específico do CLIENTE + HOST
-            messagingTemplate.convertAndSend("/topic/grafico/" + filter.clientId() + "/" + filter.hostid(), future);
+            try {
+                Map<String, List<MetricasDTO>> future = calcularPerdas.ListaMestricasSemID(filter);
+                messagingTemplate.convertAndSend("/topic/grafico/" + filter.clientId() + "/" + filter.hostid(), future);
+            } finally {
+                flag.set(false);
+            }
         });
     }
 

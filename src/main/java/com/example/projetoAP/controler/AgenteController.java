@@ -82,7 +82,6 @@ public class AgenteController {
         agente.setAtivo(true);
         agente.setStatus("ONLINE");
         agente.setUltimoContato(LocalDateTime.now());
-
         if (body.containsKey("cpu")) agente.setCpuPercent(toDouble(body.get("cpu")));
         if (body.containsKey("memoriaPercent")) agente.setMemoriaPercent(toDouble(body.get("memoriaPercent")));
         if (body.containsKey("memoriaTotal")) agente.setMemoriaTotal(toLong(body.get("memoriaTotal")));
@@ -95,6 +94,9 @@ public class AgenteController {
         if (body.containsKey("usuario")) agente.setUsuario(str(body.get("usuario")));
         if (body.containsKey("anydesk")) agente.setAnydesk(str(body.get("anydesk")));
         if (body.containsKey("dominio")) agente.setDominio(str(body.get("dominio")));
+        if(body.containsKey("setor")) agente.setSetor(str(body.get("setor")));
+        if(body.containsKey("patrimonio")) agente.setPatrimonio(str(body.get("patrimonio")));
+        if(body.containsKey("filial")) agente.setFilial(str(body.get("filial")));
 
         agenteRepository.save(agente);
 
