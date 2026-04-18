@@ -1,4 +1,4 @@
- # 🖥️ Sistema de Monitoramento
+# 🖥️ Sistema de Monitoramento
 Este projeto é um sistema de monitoramento de hosts em tempo real. Ele coleta e exibe métricas importantes como  status dos serviços e conectividade, com interface visual e interativa.
 
 🔧 Tecnologias Utilizadas
@@ -33,3 +33,16 @@ Inicie o backend com Spring Boot
 Acesse o frontend pelo navegador
 
 Visualize os dados em tempo real através dos gráficos e tabelas
+
+## 📘 Swagger Documentation
+
+The API documentation is available via Swagger UI. To access it:
+
+1. Start the application.
+2. Navigate to `http://localhost:8083/swagger-ui.html`.
+3. Use the `Authorization` header with a valid token to access protected endpoints.
+
+### Example Token Usage
+- Add `Authorization: Bearer <your-token>` in the request headers.
+
+For more details, refer to the `SwaggerAccessFilter` implementation in the codebase.

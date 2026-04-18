@@ -224,13 +224,19 @@ function abrirDetalhes(hostname, hostid, ip) {
 }
 
 function formatarData(data) {
-    if (!data) return "--:--";
+    if (!data) return "--/-- --:--";
+    // Se ja vem formatado "dd/MM/yyyy HH:mm:ss", mantem tudo
     if (typeof data === 'string' && data.includes('/')) {
-        var partes = data.split(' ');
-        return partes.length > 1 ? partes[1] : data;
+        return data;
     }
     var date = new Date(data);
-    return date.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+    var dia = String(date.getDate()).padStart(2,'0');
+    var mes = String(date.getMonth()+1).padStart(2,'0');
+    var ano = date.getFullYear();
+    var hora = String(date.getHours()).padStart(2,'0');
+    var min = String(date.getMinutes()).padStart(2,'0');
+    var seg = String(date.getSeconds()).padStart(2,'0');
+    return dia + '/' + mes + '/' + ano + ' ' + hora + ':' + min + ':' + seg;
 }
 
 function toggleFullscreen() {

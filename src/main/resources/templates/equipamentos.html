@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equipamentos | Informatica CD-116</title>
+    <link rel="stylesheet" th:href="@{/css/equipamentos.css}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body>
+
+<div class="eq-container">
+
+    <!-- Header -->
+    <header class="eq-header">
+        <div>
+            <h1>Gestao de Equipamentos</h1>
+            <div class="subtitle">Laptops, Desktops e agentes clientes - monitoramento e manutencao</div>
+        </div>
+        <div class="eq-header-actions">
+            <button class="btn btn-back" onclick="window.location.href='/endpoint/monitoramento'">&larr; Voltar</button>
+            <button class="btn" onclick="window.location.href='/endpoint/monitoramento/equipamentos'">Monitor Tempo Real</button>
+            <button class="btn btn-excel" onclick="exportarExcel()">Exportar Excel</button>
+            <button class="btn btn-primary" onclick="abrirModalNovo()">+ Novo Equipamento</button>
+        </div>
+    </header>
+
+    <!-- Resumo -->
+    <div class="eq-summary">
+        <div class="summary-card">
+            <span class="summary-label">Total</span>
+            <span class="summary-value" id="sum-total">0</span>
+        </div>
+        <div class="summary-card">
+            <span class="summary-label">Online</span>
+            <span class="summary-value ok" id="sum-online">0</span>
+        </div>
+        <div class="summary-card">
+            <span class="summary-label">Offline</span>
+            <span class="summary-value off" id="sum-offline">0</span>
+        </div>
+        <div class="summary-card">
+            <span class="summary-label">Usados</span>
+            <span class="summary-value warn" id="sum-usados">0</span>
+        </div>
+        <div class="summary-card">
+            <span class="summary-label">Criticos</span>
+            <span class="summary-value crit" id="sum-criticos">0</span>
+        </div>
+        <div class="summary-card">
+            <span class="summary-label">Garantia Vencida</span>
+            <span class="summary-value crit" id="sum-gar-vencida">0</span>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="eq-filtros">
+        <div class="filtro-grupo">
+            <label for="f-busca">Busca</label>
+            <input id="f-busca" type="text" placeholder="hostname, patrimonio, IP..." oninput="aplicarFiltros()">
+        </div>
+        <div class="filtro-grupo">
+            <label for="f-setor">Setor</label>
+            <select id="f-setor" onchange="aplicarFiltros()">
+                <option value="">Todos</option>
+                <option>RH</option>
+                <option>SAC</option>
+                <option>TRANSPORT</option>
+                <option>SAC HORT</option>
+                <option>RECEBIMENTO</option>
+                <option>FATURAMENTO EXPED</option>
+                <option>FATURAMENTO RECEB</option>
+            </select>
+        </div>
+        <div class="filtro-grupo">
+            <label for="f-filial">Filial</label>
+            <select id="f-filial" onchange="aplicarFiltros()"><option value="">Todas</option></select>
+        </div>
+        <div class="filtro-grupo">
+            <label for="f-status">Status</label>
+            <select id="f-status" onchange="aplicarFiltros()">
+                <option value="">Todos</option>
+                <option value="ONLINE">Online</option>
+                <option value="OFFLINE">Offline</option>
+            </select>
+        </div>
+        <div class="filtro-grupo">
+            <label for="f-uso">Status Uso</label>
+            <select id="f-uso" onchange="aplicarFiltros()">
+                <option value="">Todos</option>
+                <option value="NORMAL">Normal</option>
+                <option value="USADO">Usado</option>
+                <option value="CRITICO">Critico</option>
+            </select>
+        </div>
+        <div class="filtro-grupo">
+            <label for="f-tipo">Tipo</label>
+            <select id="f-tipo" onchange="aplicarFiltros()">
+                <option value="">Todos</option>
+                <option value="LAPTOP">Laptop</option>
+                <option value="DESKTOP">Desktop</option>
+            </select>
+        </div>
+        <div class="filtro-grupo">
+            <label>&nbsp;</label>
+            <button class="btn" onclick="limparFiltros()">Limpar</button>
+        </div>
+        <div class="filtro-grupo">
+            <label>&nbsp;</label>
+            <button class="btn" onclick="abrirModalSetores()">Gerenciar Setores</button>
+        </div>
+        <div class="filtro-grupo">
+            <label>&nbsp;</label>
+            <button class="btn" onclick="abrirModalFiliais()">Gerenciar Filiais</button>
+        </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="eq-table-wrapper">
+        <table class="eq-table">
+            <thead>
+            <tr>
+                <th>Hostname</th>
+                <th>Tipo</th>
+                <th>IP / AnyDesk</th>
+                <th>Setor / Filial</th>
+                <th>CPU</th>
+                <th>Memoria</th>
+                <th>Disco</th>
+                <th>Status</th>
+                <th>Uso</th>
+                <th>Manut.</th>
+                <th>Acoes</th>
+            </tr>
+            </thead>
+            <tbody id="tbody-equip">
+            <tr><td colspan="11"><div class="loading-wrap"><div class="loader"></div></div></td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Novo / Editar -->
+<div id="modal-equip" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-head">
+            <h2 id="modal-equip-titulo">Novo Equipamento</h2>
+            <button class="modal-close" onclick="fecharModal('modal-equip')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="form-equip" onsubmit="event.preventDefault(); salvarEquip();">
+                <input type="hidden" id="eq-id">
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label>Agent ID *</label>
+                        <input id="eq-agentId" required>
+                    </div>
+                    <div class="form-field">
+                        <label>Tipo</label>
+                        <select id="eq-tipo">
+                            <option value="">--</option>
+                            <option value="LAPTOP">Laptop</option>
+                            <option value="DESKTOP">Desktop</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label>Hostname</label>
+                        <input id="eq-hostname">
+                    </div>
+                    <div class="form-field">
+                        <label>Patrimonio</label>
+                        <input id="eq-patrimonio">
+                    </div>
+                    <div class="form-field">
+                        <label>Marca</label>
+                        <input id="eq-marca">
+                    </div>
+                    <div class="form-field">
+                        <label>Modelo</label>
+                        <input id="eq-modelo">
+                    </div>
+                    <div class="form-field">
+                        <label>Numero Serie</label>
+                        <input id="eq-sn">
+                    </div>
+                    <div class="form-field">
+                        <label>AnyDesk</label>
+                        <input id="eq-anydesk">
+                    </div>
+                    <div class="form-field">
+                        <label>Dominio</label>
+                        <input id="eq-dominio">
+                    </div>
+                    <div class="form-field">
+                        <label>Setor</label>
+                        <select id="eq-setor">
+                            <option value="">--</option>
+                            <option>RH</option><option>SAC</option><option>TRANSPORT</option>
+                            <option>SAC HORT</option><option>RECEBIMENTO</option>
+                            <option>FATURAMENTO EXPED</option><option>FATURAMENTO RECEB</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label>Filial</label>
+                        <select id="eq-filial"><option value="">--</option></select>
+                    </div>
+                    <div class="form-field">
+                        <label>Data de Compra</label>
+                        <input id="eq-dataCompra" type="date">
+                    </div>
+                    <div class="form-field">
+                        <label>Expiracao Garantia</label>
+                        <input id="eq-garantia" type="date">
+                    </div>
+                    <div class="form-field full">
+                        <label>Descricao</label>
+                        <textarea id="eq-descricao"></textarea>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-foot">
+            <button class="btn" onclick="fecharModal('modal-equip')">Cancelar</button>
+            <button class="btn btn-primary" onclick="salvarEquip()">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalhes -->
+<div id="modal-detalhe" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-head">
+            <h2 id="det-titulo">Detalhes do Equipamento</h2>
+            <button class="modal-close" onclick="fecharModal('modal-detalhe')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="tabs">
+                <button class="tab active" data-tab="info" onclick="trocarTab('info')">Informacoes</button>
+                <button class="tab" data-tab="manut" onclick="trocarTab('manut')">Manutencoes</button>
+                <button class="tab" data-tab="img" onclick="trocarTab('img')">Imagem</button>
+            </div>
+
+            <div class="tab-content active" id="tab-info">
+                <div class="detail-grid">
+                    <div class="detail-image" id="det-imagem-box">
+                        <span class="detail-image-empty">Sem imagem</span>
+                    </div>
+                    <div class="detail-info-grid" id="det-info"></div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tab-manut">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div class="section-title" style="margin:0; border:none;">Historico de Manutencoes</div>
+                    <button class="btn btn-primary" onclick="abrirModalManut()">+ Nova Manutencao</button>
+                </div>
+                <div class="manut-list" id="manut-list"></div>
+            </div>
+
+            <div class="tab-content" id="tab-img">
+                <div class="section-title">Imagem Principal do Equipamento</div>
+                <div id="img-big-wrap" style="text-align:center; margin-bottom:14px;">
+                    <img id="img-big" src="" style="max-width:100%; max-height:420px; border-radius:10px; display:none;">
+                    <div id="img-empty" class="empty-state">Nenhuma imagem cadastrada</div>
+                </div>
+                <form id="form-upload-img" onsubmit="event.preventDefault(); uploadImagemPrincipal();" enctype="multipart/form-data">
+                    <div class="form-field">
+                        <label>Enviar imagem (substitui a atual)</label>
+                        <input type="file" id="file-img" accept="image/*" required>
+                    </div>
+                    <button class="btn btn-primary" type="submit" style="margin-top:8px;">Enviar Imagem</button>
+                </form>
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn" onclick="fecharModal('modal-detalhe')">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Manutencao -->
+<div id="modal-manut" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-head">
+            <h2>Registrar Manutencao</h2>
+            <button class="modal-close" onclick="fecharModal('modal-manut')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="form-manut" onsubmit="event.preventDefault(); salvarManut();" enctype="multipart/form-data">
+                <div class="form-grid">
+                    <div class="form-field full">
+                        <label>Descricao (item)</label>
+                        <textarea id="mn-descricao" required placeholder="Ex: Troca de SSD de 240GB por 480GB"></textarea>
+                    </div>
+                    <div class="form-field full">
+                        <label>Laudo Final</label>
+                        <textarea id="mn-laudo" placeholder="Texto completo do laudo..."></textarea>
+                    </div>
+                    <div class="form-field">
+                        <label>Anexar Laudo (pdf, doc, ...)</label>
+                        <input type="file" id="mn-arquivo">
+                    </div>
+                    <div class="form-field">
+                        <label>Imagem da manutencao (opcional)</label>
+                        <input type="file" id="mn-imagem" accept="image/*">
+                    </div>
+                </div>
+                <p style="font-size:10px; color:#8b949e; margin-top:10px;">* Apenas tecnicos/admin podem registrar laudo.</p>
+            </form>
+        </div>
+        <div class="modal-foot">
+            <button class="btn" onclick="fecharModal('modal-manut')">Cancelar</button>
+            <button class="btn btn-primary" onclick="salvarManut()">Registrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Filiais -->
+<div id="modal-filiais" class="modal-overlay">
+    <div class="modal sm">
+        <div class="modal-head">
+            <h2>Gerenciar Filiais</h2>
+            <button class="modal-close" onclick="fecharModal('modal-filiais')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form onsubmit="event.preventDefault(); criarFilial();">
+                <div class="form-grid cols-2">
+                    <div class="form-field"><label>Nome *</label><input id="fil-nome" required></div>
+                    <div class="form-field"><label>Codigo</label><input id="fil-codigo"></div>
+                    <div class="form-field"><label>Cidade</label><input id="fil-cidade"></div>
+                    <div class="form-field"><label>Estado</label><input id="fil-estado" maxlength="2"></div>
+                </div>
+                <button class="btn btn-primary" type="submit" style="margin-top:10px;">+ Adicionar</button>
+            </form>
+            <div class="section-title">Filiais Cadastradas</div>
+            <div id="lista-filiais"></div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn" onclick="fecharModal('modal-filiais')">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="popup-toast"></div>
+
+<script th:src="@{/css/equipamentos.js}"></script>
+
+</body>
+</html>

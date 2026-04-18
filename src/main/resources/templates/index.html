@@ -126,6 +126,8 @@
       <button onclick="abrirUsuarios()" class="btn-admin" id="btn-usuarios">Usuarios</button>
       <button onclick="abrirHistorico()" class="btn-admin" id="btn-historico">Historico</button>
       <button onclick="abrirSetores()" data-route="/setores" id="btn-setores">Setores</button>
+      <button onclick="abrirEquipamentos()" class="btn-admin" id="btn-equipamentos">Equipamentos</button>
+      <button onclick="abrirMonitorEquipamentos()" id="btn-monitor-equip">Monitor Equipamentos</button>
       <button onclick="abrirLoginModal()" id="btn-fazer-login">Fazer Login</button>
     </div>
 
@@ -186,6 +188,7 @@
       var btnUsuarios = document.getElementById('btn-usuarios');
       var btnHistorico = document.getElementById('btn-historico');
       var btnSetores = document.getElementById('btn-setores');
+      var btnEquipamentos = document.getElementById('btn-equipamentos');
 
       if (authToken && authUsername) {
           userArea.innerHTML =
@@ -196,12 +199,14 @@
           if (btnUsuarios) btnUsuarios.style.display = authPermissoes && authPermissoes.acessoUsuarios ? '' : 'none';
           if (btnHistorico) btnHistorico.style.display = authPermissoes && authPermissoes.acessoHistorico ? '' : 'none';
           if (btnSetores) btnSetores.style.display = authPermissoes && authPermissoes.acessoSetores ? '' : 'none';
+          if (btnEquipamentos) btnEquipamentos.style.display = authPermissoes && authPermissoes.acessoUsuarios ? '' : 'none';
       } else {
           userArea.innerHTML = '';
           btnLogin.style.display = '';
           if (btnUsuarios) btnUsuarios.style.display = 'none';
           if (btnHistorico) btnHistorico.style.display = 'none';
           if (btnSetores) btnSetores.style.display = 'none';
+          if (btnEquipamentos) btnEquipamentos.style.display = 'none';
       }
   }
 
@@ -313,6 +318,23 @@
 
   function abrirSetores() {
       window.location.href = '/setores';
+  }
+
+  function abrirEquipamentos() {
+      if (!authToken) {
+          mostrarPopup('Faca login para acessar');
+          abrirLoginModal();
+          return;
+      }
+      if (!authPermissoes || !authPermissoes.acessoUsuarios) {
+          mostrarPopup('Perfil nao tem permissao para acessar');
+          return;
+      }
+      window.location.href = '/endpoint/equipamentos';
+  }
+
+  function abrirMonitorEquipamentos() {
+      window.location.href = '/endpoint/monitoramento/equipamentos';
   }
 
   // ===== VERIFICAR SESSAO AO CARREGAR =====

@@ -14,17 +14,17 @@ public record EndpointDTO(
         String dataUltimaVezOnline,
         Boolean isIntermitencia,
         String pings
-        ){
+) {
 
     public EndpointDTO(Endpoint response) {
-        this(response.getId(),response.getNome()
-                ,response.getModelo(),response.getSn(),
-                response.getLocal(),response.getMac(),response.getIp(),response.getStatus(),response.getPing(),response.getData(),response.getLink(),"",response.getGrupoId(),response.getGrupo(),response.getFilialName(),response.getNomeCompleto(),"s",false,"");
+        this(response.getId(), response.getNome(),
+                response.getModelo(), response.getSn(),
+                response.getLocal(), response.getMac(), response.getIp(), response.getStatus(), response.getPing(), response.getData(), response.getLink(), "", response.getGrupoId(), response.getGrupo(), response.getFilialName(), response.getNomeCompleto(), "s", false, "");
     }
 
     public EndpointDTO(EndpointEntity endpointEntity) {
-        this(endpointEntity.getId(),endpointEntity.getNome(),endpointEntity.model,endpointEntity.getSn(),endpointEntity.getLocal(),endpointEntity.getMac(),endpointEntity.getIp(),endpointEntity.getStatus(),endpointEntity.getPing(),endpointEntity.getData(),endpointEntity.getLink(),null,endpointEntity.getGrupoId(),endpointEntity.getGrupo(),endpointEntity.getFilialName(),endpointEntity.getNomeComplexo(),endpointEntity.ConverteHora()!=null?endpointEntity.ConverteHora():null,endpointEntity.isIntermitente(),endpointEntity.getPing());
-    }
+       this(endpointEntity.getId(), endpointEntity.getNome(), endpointEntity.model, endpointEntity.getSn(), endpointEntity.getLocal(), endpointEntity.getMac(), endpointEntity.getIp(), endpointEntity.getStatus(), endpointEntity.getPing(), endpointEntity.getData(), endpointEntity.getLink(), null, endpointEntity.getGrupoId(), endpointEntity.getGrupo(), endpointEntity.getFilialName(), endpointEntity.getNomeComplexo(), endpointEntity.ConverteHora() != null ? endpointEntity.ConverteHora() : null, endpointEntity.isIntermitente(), endpointEntity.getPing());
+   }
 
 
 }
