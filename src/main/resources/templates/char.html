@@ -1,49 +1,125 @@
 <!DOCTYPE html>
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <title>Monitoramento ICMP | Pro</title>
-  <link rel="stylesheet" th:href="@{/css/char.css}">
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoramento ICMP | Dashboard</title>
+    <link rel="stylesheet" th:href="@{/css/char.css}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 </head>
-<body class="dark-theme">
+<body>
 
 <div class="dashboard">
-  <header class="header">
-    <h2 id="titule">Iniciando Monitoramento...</h2>
-    <div id="ip-badge" class="badge">IP: --.---.---.--</div>
-  </header>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-info">
+            <h2 id="titule">Iniciando Monitoramento...</h2>
+            <div id="ip-badge" class="badge">IP: --.---.---.--</div>
+        </div>
+        <div id="status-badge" class="status-badge status-checking">Verificando...</div>
+        <div class="header-controls">
+            <label class="filter-label" for="horas-filtro">Intervalo:</label>
+            <select id="horas-filtro" class="filter-select">
+                <option value="0:0">Todos</option>
+                <optgroup label="Segundos">
+                    <option value="0:1">1s</option>
+                    <option value="0:5">5s</option>
+                    <option value="0:10">10s</option>
+                </optgroup>
+                <optgroup label="Minutos">
+                    <option value="0:60">1m</option>
+                    <option value="0:300">5m</option>
+                </optgroup>
+                <optgroup label="Horas">
+                    <option value="1:0">1h</option>
+                    <option value="3:0" selected>3h</option>
+                    <option value="5:0">5h</option>
+                    <option value="6:0">6h</option>
+                    <option value="12:0">12h</option>
+                    <option value="17:0">17h</option>
+                    <option value="24:0">24h</option>
+                </optgroup>
+            </select>
+            <span class="offline-summary" id="offline-summary">Offline: --</span>
+        </div>
+    </header>
 
-  <div class="grid-container">
-    <div class="card gauge-card">
-      <span class="label">Perda Atual</span>
-      <div class="chart-wrapper">
-        <canvas id="gaugeChart"></canvas>
-        <div id="percentLabel" class="gauge-value">0%</div>
-      </div>
+    <!-- Stats Cards -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <span class="stat-label">Latencia Atual</span>
+            <span class="stat-value" id="stat-avg">-- ms</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Minima</span>
+            <span class="stat-value stat-good" id="stat-min">-- ms</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Maxima</span>
+            <span class="stat-value stat-warn" id="stat-max">-- ms</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Jitter</span>
+            <span class="stat-value" id="stat-jitter">-- ms</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Perda</span>
+            <span class="stat-value" id="stat-loss">--%</span>
+        </div>
     </div>
 
-    <div class="card latency-card">
-      <span class="label">Latência em Tempo Real</span>
-      <div class="chart-wrapper">
-        <canvas id="latencyChart"></canvas>
-      </div>
-    </div>
+    <!-- Charts Grid -->
+    <div class="grid-container">
+        <!-- Gauge de perda -->
+        <div class="card gauge-card">
+            <span class="card-title">Perda de Pacotes</span>
+            <div class="chart-wrapper">
+                <canvas id="gaugeChart"></canvas>
+                <div id="percentLabel" class="gauge-value">0%</div>
+            </div>
+        </div>
 
-    <div class="card history-card">
-      <span class="label">Histórico de Estabilidade</span>
-      <div class="chart-wrapper">
-        <canvas id="icmpChart"></canvas>
-      </div>
+        <!-- Latencia em tempo real -->
+        <div class="card latency-card">
+            <span class="card-title">Latencia (ms)</span>
+            <div class="chart-wrapper">
+                <canvas id="latencyChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Historico de perda -->
+        <div class="card history-card">
+            <span class="card-title">Historico de Perda (%)</span>
+            <div class="chart-wrapper">
+                <canvas id="icmpChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Jitter -->
+        <div class="card jitter-card">
+            <span class="card-title">Jitter / Variacao (ms)</span>
+            <div class="chart-wrapper">
+                <canvas id="jitterChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Min/Max range -->
+        <div class="card range-card">
+            <span class="card-title">Faixa Min / Max (ms)</span>
+            <div class="chart-wrapper">
+                <canvas id="rangeChart"></canvas>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
 <div id="overlay-loader">
-  <div class="spinner"></div>
+    <div class="loader-content">
+        <div class="spinner"></div>
+        <p class="loader-text">Carregando metricas...</p>
+    </div>
 </div>
 
 <script th:src="@{/css/grafico.js}"></script>

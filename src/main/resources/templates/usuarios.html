@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pt-br" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestao de Usuarios</title>
+    <style>
+        :root { --bg:#0d1117; --card:#161b22; --border:#30363d; --text:#c9d1d9; --dim:#8b949e; --blue:#58a6ff; --green:#3fb950; --red:#f85149; --yellow:#d29922; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--text); font-family:'Segoe UI',sans-serif; padding:16px; }
+        .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:10px; flex-wrap:wrap; gap:8px; }
+        .header h1 { font-size:18px; color:var(--blue); }
+        .btn-voltar { background:none; border:1px solid var(--border); color:var(--text); padding:6px 14px; border-radius:5px; cursor:pointer; font-size:11px; text-decoration:none; }
+        .btn-voltar:hover { border-color:var(--blue); color:var(--blue); }
+        .section { display:grid; grid-template-columns:320px 1fr; gap:16px; }
+        .form-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:16px; }
+        .form-card h3 { font-size:13px; color:var(--blue); margin-bottom:12px; }
+        .form-card label { display:block; font-size:10px; color:var(--dim); margin-bottom:3px; text-transform:uppercase; }
+        .form-card input, .form-card select { width:100%; padding:8px 10px; background:var(--bg); border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:12px; margin-bottom:8px; }
+        .form-card input:focus, .form-card select:focus { border-color:var(--blue); outline:none; }
+        .form-card button { width:100%; padding:9px; background:var(--green); color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600; font-size:12px; }
+        .form-card button:hover { opacity:0.9; }
+        .list-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:16px; max-height:80vh; overflow-y:auto; }
+        .list-card h3 { font-size:13px; color:var(--dim); margin-bottom:10px; }
+        .user-row { display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid var(--border); font-size:12px; flex-wrap:wrap; gap:6px; }
+        .user-row:last-child { border-bottom:none; }
+        .user-info { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+        .user-name { color:var(--blue); font-weight:600; }
+        .user-perfil { font-size:10px; padding:2px 8px; border-radius:8px; }
+        .perfil-admin { background:rgba(210,153,34,0.15); color:var(--yellow); }
+        .perfil-info { background:rgba(88,166,255,0.15); color:var(--blue); }
+        .user-detail { color:var(--dim); font-size:11px; }
+        .status-autorizado { color:var(--green); }
+        .status-bloqueado { color:var(--red); }
+        .user-actions { display:flex; gap:6px; }
+        .btn-sm { padding:4px 10px; border-radius:4px; cursor:pointer; font-size:10px; border:1px solid; background:none; }
+        .btn-edit { border-color:var(--blue); color:var(--blue); }
+        .btn-edit:hover { background:var(--blue); color:#fff; }
+        .btn-del { border-color:var(--red); color:var(--red); }
+        .btn-del:hover { background:var(--red); color:#fff; }
+        .btn-auth { border-color:var(--green); color:var(--green); }
+        .btn-auth:hover { background:var(--green); color:#fff; }
+        .btn-block { border-color:var(--yellow); color:var(--yellow); }
+        .btn-block:hover { background:var(--yellow); color:#fff; }
+        .msg { padding:8px 12px; border-radius:4px; margin-bottom:12px; font-size:12px; display:none; }
+        .msg-ok { background:rgba(63,185,80,0.15); color:var(--green); border:1px solid var(--green); }
+        .msg-err { background:rgba(248,81,73,0.15); color:var(--red); border:1px solid var(--red); }
+        .empty { color:var(--dim); font-size:12px; text-align:center; padding:20px; }
+        /* Revalidation modal */
+        .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center; }
+        .modal-overlay.show { display:flex; }
+        .modal-box { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:20px; width:320px; }
+        .modal-box h3 { color:var(--blue); margin-bottom:12px; font-size:14px; }
+        .modal-box input { width:100%; padding:8px; background:var(--bg); border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:12px; margin-bottom:8px; }
+        .modal-box .modal-btns { display:flex; gap:8px; margin-top:8px; }
+        .modal-box .btn-confirm { flex:1; padding:8px; background:var(--blue); color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600; }
+        .modal-box .btn-cancel { flex:1; padding:8px; background:var(--border); color:var(--text); border:none; border-radius:4px; cursor:pointer; }
+        .modal-error { color:var(--red); font-size:11px; display:none; margin-top:4px; }
+        @media (max-width:700px) { .section { grid-template-columns:1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Gestao de Usuarios</h1>
+    <a href="/endpoint/monitoramento" class="btn-voltar">Voltar</a>
+</div>
+
+<div id="msg" class="msg"></div>
+
+<div class="section">
+    <div class="form-card">
+        <h3 id="form-title">Novo Usuario</h3>
+        <input type="hidden" id="edit-id">
+        <label>Username</label>
+        <input type="text" id="f-username" placeholder="Username...">
+        <label>Senha</label>
+        <input type="password" id="f-senha" placeholder="Senha...">
+        <label>Nome</label>
+        <input type="text" id="f-nome" placeholder="Nome completo...">
+        <label>Filial</label>
+        <input type="text" id="f-filial" placeholder="Filial...">
+        <label>Perfil</label>
+        <select id="f-perfil">
+            <option value="">Carregando...</option>
+        </select>
+        <label>Setor</label>
+        <input type="text" id="f-setor" placeholder="Setor...">
+        <label>Cargo</label>
+        <input type="text" id="f-cargo" placeholder="Cargo...">
+        <label>Autorizado</label>
+        <select id="f-autorizado">
+            <option value="true">Sim</option>
+            <option value="false">Nao</option>
+        </select>
+        <button onclick="salvarUsuario()">Salvar</button>
+    </div>
+
+    <div class="list-card">
+        <h3>Usuarios Cadastrados</h3>
+        <div id="lista-usuarios"><div class="empty">Carregando...</div></div>
+    </div>
+</div>
+
+<!-- Revalidation modal for critical actions -->
+<div id="reval-modal" class="modal-overlay">
+    <div class="modal-box">
+        <h3>Confirmar Acao</h3>
+        <p style="font-size:11px;color:#8b949e;margin-bottom:12px;">Informe suas credenciais para confirmar esta acao.</p>
+        <input type="text" id="reval-user" placeholder="Usuario">
+        <input type="password" id="reval-pass" placeholder="Senha">
+        <div class="modal-error" id="reval-error">Credenciais invalidas</div>
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="fecharRevalModal()">Cancelar</button>
+            <button class="btn-confirm" onclick="confirmarRevalidacao()">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var token = localStorage.getItem('auth_token');
+var pendingAction = null;
+
+function getToken() { return localStorage.getItem('auth_token'); }
+
+function showMsg(text, ok) {
+    var el = document.getElementById('msg');
+    el.innerText = text;
+    el.className = 'msg ' + (ok ? 'msg-ok' : 'msg-err');
+    el.style.display = 'block';
+    setTimeout(function() { el.style.display = 'none'; }, 4000);
+}
+
+function carregarUsuarios() {
+    fetch('/usuarios', { headers: { 'Authorization': getToken() } })
+    .then(function(r) {
+        if (r.status === 403) {
+            document.getElementById('lista-usuarios').innerHTML = '<div class="empty">Sem permissao para acessar</div>';
+            return null;
+        }
+        return r.json();
+    })
+    .then(function(data) {
+        if (!data) return;
+        var container = document.getElementById('lista-usuarios');
+        if (data.length === 0) {
+            container.innerHTML = '<div class="empty">Nenhum usuario cadastrado</div>';
+            return;
+        }
+        var html = '';
+        data.forEach(function(u) {
+            var perfilClass = u.perfil === 'ADMIN' ? 'perfil-admin' : 'perfil-info';
+            var statusClass = u.autorizado ? 'status-autorizado' : 'status-bloqueado';
+            var statusText = u.autorizado ? 'Autorizado' : 'Bloqueado';
+            var btnAuthClass = u.autorizado ? 'btn-block' : 'btn-auth';
+            var btnAuthText = u.autorizado ? 'Bloquear' : 'Autorizar';
+            html += '<div class="user-row">' +
+                '<div class="user-info">' +
+                '<span class="user-name">' + u.username + '</span>' +
+                '<span class="user-perfil ' + perfilClass + '">' + u.perfil + '</span>' +
+                '<span class="user-detail">' + (u.nome || '') + '</span>' +
+                '<span class="user-detail">Filial: ' + (u.filial || '-') + '</span>' +
+                '<span class="user-detail">Setor: ' + (u.setor || '-') + '</span>' +
+                '<span class="user-detail ' + statusClass + '">' + statusText + '</span>' +
+                '</div>' +
+                '<div class="user-actions">' +
+                '<button class="btn-sm btn-edit" onclick="editarUsuario(' + u.id + ',\'' + u.username + '\',\'' + (u.nome||'') + '\',\'' + (u.filial||'') + '\',\'' + u.perfil + '\',\'' + (u.setor||'') + '\',\'' + (u.cargo||'') + '\',' + u.autorizado + ')">Editar</button>' +
+                '<button class="btn-sm ' + btnAuthClass + '" onclick="toggleAutorizacao(' + u.id + ')">' + btnAuthText + '</button>' +
+                '<button class="btn-sm btn-del" onclick="deletarUsuario(' + u.id + ')">Excluir</button>' +
+                '</div></div>';
+        });
+        container.innerHTML = html;
+    });
+}
+
+function limparForm() {
+    document.getElementById('edit-id').value = '';
+    document.getElementById('f-username').value = '';
+    document.getElementById('f-senha').value = '';
+    document.getElementById('f-nome').value = '';
+    document.getElementById('f-filial').value = '';
+    document.getElementById('f-perfil').value = 'INFORMATICA';
+    document.getElementById('f-setor').value = '';
+    document.getElementById('f-cargo').value = '';
+    document.getElementById('f-autorizado').value = 'true';
+    document.getElementById('form-title').innerText = 'Novo Usuario';
+    document.getElementById('f-username').disabled = false;
+}
+
+function salvarUsuario() {
+    var editId = document.getElementById('edit-id').value;
+    var body = {
+        username: document.getElementById('f-username').value,
+        senha: document.getElementById('f-senha').value,
+        nome: document.getElementById('f-nome').value,
+        filial: document.getElementById('f-filial').value,
+        perfil: document.getElementById('f-perfil').value,
+        setor: document.getElementById('f-setor').value,
+        cargo: document.getElementById('f-cargo').value,
+        autorizado: document.getElementById('f-autorizado').value === 'true'
+    };
+
+    var url = editId ? '/usuarios/' + editId : '/usuarios';
+    var method = editId ? 'PUT' : 'POST';
+
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json', 'Authorization': getToken() },
+        body: JSON.stringify(body)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        showMsg(data.message, !data.message.includes('erro') && !data.message.includes('invalido') && !data.message.includes('existe'));
+        limparForm();
+        carregarUsuarios();
+    });
+}
+
+function editarUsuario(id, username, nome, filial, perfil, setor, cargo, autorizado) {
+    document.getElementById('edit-id').value = id;
+    document.getElementById('f-username').value = username;
+    document.getElementById('f-username').disabled = true;
+    document.getElementById('f-senha').value = '';
+    document.getElementById('f-nome').value = nome;
+    document.getElementById('f-filial').value = filial;
+    document.getElementById('f-perfil').value = perfil;
+    document.getElementById('f-setor').value = setor;
+    document.getElementById('f-cargo').value = cargo;
+    document.getElementById('f-autorizado').value = autorizado ? 'true' : 'false';
+    document.getElementById('form-title').innerText = 'Editar Usuario #' + id;
+    window.scrollTo(0, 0);
+}
+
+function deletarUsuario(id) {
+    pendingAction = function() {
+        fetch('/usuarios/' + id, {
+            method: 'DELETE',
+            headers: { 'Authorization': getToken() }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            showMsg(data.message, true);
+            carregarUsuarios();
+        });
+    };
+    abrirRevalModal();
+}
+
+function toggleAutorizacao(id) {
+    pendingAction = function() {
+        fetch('/usuarios/' + id + '/autorizar', {
+            method: 'PATCH',
+            headers: { 'Authorization': getToken() }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            showMsg(data.message, true);
+            carregarUsuarios();
+        });
+    };
+    abrirRevalModal();
+}
+
+function abrirRevalModal() {
+    document.getElementById('reval-modal').classList.add('show');
+    document.getElementById('reval-error').style.display = 'none';
+    document.getElementById('reval-user').value = '';
+    document.getElementById('reval-pass').value = '';
+    document.getElementById('reval-user').focus();
+}
+
+function fecharRevalModal() {
+    document.getElementById('reval-modal').classList.remove('show');
+    pendingAction = null;
+}
+
+function confirmarRevalidacao() {
+    fetch('/auth/revalidar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            username: document.getElementById('reval-user').value,
+            senha: document.getElementById('reval-pass').value
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.autorizado) {
+            document.getElementById('reval-modal').classList.remove('show');
+            if (pendingAction) { pendingAction(); pendingAction = null; }
+        } else {
+            document.getElementById('reval-error').style.display = 'block';
+        }
+    });
+}
+
+function carregarPerfis() {
+    fetch('/auth/perfis')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        var select = document.getElementById('f-perfil');
+        select.innerHTML = '';
+        data.forEach(function(p) {
+            var opt = document.createElement('option');
+            opt.value = p.nome;
+            opt.textContent = p.nome;
+            select.appendChild(opt);
+        });
+    });
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+    var permissoes = null;
+    try { permissoes = JSON.parse(localStorage.getItem('auth_permissoes')); } catch(e) {}
+    if (!permissoes || !permissoes.acessoUsuarios) {
+        document.body.innerHTML = '<div style="text-align:center;padding:40px;color:#f85149;font-size:16px;">Perfil nao tem permissao para acessar<br><a href="/endpoint/monitoramento" style="color:#58a6ff;font-size:13px;">Voltar</a></div>';
+        return;
+    }
+    carregarPerfis();
+    carregarUsuarios();
+});
+</script>
+</body>
+</html>

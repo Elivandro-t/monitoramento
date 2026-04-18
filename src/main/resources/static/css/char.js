@@ -104,6 +104,10 @@ async function Onlw() {
 }
 
 function latencia(loc, hostid, itemid, ip) {
+    // Salvar no localStorage para persistencia ao recarregar
+    localStorage.setItem('chart_hostid', hostid);
+    localStorage.setItem('chart_hostname', loc);
+    localStorage.setItem('chart_interfaceIp', ip);
     window.open(`${endpoint}/endpoint/char?hostname=${loc}&interfaceIp=${ip}&hostid=${hostid}&itemid=${itemid}&limit=0`);
 }
 

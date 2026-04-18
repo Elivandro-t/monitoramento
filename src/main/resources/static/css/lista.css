@@ -92,8 +92,8 @@ html, body {
     background-color: #2e5bff;
     color: white;
     border: none;
-    padding: 9px 15px;
-    font-size: 11px;
+    padding: 7px 12px;
+    font-size: 10px;
     font-weight: bold;
     cursor: pointer;
     text-transform: uppercase;
@@ -112,26 +112,28 @@ html, body {
     height: calc(100vh - 65px); /* Ajusta conforme a altura do seu header */
     overflow-y: auto;
     overflow-x: auto;
+    scrollbar-width: thin;
 }
 
 table {
     width: 100%;
     border-collapse: separate;
-    border-spacing: 0 2px;
+    border-spacing: 0 1px;
+    table-layout: fixed;
 }
 
 /* Header da Tabela (Sticky) */
 thead th {
     color: #3498db;
     text-align: left;
-    padding: 12px 10px;
-    font-size: 11px;
+    padding: 8px 8px;
+    font-size: 10px;
     background: #1a1d21;
     position: sticky;
     top: 0;
     z-index: 50;
     text-transform: uppercase;
-    border-bottom: 2px solid #333;
+    border-bottom: 1px solid #333;
 }
 
 /* Indicadores de Ordenação no Header */
@@ -159,8 +161,8 @@ tr.tr:hover {
 }
 
 td {
-    padding: 10px;
-    font-size: 12px;
+    padding: 6px 8px;
+    font-size: 10px;
     color: #bdc3c7;
     white-space: nowrap;
     border-bottom: 1px solid #1a1d21;
@@ -181,6 +183,32 @@ td:nth-child(6) { /* MAC ADDRESS */
     border-radius: 2px;
     text-transform: uppercase;
     font-size: 10px;
+}
+.area_table button {
+    background: #2e8cff;
+    color: #fff;
+    border: 1px solid #1f6cec;
+    border-radius: 5px;
+    padding: 6px 10px;
+    font-size: 11px;
+    transition: background 0.2s ease;
+}
+
+.area_table button:hover {
+    background: #1d73e6;
+}
+
+.area_table::-webkit-scrollbar {
+    width: 8px;
+}
+
+.area_table::-webkit-scrollbar-track {
+    background: #111317;
+}
+
+.area_table::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
 }
 
 /* ==========================================================
@@ -250,14 +278,11 @@ td:nth-child(6) { /* MAC ADDRESS */
     background: #e74c3c;
     color: white;
     border: none;
-    padding: 5px 10px;
+    padding: 4px 8px;
     cursor: pointer;
     border-radius: 4px;
     font-weight: bold;
-}
-
-.area-propt {
-    background: #000;
+    font-size: 10px;
     padding: 10px;
     margin-bottom: 10px;
     border-radius: 4px;

@@ -1,19 +1,20 @@
 package com.example.projetoAP.repository.EntitySetor;
 
-import com.example.projetoAP.Gateways.SetorRepositoy;
-import com.example.projetoAP.domain.model.Setor.SetorDTO;
-import com.example.projetoAP.domain.model.Setores;
+import java.util.List;
+
 import org.springframework.stereotype.Component;
 
-import java.util.List;
+import com.example.projetoAP.Gateways.SetorRepositoy;
+import com.example.projetoAP.domain.model.Setores;
 
 @Component
 public class FactureSetor implements SetorRepositoy {
-    RepositorySetor repositorySetor;
+    private final RepositorySetor repositorySetor;
+
     public FactureSetor(RepositorySetor repository){
         this.repositorySetor = repository;
     }
-    public FactureSetor(){}
+
     @Override
     public void setRegistro(Setores s) {
         var buscados = repositorySetor.getReferenceByNameComplexo(s.getNameComplexo());

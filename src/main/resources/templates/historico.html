@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-br" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historico de Auditoria</title>
+    <style>
+        :root { --bg:#0d1117; --card:#161b22; --border:#30363d; --text:#c9d1d9; --dim:#8b949e; --blue:#58a6ff; --green:#3fb950; --red:#f85149; --yellow:#d29922; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--text); font-family:'Segoe UI',sans-serif; padding:16px; }
+        .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:10px; flex-wrap:wrap; gap:8px; }
+        .header h1 { font-size:18px; color:var(--blue); }
+        .btn-voltar { background:none; border:1px solid var(--border); color:var(--text); padding:6px 14px; border-radius:5px; cursor:pointer; font-size:11px; text-decoration:none; }
+        .btn-voltar:hover { border-color:var(--blue); color:var(--blue); }
+        .filters { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:flex-end; }
+        .filter-group { display:flex; flex-direction:column; gap:3px; }
+        .filter-group label { font-size:10px; color:var(--dim); text-transform:uppercase; }
+        .filter-group input, .filter-group select { padding:7px 10px; background:var(--card); border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:11px; }
+        .filter-group input:focus, .filter-group select:focus { border-color:var(--blue); outline:none; }
+        .btn-filter { padding:7px 16px; background:var(--blue); color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600; height:32px; }
+        .btn-filter:hover { opacity:0.9; }
+        .btn-clear { padding:7px 16px; background:var(--border); color:var(--text); border:none; border-radius:4px; cursor:pointer; font-size:11px; height:32px; }
+        .table-wrap { background:var(--card); border:1px solid var(--border); border-radius:8px; overflow:auto; max-height:72vh; }
+        table { width:100%; border-collapse:collapse; font-size:11px; }
+        thead { position:sticky; top:0; background:var(--card); z-index:1; }
+        th { padding:10px 8px; text-align:left; color:var(--dim); text-transform:uppercase; font-size:10px; border-bottom:1px solid var(--border); }
+        td { padding:8px; border-bottom:1px solid var(--border); }
+        tr:hover { background:rgba(88,166,255,0.04); }
+        .acao-login { color:var(--green); }
+        .acao-logout { color:var(--dim); }
+        .acao-delete { color:var(--red); }
+        .acao-edit { color:var(--yellow); }
+        .acao-falha { color:var(--red); font-weight:600; }
+        .empty { color:var(--dim); text-align:center; padding:30px; font-size:12px; }
+        .total { font-size:11px; color:var(--dim); margin-bottom:8px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Historico de Auditoria</h1>
+    <a href="/endpoint/monitoramento" class="btn-voltar">Voltar</a>
+</div>
+
+<div class="filters">
+    <div class="filter-group">
+        <label>Usuario</label>
+        <input type="text" id="f-usuario" placeholder="Filtrar por usuario...">
+    </div>
+    <div class="filter-group">
+        <label>Acao</label>
+        <select id="f-acao">
+            <option value="">Todas</option>
+            <option value="LOGIN">Login</option>
+            <option value="LOGOUT">Logout</option>
+            <option value="LOGIN_FALHA">Login Falha</option>
+            <option value="LOGIN_BLOQUEADO">Login Bloqueado</option>
+            <option value="REVALIDACAO">Revalidacao</option>
+            <option value="CRIAR_USUARIO">Criar Usuario</option>
+            <option value="EDITAR_USUARIO">Editar Usuario</option>
+            <option value="DELETAR_USUARIO">Deletar Usuario</option>
+            <option value="AUTORIZAR_USUARIO">Autorizar Usuario</option>
+            <option value="DESAUTORIZAR_USUARIO">Desautorizar Usuario</option>
+            <option value="DELETAR_ENDPOINT">Deletar Endpoint</option>
+        </select>
+    </div>
+    <div class="filter-group">
+        <label>Data Inicio</label>
+        <input type="date" id="f-data-inicio">
+    </div>
+    <div class="filter-group">
+        <label>Data Fim</label>
+        <input type="date" id="f-data-fim">
+    </div>
+    <button class="btn-filter" onclick="carregarLogs()">Filtrar</button>
+    <button class="btn-clear" onclick="limparFiltros()">Limpar</button>
+</div>
+
+<div id="total" class="total"></div>
+
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Data/Hora</th>
+                <th>Usuario</th>
+                <th>Acao</th>
+                <th>Rota</th>
+                <th>Dados</th>
+                <th>IP</th>
+                <th>Navegador</th>
+                <th>SO</th>
+            </tr>
+        </thead>
+        <tbody id="tbody">
+            <tr><td colspan="8" class="empty">Carregando...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+function getToken() { return localStorage.getItem('auth_token'); }
+
+function getAcaoClass(acao) {
+    if (acao.includes('LOGIN') && !acao.includes('FALHA') && !acao.includes('BLOQUEADO')) return 'acao-login';
+    if (acao.includes('LOGOUT')) return 'acao-logout';
+    if (acao.includes('DELETAR')) return 'acao-delete';
+    if (acao.includes('EDITAR') || acao.includes('AUTORIZAR') || acao.includes('CRIAR')) return 'acao-edit';
+    if (acao.includes('FALHA') || acao.includes('BLOQUEADO')) return 'acao-falha';
+    return '';
+}
+
+function carregarLogs() {
+    var params = new URLSearchParams();
+    var usuario = document.getElementById('f-usuario').value;
+    var acao = document.getElementById('f-acao').value;
+    var dataInicio = document.getElementById('f-data-inicio').value;
+    var dataFim = document.getElementById('f-data-fim').value;
+    if (usuario) params.set('usuario', usuario);
+    if (acao) params.set('acao', acao);
+    if (dataInicio) params.set('dataInicio', dataInicio);
+    if (dataFim) params.set('dataFim', dataFim);
+
+    fetch('/audit?' + params.toString(), {
+        headers: { 'Authorization': getToken() }
+    })
+    .then(function(r) {
+        if (r.status === 403) {
+            document.getElementById('tbody').innerHTML = '<tr><td colspan="8" class="empty">Sem permissao para acessar</td></tr>';
+            return null;
+        }
+        return r.json();
+    })
+    .then(function(data) {
+        if (!data) return;
+        document.getElementById('total').innerText = 'Total: ' + data.length + ' registros';
+        if (data.length === 0) {
+            document.getElementById('tbody').innerHTML = '<tr><td colspan="8" class="empty">Nenhum registro encontrado</td></tr>';
+            return;
+        }
+        var html = '';
+        data.forEach(function(l) {
+            html += '<tr>' +
+                '<td>' + l.timestamp + '</td>' +
+                '<td>' + l.usuario + '</td>' +
+                '<td class="' + getAcaoClass(l.acao) + '">' + l.acao + '</td>' +
+                '<td>' + l.rota + '</td>' +
+                '<td>' + l.dados + '</td>' +
+                '<td>' + l.ipMaquina + '</td>' +
+                '<td>' + l.navegador + '</td>' +
+                '<td>' + l.sistemaOperacional + '</td>' +
+                '</tr>';
+        });
+        document.getElementById('tbody').innerHTML = html;
+    });
+}
+
+function limparFiltros() {
+    document.getElementById('f-usuario').value = '';
+    document.getElementById('f-acao').value = '';
+    document.getElementById('f-data-inicio').value = '';
+    document.getElementById('f-data-fim').value = '';
+    carregarLogs();
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+    var permissoes = null;
+    try { permissoes = JSON.parse(localStorage.getItem('auth_permissoes')); } catch(e) {}
+    if (!permissoes || !permissoes.acessoHistorico) {
+        document.body.innerHTML = '<div style="text-align:center;padding:40px;color:#f85149;font-size:16px;">Perfil nao tem permissao para acessar<br><a href="/endpoint/monitoramento" style="color:#58a6ff;font-size:13px;">Voltar</a></div>';
+        return;
+    }
+    carregarLogs();
+});
+</script>
+</body>
+</html>

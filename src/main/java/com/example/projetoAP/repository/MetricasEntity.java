@@ -10,7 +10,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 @Entity
-@Table(name = "history")
+@Table(name = "history", indexes = {
+        @Index(name = "idx_history_hostid_timestamp", columnList = "hostid,timestamp"),
+        @Index(name = "idx_history_hostid_itemid", columnList = "hostid,itemid")
+})
 public class MetricasEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

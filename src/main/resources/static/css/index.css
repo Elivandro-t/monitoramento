@@ -4,10 +4,11 @@ body{
     overflow: hidden;
     position: relative;
     box-sizing: border-box;
+    color: #e6e9ef;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 main{
-    padding:10px;
-
+    padding: 10px;
 }
 /* .container_int{
     background-color: red;
@@ -16,23 +17,25 @@ main{
 
 } */
 .in{
-    height: 20px;
+    height: auto;
 }
 button{
-    height:20px;
-    border:1px solid #ddf;
+    height: 28px;
+    border: 1px solid #ddf;
     cursor: pointer;
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 12px;
-
-
+    font-size: 11px;
+    color: #f4f7fb;
+    background: rgba(255,255,255,0.05);
+    padding: 0 10px;
+}
+button:hover{
+    background-color: rgba(255,255,255,0.12);
 }
 .botao{
     background-color:#007ACC;
     color: #F2F2F2;
     padding-top: 2px;
-
-
 }
 .titulo{
     display: flex;
@@ -51,17 +54,15 @@ button:active{
     background-color: #007ACC;
 }
 button:checked{
-        background-color: #4A90E2;
-
+    background-color: #4A90E2;
 }
 .area_view{
     color: #fff;
-    /* border:1px dotted #8f7676; */
     margin-top: 5px;
     border-top-left-radius: 2px;
     border-top-right-radius: 2px;
-   box-sizing: border-box;
-   margin-bottom: 25px;
+    box-sizing: border-box;
+    margin-bottom: 25px;
 }
 .area_view_mac{
 }
@@ -69,10 +70,9 @@ iframe{
     border: 0;
     height:calc(92vh - 70px);
     overflow: hidden;
-
 }
 #status{
-   font-size: 16px;
+   font-size: 14px;
    font-weight: bold;
    padding: 2px 5px;
    border-radius: 5px;
@@ -90,11 +90,13 @@ footer{
     width: 100%;
     position: fixed;
     z-index: 1000;
-    padding: 0 10px;
-    font-size: 14px;
+    padding: 8px 14px;
+    font-size: 12px;
     bottom: 0;
-    color: #d4d1d1;
+    color: #8b96a8;
     text-align: center;
     font-family: Arial, Helvetica, sans-serif;
+    background: rgba(10,12,18,0.95);
+    border-top: 1px solid rgba(255,255,255,0.06);
 
 }

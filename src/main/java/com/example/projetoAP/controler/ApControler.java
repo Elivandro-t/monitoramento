@@ -1,31 +1,42 @@
 package com.example.projetoAP.controler;
 
-import com.example.projetoAP.EndpointDTO;
-import com.example.projetoAP.Service.EndpointInterfaceDTO;
-import com.example.projetoAP.controler.SetoresService.SetorService;
-import com.example.projetoAP.controler.service.*;
-import com.example.projetoAP.domain.model.UpdateDTO;
-import com.example.projetoAP.domain.vo.Filter;
-import com.example.projetoAP.domain.vo.MetricasDTO;
-import jakarta.persistence.Table;
-import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.messaging.handler.annotation.SendTo;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Controller;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.example.projetoAP.EndpointDTO;
+import com.example.projetoAP.Service.EndpointInterfaceDTO;
+import com.example.projetoAP.controler.SetoresService.SetorService;
+import com.example.projetoAP.controler.service.AuthService;
+import com.example.projetoAP.controler.service.CalcularPerdas;
+import com.example.projetoAP.controler.service.EndpointService;
+import com.example.projetoAP.controler.service.GroupService;
+import com.example.projetoAP.domain.model.UpdateDTO;
+import com.example.projetoAP.domain.vo.Filter;
+
+import com.example.projetoAP.controler.service.AuditService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 @Controller
 @RequestMapping("/endpoint")
@@ -38,9 +49,13 @@ public class ApControler {
     private SimpMessagingTemplate messagingTemplate;
     @Autowired
     GroupService groupService;
+    @Autowired
+    AuthService authService;
+    @Autowired
+    AuditService auditService;
     EndpointService endpointService;
     SetorService setorService;
-    ApControler(EndpointService endpointService,SetorService setor){
+    ApControler(EndpointService endpointService, SetorService setor){
         this.endpointService = endpointService;
         this.setorService = setor;
     }
@@ -148,19 +163,43 @@ public class ApControler {
     public String websocket(){
         return "listaweb";
     }
+    @GetMapping("/usuarios")
+    public String usuarios(){
+        return "usuarios";
+    }
+    @GetMapping("/historico")
+    public String historico(){
+        return "historico";
+    }
     @GetMapping("/monitoramento/char")
     public String monitor(){
         return "charlista";
     }
     @GetMapping("/char")
-    public String Char(@RequestParam(required = false) String limit,
-                       @RequestParam(required = false) String hostname,
-                       @RequestParam(required = false) String hostid,
-                       @RequestParam(required = false) String itemid, Model model) throws ExecutionException, InterruptedException {
-        var lista = calcularPerdas.listaMetricas(new Filter(Long.parseLong(limit),Long.parseLong(itemid),Long.parseLong(hostid)));;
-     Map<String,List<MetricasDTO>> li = lista.get();
-        model.addAttribute("data",lista.get());
+    public String Char(@RequestParam(required = false, defaultValue = "0") String limit,
+                       @RequestParam(required = false, defaultValue = "") String hostname,
+                       @RequestParam(required = false, defaultValue = "0") String hostid,
+                       @RequestParam(required = false, defaultValue = "1") String itemid, Model model) throws ExecutionException, InterruptedException {
+        long limitValue = parseLongOrDefault(limit, 0L);
+        long hostIdValue = parseLongOrDefault(hostid, 0L);
+        long itemIdValue = parseLongOrDefault(itemid, 1L);
+
+        if (hostIdValue <= 0) {
+            model.addAttribute("data", Map.of("result", List.of()));
+            return "char";
+        }
+
+        var lista = calcularPerdas.listaMetricas(new Filter(limitValue, itemIdValue, hostIdValue));
+        model.addAttribute("data", lista.get());
         return "char";
+    }
+
+    private long parseLongOrDefault(String value, long defaultValue) {
+        try {
+            return Long.parseLong(value);
+        } catch (Exception e) {
+            return defaultValue;
+        }
     }
     @PutMapping("/registro")
     public String atualizaDados(UpdateDTO e,Model red){
@@ -169,10 +208,26 @@ public class ApControler {
     }
     @DeleteMapping("/delete")
     @Transactional
-    public String deletar(@RequestParam Long id){
-        System.out.println("deletado "+id);
+    @ResponseBody
+    public org.springframework.http.ResponseEntity<?> deletar(@RequestParam Long id,
+                                                               @RequestHeader(value = "Authorization", required = false) String token,
+                                                               HttpServletRequest request) {
+        if (!authService.temPermissao(token, "acessoDelete")) {
+            return org.springframework.http.ResponseEntity.status(403).body(Map.of("message", "Sem permissao para deletar. Faca login novamente."));
+        }
+        String username = authService.getUsername(token);
         endpointService.delete(id);
-        return "redirect:/registro";
+        auditService.registrar(username, "DELETAR_ENDPOINT", "/endpoint/delete",
+                "Deletou endpoint ID: " + id, getClientIp(request), request.getHeader("User-Agent"));
+        return org.springframework.http.ResponseEntity.ok(Map.of("message", "Endpoint excluido com sucesso"));
+    }
+
+    private String getClientIp(HttpServletRequest request) {
+        String xForwarded = request.getHeader("X-Forwarded-For");
+        if (xForwarded != null && !xForwarded.isEmpty()) {
+            return xForwarded.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }
 ///sudo docker run --name mysql -e MYSQL_DATABASE=informatica -e MYSQL_ROOT_PASSWORD=Tgfhvbnm1@ -p 3306:3306 -d mysql:latest

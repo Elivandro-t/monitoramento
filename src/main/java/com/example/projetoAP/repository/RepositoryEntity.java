@@ -19,8 +19,8 @@ public interface RepositoryEntity extends JpaRepository<EndpointEntity,Long> {
 
 
     @Modifying
-    @Query("UPDATE EndpointEntity e SET e.status = :status, e.ping = :ping, e.ultimaVezOnline = :ultima, e.agoraIntermitente = agoraIntermitente WHERE e.id = :id")
+    @Query("UPDATE EndpointEntity e SET e.status = :status, e.ping = :ping, e.ultimaVezOnline = :ultima, e.agoraIntermitente = :agoraIntermitente WHERE e.id = :id")
     void atualizarStatus(@Param("id") Long id, @Param("status") String status,
-                         @Param("ping") String ping, @Param("ultima") LocalDateTime ultima, boolean agoraIntermitente);
+                         @Param("ping") String ping, @Param("ultima") LocalDateTime ultima, @Param("agoraIntermitente") boolean agoraIntermitente);
 
 }

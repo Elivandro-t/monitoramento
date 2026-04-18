@@ -1,19 +1,225 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="pt-br" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" th:href="@{/css/registro.css}">
-
+    <title>Gerenciamento - Grupos e Filiais</title>
+    <style>
+        :root { --bg:#0d1117; --card:#161b22; --border:#30363d; --text:#c9d1d9; --dim:#8b949e; --blue:#58a6ff; --green:#3fb950; --red:#f85149; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--text); font-family:'Segoe UI',sans-serif; padding:16px; }
+        h1 { font-size:18px; color:var(--blue); margin-bottom:16px; }
+        .tabs { display:flex; gap:4px; margin-bottom:16px; }
+        .tab { padding:8px 20px; background:var(--card); border:1px solid var(--border); border-radius:6px 6px 0 0; cursor:pointer; color:var(--dim); font-size:12px; font-weight:600; }
+        .tab.active { background:var(--bg); border-bottom-color:var(--bg); color:var(--blue); }
+        .tab-content { display:none; }
+        .tab-content.active { display:block; }
+        .section { display:grid; grid-template-columns:300px 1fr; gap:16px; }
+        .form-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:16px; }
+        .form-card h3 { font-size:13px; color:var(--blue); margin-bottom:12px; }
+        .form-card input { width:100%; padding:8px 10px; background:#0d1117; border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:12px; margin-bottom:8px; }
+        .form-card input:focus { border-color:var(--blue); outline:none; }
+        .form-card button { width:100%; padding:8px; background:var(--green); color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600; font-size:12px; }
+        .form-card button:hover { opacity:0.9; }
+        .list-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:16px; max-height:60vh; overflow-y:auto; }
+        .list-card h3 { font-size:13px; color:var(--dim); margin-bottom:6px; }
+        .subtitle { font-size:11px; color:var(--text); margin-bottom:12px; }
+        .note { font-size:11px; color:#a1caff; margin-bottom:10px; }
+        .list-item { display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:1px solid var(--border); font-size:12px; }
+        .list-item:last-child { border-bottom:none; }
+        .list-item .item-info { display:flex; gap:8px; align-items:center; }
+        .list-item .item-id { color:var(--dim); font-family:monospace; min-width:30px; }
+        .list-item .item-name { color:var(--text); }
+        .list-item .item-filial { color:var(--blue); font-size:11px; }
+        .btn-delete { background:none; border:1px solid var(--red); color:var(--red); padding:3px 10px; border-radius:4px; cursor:pointer; font-size:10px; width:auto; }
+        .btn-delete:hover { background:var(--red); color:#fff; }
+        .empty { color:var(--dim); font-size:12px; text-align:center; padding:20px; }
+        .msg { padding:8px 12px; border-radius:4px; margin-bottom:12px; font-size:12px; }
+        .msg-success { background:rgba(63,185,80,0.15); color:var(--green); border:1px solid var(--green); }
+        .msg-error { background:rgba(248,81,73,0.15); color:var(--red); border:1px solid var(--red); }
+        /* Modal Auth */
+        .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center; }
+        .modal-overlay.show { display:flex; }
+        .modal-box { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:20px; width:320px; }
+        .modal-box h3 { color:var(--blue); margin-bottom:12px; font-size:14px; }
+        .modal-box input { width:100%; padding:8px; background:var(--bg); border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:12px; margin-bottom:8px; }
+        .modal-box .modal-btns { display:flex; gap:8px; margin-top:8px; }
+        .modal-box .btn-login { flex:1; padding:8px; background:var(--blue); color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600; }
+        .modal-box .btn-cancel { flex:1; padding:8px; background:var(--border); color:var(--text); border:none; border-radius:4px; cursor:pointer; }
+        .modal-error { color:var(--red); font-size:11px; display:none; margin-top:4px; }
+        .list-card::-webkit-scrollbar { width:4px; }
+        .list-card::-webkit-scrollbar-thumb { background:var(--border); border-radius:10px; }
+        @media (max-width:700px) {
+            .section { grid-template-columns:1fr; }
+        }
+    </style>
 </head>
 <body>
-<script th:src="@{/css/group.js}"></script>
-  <h1>Grupos de Serviços</h1>
-   <form method="post" action="/group/registro">
-       <input type="text" name="nome"  placeholder="Nome do grupo...">
-   </form>
-<div id="modal" style="display:block;" th:if="${mensagem}" th:text="${mensagem}"></div>
+
+<h1>Gerenciamento</h1>
+
+<div th:if="${mensagem}" class="msg msg-success" th:text="${mensagem}"></div>
+
+<!-- Tabs -->
+<div class="tabs">
+    <div class="tab active" onclick="showTab('grupos')">Grupos</div>
+    <div class="tab" onclick="showTab('setores')">Filiais / Blocos</div>
+</div>
+
+<!-- Tab Grupos -->
+<div id="tab-grupos" class="tab-content active">
+    <div class="section">
+        <div class="form-card">
+            <h3>Novo Grupo</h3>
+            <div class="note">A exclusão só funciona após autenticação válida.</div>
+            <form method="post" action="/group/registro">
+                <input type="text" name="nome" placeholder="Nome do grupo..." required>
+                <button type="submit">Criar Grupo</button>
+            </form>
+        </div>
+        <div class="list-card">
+            <h3>Grupos Cadastrados</h3>
+            <div class="subtitle" th:text="|Total de grupos: ${grupos != null ? #lists.size(grupos) : 0}|"></div>
+            <div th:if="${grupos == null || grupos.isEmpty()}" class="empty">Nenhum grupo cadastrado</div>
+            <div th:each="item : ${grupos}" class="list-item">
+                <div class="item-info">
+                    <span class="item-id" th:text="'#' + ${item.id}"></span>
+                    <span class="item-name" th:text="${item.nome}"></span>
+                </div>
+                <button class="btn-delete" th:data-id="${item.id}" th:data-type="group" onclick="confirmarExclusao(this)">Excluir</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tab Setores -->
+<div id="tab-setores" class="tab-content">
+    <div class="section">
+        <div class="form-card">
+            <h3>Nova Filial / Bloco</h3>
+            <form method="post" action="/setores">
+                <input type="text" name="nome" placeholder="Nome do complexo..." required>
+                <input type="text" name="filial" placeholder="Numero da filial..." required>
+                <button type="submit">Criar Filial</button>
+            </form>
+        </div>
+        <div class="list-card">
+            <h3>Filiais / Blocos Cadastrados</h3>
+            <div class="subtitle" th:text="|Total de filiais/blocos: ${setores != null ? #lists.size(setores) : 0}|"></div>
+            <div th:if="${setores == null || setores.isEmpty()}" class="empty">Nenhuma filial cadastrada</div>
+            <div th:each="item : ${setores}" class="list-item">
+                <div class="item-info">
+                    <span class="item-id" th:text="'#' + ${item.id}"></span>
+                    <span class="item-name" th:text="${item.nome}"></span>
+                    <span class="item-filial" th:text="'Filial ' + ${item.filial}"></span>
+                </div>
+                <button class="btn-delete" th:data-id="${item.id}" th:data-type="setor" onclick="confirmarExclusao(this)">Excluir</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Autenticacao -->
+<div id="auth-modal" class="modal-overlay">
+    <div class="modal-box">
+        <h3>Autenticacao Necessaria</h3>
+        <p style="font-size:11px;color:#8b949e;margin-bottom:12px;">Informe suas credenciais para realizar esta acao.</p>
+        <input type="text" id="auth-user" placeholder="Usuario">
+        <input type="password" id="auth-pass" placeholder="Senha">
+        <div class="modal-error" id="auth-error">Usuario ou senha invalidos</div>
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
+            <button class="btn-login" onclick="fazerLogin()">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var deleteId = null;
+var deleteType = null;
+
+function showTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
+    document.querySelectorAll('.tab').forEach(function(el) { el.classList.remove('active'); });
+    document.getElementById('tab-' + tab).classList.add('active');
+    event.target.classList.add('active');
+}
+
+function confirmarExclusao(btn) {
+    deleteId = btn.getAttribute('data-id');
+    deleteType = btn.getAttribute('data-type');
+
+    var token = localStorage.getItem('auth_token');
+    if (token) {
+        // Verifica se token ainda e valido
+        fetch('/auth/verificar', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({token: token})
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            if (data.autorizado) {
+                executarExclusao(token);
+            } else {
+                localStorage.removeItem('auth_token');
+                abrirModal();
+            }
+        });
+    } else {
+        abrirModal();
+    }
+}
+
+function abrirModal() {
+    document.getElementById('auth-modal').classList.add('show');
+    document.getElementById('auth-user').value = '';
+    document.getElementById('auth-pass').value = '';
+    document.getElementById('auth-error').style.display = 'none';
+    document.getElementById('auth-user').focus();
+}
+
+function fecharModal() {
+    document.getElementById('auth-modal').classList.remove('show');
+    deleteId = null;
+    deleteType = null;
+}
+
+function fazerLogin() {
+    var username = document.getElementById('auth-user').value;
+    var senha = document.getElementById('auth-pass').value;
+
+    fetch('/auth/login', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({username: username, senha: senha})
+    }).then(function(r) { return r.json(); }).then(function(data) {
+        if (data.token) {
+            localStorage.setItem('auth_token', data.token);
+            fecharModal();
+            executarExclusao(data.token);
+        } else {
+            document.getElementById('auth-error').style.display = 'block';
+        }
+    });
+}
+
+function executarExclusao(token) {
+    var url = '';
+    if (deleteType === 'group') url = '/group/delete/' + deleteId;
+    else if (deleteType === 'setor') url = '/setores/delete/' + deleteId;
+
+    fetch(url, {
+        method:'DELETE',
+        headers:{'Authorization': token}
+    }).then(function(r) {
+        if (r.ok) {
+            window.location.reload();
+        } else {
+            localStorage.removeItem('auth_token');
+            abrirModal();
+        }
+    });
+}
+</script>
 
 </body>
 </html>

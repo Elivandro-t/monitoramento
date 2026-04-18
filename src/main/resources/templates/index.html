@@ -2,38 +2,357 @@
 
 <head>
   <link rel="stylesheet" th:href="@{/css/index.css}">
+  <style>
+    /* ===== BOTOES MENORES ===== */
+    .in button {
+      font-size: 10px;
+      padding: 0 8px;
+      height: 24px;
+      white-space: nowrap;
+    }
+    .container_ints.in {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      align-items: center;
+    }
+
+    /* ===== TITULO MENOR ===== */
+    .titulo h2 { font-size: 13px; }
+    .titulo { gap: 6px; flex-wrap: wrap; }
+
+    /* ===== USER AREA ===== */
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: #8b949e;
+    }
+    .user-info .user-name { color: #58a6ff; font-weight: 600; font-size: 10px; }
+    .user-info .user-perfil {
+      color: #3fb950;
+      font-size: 9px;
+      background: rgba(63,185,80,0.15);
+      padding: 1px 6px;
+      border-radius: 6px;
+    }
+    .btn-logout {
+      background: none;
+      border: 1px solid #f85149;
+      color: #f85149;
+      padding: 1px 8px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 9px;
+      height: auto;
+    }
+    .btn-logout:hover { background: #f85149; color: #fff; }
+
+    /* ===== BOTOES ADMIN ===== */
+    .btn-admin { border-color: #d29922; color: #d29922; }
+    .btn-admin:hover { background: #d29922; color: #fff; }
+
+    /* ===== LOADING IFRAME ===== */
+    #iframe-loading {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(13,17,23,0.90);
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 10;
+    }
+    #iframe-loading .ld-spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid #30363d;
+      border-top: 3px solid #58a6ff;
+      border-radius: 50%;
+      animation: ld-spin 0.7s linear infinite;
+    }
+    #iframe-loading .ld-text {
+      color: #8b949e;
+      font-size: 11px;
+    }
+    @keyframes ld-spin { to { transform: rotate(360deg); } }
+
+    .area_view { position: relative; }
+
+    /* ===== MODAL ===== */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:2000; justify-content:center; align-items:center; }
+    .modal-overlay.show { display:flex; }
+    .modal-box { background:#161b22; border:1px solid #30363d; border-radius:10px; padding:20px; width:300px; position:relative; }
+    .modal-box h3 { color:#58a6ff; margin-bottom:10px; font-size:14px; }
+    .modal-box p { font-size:10px; color:#8b949e; margin-bottom:10px; }
+    .modal-box input { width:100%; padding:7px 8px; background:#0d1117; border:1px solid #30363d; border-radius:4px; color:#c9d1d9; font-size:11px; margin-bottom:8px; box-sizing:border-box; }
+    .modal-box input:focus { border-color:#58a6ff; outline:none; }
+    .modal-btns { display:flex; gap:6px; margin-top:8px; }
+    .btn-login-modal { flex:1; padding:7px; background:#58a6ff; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600; font-size:11px; }
+    .btn-login-modal:hover { background:#79b8ff; }
+    .btn-close-modal { position:absolute; top:8px; right:10px; background:none; border:none; color:#8b949e; font-size:16px; cursor:pointer; height:auto; padding:0; }
+    .btn-close-modal:hover { color:#f85149; }
+    .modal-error { color:#f85149; font-size:10px; display:none; margin-top:4px; }
+
+    /* ===== POPUP ===== */
+    .popup-msg {
+      position:fixed; top:16px; right:16px;
+      background:#161b22; border:1px solid #f85149; color:#f85149;
+      padding:10px 16px; border-radius:6px; font-size:11px;
+      z-index:3000; display:none;
+    }
+    .popup-msg.show { display:block; }
+  </style>
 </head>
 
 <body>
   <main>
     <div class="titulo">
-      <h2 >Informatica CD-116</h2>
+      <h2>Informatica CD-116</h2>
       <p id="status">Verificando...</p>
+      <div id="user-area" class="user-info" style="margin-left:auto;"></div>
     </div>
-    
+
     <div class="container_ints in">
       <button onclick="app('/endpoint/pagina',this);" data-route="/pagina">Mac Search</button>
       <button onclick="app('/endpoint/lista',this);" data-route="/lista">Interface List</button>
       <button onclick="app('/endpoint/antenas',this);" data-route="/antenas">Host List</button>
       <button onclick="app('/group/registro',this);" data-route="/group/registro">Host Group</button>
       <button onclick="app2('/endpoint/monitoramento/char',this);">Monitor 1</button>
-      <button onclick="app2('/endpoint/web',this);" >Monitor 2</button>
-      <button onclick="downloads()" >Android app</button>
-
-
+      <button onclick="app2('/endpoint/web',this);">Monitor 2</button>
+      <button onclick="downloads()">Android app</button>
+      <button onclick="abrirUsuarios()" class="btn-admin" id="btn-usuarios">Usuarios</button>
+      <button onclick="abrirHistorico()" class="btn-admin" id="btn-historico">Historico</button>
+      <button onclick="abrirSetores()" data-route="/setores" id="btn-setores">Setores</button>
+      <button onclick="abrirLoginModal()" id="btn-fazer-login">Fazer Login</button>
     </div>
+
     <div class="area_view">
-        <iframe src="/endpoint/lista" width="100%" id="iframe"></iframe>
+        <!-- Loading overlay dentro do iframe -->
+        <div id="iframe-loading">
+            <div class="ld-spinner"></div>
+            <span class="ld-text">Carregando dados...</span>
+        </div>
+        <iframe src="/endpoint/lista" width="100%" id="iframe" onload="esconderLoading()"></iframe>
     </div>
+
     <footer>
       <span>@developed by Elivandro  </span>
-      <small>V 1.2 JVM 21</small>
+      <small>V 2.1.23 JVM 21</small>
     </footer>
+  </main>
 
-</main>
-<script th:src="@{/css/onserver.js}"></script>
-<script th:src="@{/css/javascrip.js}"></script>
-   
+  <!-- Login Modal -->
+  <div id="login-modal" class="modal-overlay">
+    <div class="modal-box">
+      <button class="btn-close-modal" onclick="fecharLoginModal()">&times;</button>
+      <h3>Login</h3>
+      <p>Informe suas credenciais para acessar funcoes administrativas.</p>
+      <input type="text" id="login-user" placeholder="Usuario" onkeydown="if(event.key==='Enter')fazerLogin()">
+      <input type="password" id="login-pass" placeholder="Senha" onkeydown="if(event.key==='Enter')fazerLogin()">
+      <div class="modal-error" id="login-error"></div>
+      <div class="modal-btns">
+        <button class="btn-login-modal" onclick="fazerLogin()">Fazer Login</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Popup de permissao -->
+  <div id="popup-permissao" class="popup-msg"></div>
+
+  <script th:src="@{/css/onserver.js}"></script>
+  <script th:src="@{/css/javascrip.js}"></script>
+  <script>
+  // ===== AUTH STATE =====
+  var authToken = localStorage.getItem('auth_token');
+  var authPerfil = localStorage.getItem('auth_perfil');
+  var authUsername = localStorage.getItem('auth_username');
+  var authNome = localStorage.getItem('auth_nome');
+  var authPermissoes = null;
+  try { authPermissoes = JSON.parse(localStorage.getItem('auth_permissoes')); } catch(e) {}
+
+  // ===== LOADING IFRAME =====
+  function esconderLoading() {
+      var ld = document.getElementById('iframe-loading');
+      if (ld) ld.style.display = 'none';
+  }
+
+  // ===== UI =====
+  function atualizarUI() {
+      var userArea = document.getElementById('user-area');
+      var btnLogin = document.getElementById('btn-fazer-login');
+      var btnUsuarios = document.getElementById('btn-usuarios');
+      var btnHistorico = document.getElementById('btn-historico');
+      var btnSetores = document.getElementById('btn-setores');
+
+      if (authToken && authUsername) {
+          userArea.innerHTML =
+              '<span class="user-name">' + (authNome || authUsername) + '</span>' +
+              '<span class="user-perfil">' + (authPerfil || '') + '</span>' +
+              '<button class="btn-logout" onclick="fazerLogout()">Sair</button>';
+          btnLogin.style.display = 'none';
+          if (btnUsuarios) btnUsuarios.style.display = authPermissoes && authPermissoes.acessoUsuarios ? '' : 'none';
+          if (btnHistorico) btnHistorico.style.display = authPermissoes && authPermissoes.acessoHistorico ? '' : 'none';
+          if (btnSetores) btnSetores.style.display = authPermissoes && authPermissoes.acessoSetores ? '' : 'none';
+      } else {
+          userArea.innerHTML = '';
+          btnLogin.style.display = '';
+          if (btnUsuarios) btnUsuarios.style.display = 'none';
+          if (btnHistorico) btnHistorico.style.display = 'none';
+          if (btnSetores) btnSetores.style.display = 'none';
+      }
+  }
+
+  // ===== LOGIN MODAL =====
+  function abrirLoginModal() {
+      document.getElementById('login-modal').classList.add('show');
+      document.getElementById('login-error').style.display = 'none';
+      document.getElementById('login-user').value = '';
+      document.getElementById('login-pass').value = '';
+      document.getElementById('login-user').focus();
+  }
+  function fecharLoginModal() {
+      document.getElementById('login-modal').classList.remove('show');
+  }
+
+  function fazerLogin() {
+      var username = document.getElementById('login-user').value;
+      var senha = document.getElementById('login-pass').value;
+      if (!username || !senha) {
+          var err = document.getElementById('login-error');
+          err.innerText = 'Preencha usuario e senha';
+          err.style.display = 'block';
+          return;
+      }
+      fetch('/auth/login', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({username: username, senha: senha})
+      })
+      .then(function(r) { return r.json().then(function(d) { return {status: r.status, data: d}; }); })
+      .then(function(res) {
+          if (res.data.token) {
+              authToken = res.data.token;
+              authPerfil = res.data.perfil;
+              authUsername = res.data.username;
+              authNome = res.data.nome;
+              authPermissoes = res.data.permissoes || {};
+              localStorage.setItem('auth_token', authToken);
+              localStorage.setItem('auth_perfil', authPerfil);
+              localStorage.setItem('auth_username', authUsername);
+              localStorage.setItem('auth_nome', authNome);
+              localStorage.setItem('auth_permissoes', JSON.stringify(authPermissoes));
+              fecharLoginModal();
+              atualizarUI();
+          } else {
+              var errEl = document.getElementById('login-error');
+              errEl.innerText = res.data.message || 'Erro ao fazer login';
+              errEl.style.display = 'block';
+          }
+      })
+      .catch(function() {
+          var errEl = document.getElementById('login-error');
+          errEl.innerText = 'Erro de conexao com o servidor';
+          errEl.style.display = 'block';
+      });
+  }
+
+  function fazerLogout() {
+      if (authToken) {
+          fetch('/auth/logout', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({token: authToken})
+          });
+      }
+      authToken = null; authPerfil = null; authUsername = null; authNome = null; authPermissoes = null;
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_perfil');
+      localStorage.removeItem('auth_username');
+      localStorage.removeItem('auth_nome');
+      localStorage.removeItem('auth_permissoes');
+      atualizarUI();
+  }
+
+  // ===== POPUP =====
+  function mostrarPopup(msg) {
+      var popup = document.getElementById('popup-permissao');
+      popup.innerText = msg;
+      popup.classList.add('show');
+      setTimeout(function() { popup.classList.remove('show'); }, 3000);
+  }
+
+  // ===== NAVEGACAO COM PERMISSAO =====
+  function abrirUsuarios() {
+      if (!authToken) {
+          mostrarPopup('Faca login para acessar');
+          abrirLoginModal();
+          return;
+      }
+      if (!authPermissoes || !authPermissoes.acessoUsuarios) {
+          mostrarPopup('Perfil nao tem permissao para acessar');
+          return;
+      }
+      window.location.href = '/endpoint/usuarios';
+  }
+
+  function abrirHistorico() {
+      if (!authToken) {
+          mostrarPopup('Faca login para acessar');
+          abrirLoginModal();
+          return;
+      }
+      if (!authPermissoes || !authPermissoes.acessoHistorico) {
+          mostrarPopup('Perfil nao tem permissao para acessar');
+          return;
+      }
+      window.location.href = '/endpoint/historico';
+  }
+
+  function abrirSetores() {
+      window.location.href = '/setores';
+  }
+
+  // ===== VERIFICAR SESSAO AO CARREGAR =====
+  function verificarSessao() {
+      if (!authToken) { atualizarUI(); return; }
+      fetch('/auth/verificar', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({token: authToken})
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+          if (!data.autorizado) {
+              authToken = null; authPerfil = null; authUsername = null; authNome = null; authPermissoes = null;
+              localStorage.removeItem('auth_token');
+              localStorage.removeItem('auth_perfil');
+              localStorage.removeItem('auth_username');
+              localStorage.removeItem('auth_nome');
+              localStorage.removeItem('auth_permissoes');
+          } else {
+              authPerfil = data.perfil || authPerfil;
+              authUsername = data.username || authUsername;
+              if (data.permissoes) authPermissoes = data.permissoes;
+              localStorage.setItem('auth_perfil', authPerfil);
+              localStorage.setItem('auth_username', authUsername);
+              localStorage.setItem('auth_permissoes', JSON.stringify(authPermissoes));
+          }
+          atualizarUI();
+      })
+      .catch(function() {
+          atualizarUI();
+      });
+  }
+
+  window.addEventListener('DOMContentLoaded', function() {
+      verificarSessao();
+      if (!authToken) {
+          setTimeout(abrirLoginModal, 500);
+      }
+  });
+  </script>
 </body>
-
 </html>

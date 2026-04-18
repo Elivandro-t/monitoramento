@@ -13,6 +13,12 @@ public interface MetricasRepository extends JpaRepository<MetricasEntity,Long> {
     @Query("SELECT p FROM MetricasEntity p where p.hostid=:hostid ORDER BY p.id DESC")
     List<MetricasEntity> findAllByIdOne(Long hostid);
 
+    @Query("SELECT p FROM MetricasEntity p where p.hostid=:hostid AND p.timestamp >= :desde ORDER BY p.id DESC")
+    List<MetricasEntity> findAllByIdOneAndTimestampAfter(Long hostid, LocalDateTime desde);
+
+    List<MetricasEntity> findTop5000ByHostidOrderByTimestampDesc(Long hostid);
+    List<MetricasEntity> findTop5000ByHostidAndTimestampAfterOrderByTimestampDesc(Long hostid, LocalDateTime desde);
+    List<MetricasEntity> findTop2000ByItemidAndHostidOrderByIdDesc(long itemid, long hostid);
 
     List<MetricasEntity> findAllByTimestampBefore(LocalDateTime timeDay);
 }

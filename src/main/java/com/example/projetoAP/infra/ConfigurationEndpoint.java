@@ -4,13 +4,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.example.projetoAP.controler.ControlerEndpoint;
-import com.example.projetoAP.controler.SetoresService.SetorService;
 import com.example.projetoAP.controler.service.EndepointBuscadosService;
 import com.example.projetoAP.controler.service.EndpointService;
 import com.example.projetoAP.controler.service.ItensMetricasService;
 import com.example.projetoAP.controler.service.SnmpService;
-import com.example.projetoAP.repository.EntitySetor.FactureSetor;
-import com.example.projetoAP.repository.EntitySetor.RepositorySetor;
 import com.example.projetoAP.repository.ICMPRepository;
 import com.example.projetoAP.repository.RepositoryEntity;
 import com.example.projetoAP.repository.SalvaEndPoint;
@@ -56,15 +53,6 @@ public class ConfigurationEndpoint {
 //    public RepositorySetor repositorySetor(RepositorySetor repository){
 //       return repository;
 //    }
-    @Bean
-    public FactureSetor factureSetor(RepositorySetor repository){
-       return new FactureSetor(repository);
-
-    }
-    @Bean
-    public SetorService setorService(FactureSetor factureSetor){
-       return new SetorService(factureSetor);
-    }
     // @Bean
     // public BotService botService() throws TelegramApiException {
     //     BotService botService = new BotService("Elivandro_bot",token);

@@ -11,26 +11,44 @@
 <body>
 
 <header class="area_container" id="sumi">
-    <div style="display: flex; gap: 15px; align-items: center;">
-        <span style="color: #3498db; font-weight: bold; font-size: 16px;">MONITORANDO...</span>
+    <div class="header-left">
+        <span class="header-title">MONITORANDO...</span>
 
-        <div class="counter-box online-box">
-            <span class="counter-label">Online</span>
-            <span class="counter-value" id="online-count">0</span>
-        </div>
-
-        <div class="counter-box offline-box">
-            <span class="counter-label">Offline</span>
-            <span class="counter-value" id="offline-count">0</span>
+        <div class="counters-wrap">
+            <div class="counter-box total-box">
+                <span class="counter-label">Total</span>
+                <span class="counter-value" id="total-count">0</span>
+            </div>
+            <div class="counter-box online-box">
+                <span class="counter-label">Online</span>
+                <span class="counter-value" id="online-count">0</span>
+            </div>
+            <div class="counter-box offline-box">
+                <span class="counter-label">Offline</span>
+                <span class="counter-value" id="offline-count">0</span>
+            </div>
+            <div class="counter-box warning-box">
+                <span class="counter-label">Intermitente</span>
+                <span class="counter-value" id="intermitente-count">0</span>
+            </div>
         </div>
     </div>
 
-    <div>
+    <div class="header-right">
+        <select id="filtro-grupo" class="filtro-select">
+            <option value="">Todos os Grupos</option>
+        </select>
         <button id="enviar" onclick="toggleFullscreen()">Tela Cheia</button>
     </div>
 </header>
 
-<main class="area_grid" id="meuContainer">
+<!-- Loading -->
+<div id="loading-container" class="loading-container">
+    <div class="loading-spinner"></div>
+    <p class="loading-text">Conectando ao servidor...</p>
+</div>
+
+<main class="area_grid" id="meuContainer" style="display:none;">
 </main>
 
 <script th:src="@{/css/visualweb.js}"></script>

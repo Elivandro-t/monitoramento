@@ -96,17 +96,71 @@ function Atualizar(id) {
     window.location.href = `${base}/endpoint/registro?id=${id}`;
 }
 
-const deletar = async (id) => {
-    if (!confirm("Deseja realmente deletar este registro?")) return;
+async function verificarToken(token) {
+    if (!token) return false;
     try {
-        const response = await fetch(`/endpoint/delete?id=${id}`, { method: 'DELETE' });
+        const response = await fetch('/auth/verificar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: token })
+        });
+        const data = await response.json();
+        return data.autorizado === true;
+    } catch (err) {
+        console.error('Erro ao verificar token:', err);
+        return false;
+    }
+}
+
+async function realizarLogin() {
+    const username = prompt('Usuario:', 'cupsadmin');
+    if (!username) return null;
+    const senha = prompt('Senha:');
+    if (!senha) return null;
+
+    try {
+        const response = await fetch('/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: username, senha: senha })
+        });
+        const data = await response.json();
+        if (data.token) {
+            localStorage.setItem('auth_token', data.token);
+            return data.token;
+        }
+        alert('Usuario ou senha invalidos');
+        return null;
+    } catch (err) {
+        console.error('Erro ao realizar login:', err);
+        alert('Erro de rede ao autenticar');
+        return null;
+    }
+}
+
+const deletar = async (id) => {
+    let token = localStorage.getItem('auth_token');
+    if (!(await verificarToken(token))) {
+        token = await realizarLogin();
+        if (!token) return;
+    }
+
+    if (!confirm('Deseja realmente deletar este registro?')) return;
+
+    try {
+        const response = await fetch(`/endpoint/delete?id=${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': token }
+        });
         if (response.ok) {
             alert('Registro deletado!');
             location.reload();
         } else {
-            alert('Erro ao deletar');
+            localStorage.removeItem('auth_token');
+            alert('Sessao expirada ou sem permissao. Faça login novamente.');
         }
     } catch (err) {
-        console.error("Erro na requisição:", err);
+        console.error('Erro na requisição:', err);
+        alert('Erro ao deletar');
     }
 };
