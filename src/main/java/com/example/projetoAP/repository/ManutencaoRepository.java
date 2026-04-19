@@ -14,8 +14,9 @@ public interface ManutencaoRepository extends JpaRepository<ManutencaoEntity, Lo
     List<ManutencaoEntity> findByStatusNotOrderByDataManutencaoDesc(String status);
     List<ManutencaoEntity> findByStatusOrderByDataManutencaoDesc(String status);
 
-    @Query("SELECT m FROM ManutencaoEntity m WHERE m.status <> 'CONDENADO' " +
-            "AND (:status IS NULL OR m.status = :status) " +
+    @Query("SELECT m FROM ManutencaoEntity m WHERE " +
+            "( (:status IS NULL AND m.status NOT IN ('ENTREGUE','CONDENADO')) " +
+            "  OR (:status IS NOT NULL AND m.status = :status) ) " +
             "AND (:setor IS NULL OR LOWER(m.setor) = LOWER(:setor)) " +
             "AND (:responsavel IS NULL OR LOWER(m.responsavelUsername) = LOWER(:responsavel)) " +
             "ORDER BY m.dataManutencao DESC")
@@ -31,4 +32,6 @@ public interface ManutencaoRepository extends JpaRepository<ManutencaoEntity, Lo
 
     long countByTecnicoUsername(String tecnicoUsername);
     List<ManutencaoEntity> findByTecnicoUsernameOrderByDataManutencaoDesc(String tecnicoUsername);
+
+    long countByPatrimonio(String patrimonio);
 }

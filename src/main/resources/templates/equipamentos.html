@@ -19,16 +19,42 @@
             <div class="subtitle">Laptops, Desktops e agentes clientes - monitoramento e manutencao</div>
         </div>
         <div class="eq-header-actions">
-            <button class="btn btn-back" onclick="window.location.href='/endpoint/monitoramento'">&larr; Voltar</button>
-            <button class="btn" onclick="window.location.href='/endpoint/monitoramento/equipamentos'">Monitor Tempo Real</button>
-            <button class="btn btn-excel" onclick="exportarExcel()">Exportar Excel</button>
-            <button class="btn" onclick="visualizarPdfEquipamentos()">Ver PDF</button>
-            <button class="btn" onclick="baixarPdfEquipamentos()">Baixar PDF</button>
-            <button class="btn" onclick="window.location.href='/manutencoes'">Manutencoes</button>
-            <button class="btn" onclick="window.location.href='/equipamentos/condenados'">Condenados</button>
-            <button class="btn" onclick="window.location.href='/relatorios/ranking'">Ranking</button>
-            <button class="btn" onclick="window.location.href='/relatorios/metricas'">Metricas</button>
-            <button class="btn btn-primary" onclick="abrirModalNovo()">+ Novo Equipamento</button>
+            <button class="btn btn-back" onclick="window.location.href='/endpoint/monitoramento'" title="Voltar">
+                <span class="ico">&larr;</span> Voltar
+            </button>
+            <button class="btn" onclick="window.location.href='/endpoint/monitoramento/equipamentos'" title="Monitor em tempo real">
+                <span class="ico">&#128202;</span> Monitor
+            </button>
+            <div class="menu-wrap">
+                <button class="menu-btn" id="btn-menu-relatorios" onclick="toggleMenu('menu-relatorios', this)" title="Relatorios e exportacoes">
+                    <span class="ico">&#128196;</span> Relatorios <span class="caret">&#9662;</span>
+                </button>
+                <div id="menu-relatorios" class="menu-drop">
+                    <button class="menu-item" onclick="fecharMenus(); exportarExcel();"><span class="ico">&#128196;</span> Exportar Excel</button>
+                    <button class="menu-item" onclick="fecharMenus(); visualizarPdfEquipamentos();"><span class="ico">&#128196;</span> Visualizar PDF</button>
+                    <button class="menu-item" onclick="fecharMenus(); baixarPdfEquipamentos();"><span class="ico">&#11015;</span> Baixar PDF</button>
+                    <div class="menu-sep"></div>
+                    <button class="menu-item" onclick="fecharMenus(); window.location.href='/relatorios/ranking'"><span class="ico">&#127942;</span> Ranking</button>
+                    <button class="menu-item" onclick="fecharMenus(); window.location.href='/relatorios/metricas'"><span class="ico">&#128200;</span> Metricas</button>
+                </div>
+            </div>
+            <div class="menu-wrap">
+                <button class="menu-btn" id="btn-menu-gestao" onclick="toggleMenu('menu-gestao', this)" title="Gestao e historico">
+                    <span class="ico">&#128295;</span> Gestao <span class="caret">&#9662;</span>
+                </button>
+                <div id="menu-gestao" class="menu-drop">
+                    <button class="menu-item" onclick="fecharMenus(); window.location.href='/manutencoes'"><span class="ico">&#128736;</span> Manutencoes</button>
+                    <button class="menu-item" onclick="fecharMenus(); window.location.href='/equipamentos/condenados'"><span class="ico">&#128465;</span> Condenados</button>
+                    <div class="menu-sep"></div>
+                    <button class="menu-item" onclick="fecharMenus(); abrirModalSetores();"><span class="ico">&#127970;</span> Gerenciar Setores</button>
+                    <button class="menu-item" onclick="fecharMenus(); abrirModalFiliais();"><span class="ico">&#127968;</span> Gerenciar Filiais</button>
+                    <div class="menu-sep"></div>
+                    <button class="menu-item danger" onclick="fecharMenus(); abrirModalCondenados();"><span class="ico">&#9888;</span> Historico de Condenados</button>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="abrirModalNovo()" title="Cadastrar novo equipamento">
+                <span class="ico">&#43;</span> Novo Equipamento
+            </button>
         </div>
     </header>
 
@@ -64,7 +90,10 @@
     <div class="eq-filtros">
         <div class="filtro-grupo">
             <label for="f-busca">Busca</label>
-            <input id="f-busca" type="text" placeholder="hostname, patrimonio, IP..." oninput="aplicarFiltros()">
+            <input id="f-busca" type="text" placeholder="hostname, patrimonio, IP..."
+                   oninput="aplicarFiltros()"
+                   autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                   name="busca-equip-nosave" data-lpignore="true" data-form-type="other">
         </div>
         <div class="filtro-grupo">
             <label for="f-mtsetor">MTsetor</label>
@@ -107,19 +136,7 @@
         </div>
         <div class="filtro-grupo">
             <label>&nbsp;</label>
-            <button class="btn" onclick="limparFiltros()">Limpar</button>
-        </div>
-        <div class="filtro-grupo">
-            <label>&nbsp;</label>
-            <button class="btn" onclick="abrirModalSetores()">Gerenciar Setores</button>
-        </div>
-        <div class="filtro-grupo">
-            <label>&nbsp;</label>
-            <button class="btn" onclick="abrirModalFiliais()">Gerenciar Filiais</button>
-        </div>
-        <div class="filtro-grupo">
-            <label>&nbsp;</label>
-            <button class="btn btn-danger" onclick="abrirModalCondenados()">Equipamentos Condenados</button>
+            <button class="btn" onclick="limparFiltros()" title="Limpar filtros">Limpar</button>
         </div>
     </div>
 
@@ -469,24 +486,34 @@
 <div id="modal-auth-field" class="modal-overlay">
     <div class="modal sm">
         <div class="modal-head">
-            <h2>Confirmar credenciais</h2>
+            <h2 id="auth-titulo">Confirmar credenciais</h2>
             <button class="modal-close" onclick="fecharModal('modal-auth-field')">&times;</button>
         </div>
         <div class="modal-body">
-            <p style="font-size:12px; color:#8b949e; margin-bottom:10px;">
+            <p id="auth-subtitulo" style="font-size:12px; color:#8b949e; margin-bottom:10px;">
                 Para alterar este campo, confirme seu usuario e senha.
             </p>
             <div class="form-grid cols-2">
-                <div class="form-field"><label>Usuario</label><input id="auth-user"></div>
-                <div class="form-field"><label>Senha</label><input id="auth-pass" type="password"></div>
+                <div class="form-field"><label>Usuario</label>
+                    <input id="auth-user" autocomplete="off" name="auth-user-nosave" data-lpignore="true">
+                </div>
+                <div class="form-field"><label>Senha</label>
+                    <input id="auth-pass" type="password" autocomplete="new-password" data-lpignore="true">
+                </div>
             </div>
             <div id="auth-err" style="color:#f85149; font-size:11px; display:none; margin-top:6px;">Credenciais invalidas</div>
         </div>
         <div class="modal-foot">
             <button class="btn" onclick="fecharModal('modal-auth-field')">Cancelar</button>
-            <button class="btn btn-primary" onclick="confirmarDesbloqueio()">Confirmar</button>
+            <button id="auth-btn-confirm" class="btn btn-primary" onclick="confirmarDesbloqueio()">Confirmar</button>
         </div>
     </div>
+</div>
+
+<!-- Viewer de imagens (lightbox) -->
+<div id="img-viewer" class="img-viewer" onclick="fecharImgViewer(event)">
+    <button class="close" onclick="fecharImgViewer(event)" title="Fechar">&times;</button>
+    <img id="img-viewer-img" src="" alt="">
 </div>
 
 <style>

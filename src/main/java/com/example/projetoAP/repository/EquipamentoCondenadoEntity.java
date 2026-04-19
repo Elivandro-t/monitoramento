@@ -30,6 +30,10 @@ public class EquipamentoCondenadoEntity {
     @Column(columnDefinition = "TEXT")
     private String historicoManutencoes;  // JSON serializado das manutencoes
 
+    // Caminho da imagem principal do equipamento no momento da condenacao
+    @Column(length = 500)
+    private String imagemPrincipal;
+
     private Integer totalManutencoes;
     private String condenadoPor;
     private LocalDateTime dataCondenacao;
@@ -49,6 +53,7 @@ public class EquipamentoCondenadoEntity {
     public String getMotivoCondenacao() { return motivoCondenacao; }
     public String getLaudoFinal() { return laudoFinal; }
     public String getHistoricoManutencoes() { return historicoManutencoes; }
+    public String getImagemPrincipal() { return imagemPrincipal; }
     public Integer getTotalManutencoes() { return totalManutencoes; }
     public String getCondenadoPor() { return condenadoPor; }
     public LocalDateTime getDataCondenacao() { return dataCondenacao; }
@@ -65,6 +70,7 @@ public class EquipamentoCondenadoEntity {
     public void setMotivoCondenacao(String motivoCondenacao) { this.motivoCondenacao = motivoCondenacao; }
     public void setLaudoFinal(String laudoFinal) { this.laudoFinal = laudoFinal; }
     public void setHistoricoManutencoes(String historicoManutencoes) { this.historicoManutencoes = historicoManutencoes; }
+    public void setImagemPrincipal(String imagemPrincipal) { this.imagemPrincipal = imagemPrincipal; }
     public void setTotalManutencoes(Integer totalManutencoes) { this.totalManutencoes = totalManutencoes; }
     public void setCondenadoPor(String condenadoPor) { this.condenadoPor = condenadoPor; }
     public void setDataCondenacao(LocalDateTime dataCondenacao) { this.dataCondenacao = dataCondenacao; }

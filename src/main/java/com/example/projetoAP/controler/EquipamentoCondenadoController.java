@@ -8,10 +8,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.net.URLConnection;
+import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -140,13 +147,96 @@ public class EquipamentoCondenadoController {
     private Map<String, Object> toMapDetalhado(EquipamentoCondenadoEntity c) {
         Map<String, Object> m = toMap(c);
         m.put("laudoFinal", nz(c.getLaudoFinal()));
+        m.put("temImagemPrincipal",
+                c.getImagemPrincipal() != null
+                        && !c.getImagemPrincipal().isBlank()
+                        && Files.exists(Paths.get(c.getImagemPrincipal())));
         List<Map<String, Object>> historico;
         try {
             historico = mapper.readValue(c.getHistoricoManutencoes() == null ? "[]" : c.getHistoricoManutencoes(),
                     List.class);
         } catch (Exception e) { historico = new ArrayList<>(); }
-        m.put("historicoManutencoes", historico);
+        // Remove caminhos absolutos do payload retornado (so expoe flags/endpoints)
+        List<Map<String, Object>> sanitized = new ArrayList<>();
+        for (int i = 0; i < historico.size(); i++) {
+            Map<String, Object> original = historico.get(i);
+            Map<String, Object> safe = new HashMap<>(original);
+            Object imagemPath = safe.remove("imagemPath");
+            Object anexoPath = safe.remove("anexoPath");
+            boolean temImagem = imagemPath != null && !imagemPath.toString().isBlank();
+            boolean temAnexo = anexoPath != null && !anexoPath.toString().isBlank();
+            safe.put("temImagem", temImagem);
+            safe.put("temAnexo", temAnexo);
+            safe.put("indice", i);
+            sanitized.add(safe);
+        }
+        m.put("historicoManutencoes", sanitized);
         return m;
+    }
+
+    @Operation(summary = "Serve a imagem principal do equipamento condenado")
+    @GetMapping("/{id}/imagem-principal")
+    public ResponseEntity<Resource> imagemPrincipal(@PathVariable long id,
+                                                    @RequestHeader(value = "Authorization", required = false) String token)
+            throws IOException {
+        if (!authService.temPermissao(token, "acessoUsuarios")) return ResponseEntity.status(403).build();
+        var opt = repository.findById(id);
+        if (opt.isEmpty() || opt.get().getImagemPrincipal() == null) return ResponseEntity.notFound().build();
+        return servirArquivo(opt.get().getImagemPrincipal(), true);
+    }
+
+    @Operation(summary = "Serve a imagem de uma manutencao registrada no historico do condenado")
+    @GetMapping("/{id}/manutencao/{indice}/imagem")
+    public ResponseEntity<Resource> imagemHistorico(@PathVariable long id,
+                                                    @PathVariable int indice,
+                                                    @RequestHeader(value = "Authorization", required = false) String token)
+            throws IOException {
+        if (!authService.temPermissao(token, "acessoUsuarios")) return ResponseEntity.status(403).build();
+        String path = extrairPathHistorico(id, indice, "imagemPath");
+        if (path == null) return ResponseEntity.notFound().build();
+        return servirArquivo(path, true);
+    }
+
+    @Operation(summary = "Serve o anexo (laudo/pdf) de uma manutencao no historico do condenado")
+    @GetMapping("/{id}/manutencao/{indice}/anexo")
+    public ResponseEntity<Resource> anexoHistorico(@PathVariable long id,
+                                                   @PathVariable int indice,
+                                                   @RequestHeader(value = "Authorization", required = false) String token)
+            throws IOException {
+        if (!authService.temPermissao(token, "acessoUsuarios")) return ResponseEntity.status(403).build();
+        String path = extrairPathHistorico(id, indice, "anexoPath");
+        if (path == null) return ResponseEntity.notFound().build();
+        return servirArquivo(path, false);
+    }
+
+    @SuppressWarnings("unchecked")
+    private String extrairPathHistorico(long id, int indice, String chave) {
+        var opt = repository.findById(id);
+        if (opt.isEmpty() || opt.get().getHistoricoManutencoes() == null) return null;
+        try {
+            List<Map<String, Object>> lista = mapper.readValue(opt.get().getHistoricoManutencoes(), List.class);
+            if (indice < 0 || indice >= lista.size()) return null;
+            Object v = lista.get(indice).get(chave);
+            if (v == null || v.toString().isBlank()) return null;
+            return v.toString();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private ResponseEntity<Resource> servirArquivo(String rawPath, boolean inline) throws IOException {
+        if (rawPath == null || rawPath.isBlank()) return ResponseEntity.notFound().build();
+        Path base = Paths.get("uploads").toAbsolutePath().normalize();
+        Path p = Paths.get(rawPath).toAbsolutePath().normalize();
+        if (!p.startsWith(base) || !Files.exists(p)) return ResponseEntity.notFound().build();
+        String contentType = URLConnection.guessContentTypeFromName(p.getFileName().toString());
+        if (contentType == null) contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+        Resource res = new FileSystemResource(p.toFile());
+        String disp = inline ? "inline" : "attachment; filename=\"" + p.getFileName().toString() + "\"";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, disp)
+                .contentType(MediaType.parseMediaType(contentType))
+                .body(res);
     }
 
     private String nz(String s) { return s == null ? "" : s; }

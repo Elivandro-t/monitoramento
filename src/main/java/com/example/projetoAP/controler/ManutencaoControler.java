@@ -4,12 +4,7 @@ import com.example.projetoAP.controler.service.AuditService;
 import com.example.projetoAP.controler.service.AuthService;
 import com.example.projetoAP.controler.service.EquipamentoCondenacaoService;
 import com.example.projetoAP.controler.service.PdfService;
-import com.example.projetoAP.repository.AgenteRepository;
-import com.example.projetoAP.repository.ManutencaoEntity;
-import com.example.projetoAP.repository.ManutencaoRepository;
-import com.example.projetoAP.repository.ManutencaoStatusLogEntity;
-import com.example.projetoAP.repository.ManutencaoStatusLogRepository;
-import com.example.projetoAP.repository.UsuarioRepository;
+import com.example.projetoAP.repository.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,7 +34,7 @@ public class ManutencaoControler {
     private static final String UPLOAD_DIR = "uploads/manutencoes";
 
     private static final Set<String> STATUS_VALIDOS = Set.of(
-            "AGUARDANDO_MANUTENCAO", "PENDENTE", "AGUARDANDO_PECAS",
+            "AGUARDANDO_MANUTENCAO", "PENDENTE", "AGUARDANDO_PECAS", "EM_ANALISE",
             "CONDENADO", "FINALIZADO", "ENTREGUE");
 
     private static final Set<String> TIPOS_VALIDOS = Set.of("PREVENTIVA", "CORRETIVA");
@@ -143,6 +138,10 @@ public class ManutencaoControler {
             return ResponseEntity.badRequest().body(Map.of("message", "Agente nao encontrado"));
         }
         var ag = agOpt.get();
+        if(!ag.getStatus().equals("ENTREGUE")||!ag.getStatus().equals("CONDENADO")){
+            return ResponseEntity.badRequest().body(Map.of(
+                    "message", "Aviso: Equipamento ja possui manutencao ativa"));
+        }
 
         Path baseDir = Paths.get(UPLOAD_DIR, agentId);
         Files.createDirectories(baseDir);
@@ -245,6 +244,24 @@ public class ManutencaoControler {
         var m = opt.get();
         String anterior = m.getStatus();
 
+        // ===== Regras de transicao de status =====
+        // ENTREGUE so apos FINALIZADO; FINALIZADO e CONDENADO so apos EM_ANALISE.
+        if ("ENTREGUE".equals(novo) && !"FINALIZADO".equals(anterior)) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "message", "Transicao invalida: ENTREGUE so e permitido apos FINALIZADO. " +
+                            "Status atual: " + anterior));
+        }
+        if ("FINALIZADO".equals(novo) && !"EM_ANALISE".equals(anterior)) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "message", "Transicao invalida: FINALIZADO so e permitido apos EM_ANALISE. " +
+                            "Status atual: " + anterior));
+        }
+        if ("CONDENADO".equals(novo) && !"EM_ANALISE".equals(anterior)) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "message", "Transicao invalida: CONDENADO so e permitido apos EM_ANALISE. " +
+                            "Status atual: " + anterior));
+        }
+
         if ("CONDENADO".equals(novo)) {
             if (laudo == null || laudo.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of(
@@ -273,7 +290,32 @@ public class ManutencaoControler {
         if ("ENTREGUE".equals(novo) || "FINALIZADO".equals(novo) || "CONDENADO".equals(novo)) {
             if (m.getDataEntrega() == null) m.setDataEntrega(LocalDateTime.now());
         }
-        manutencaoRepository.save(m);
+
+      var stus =  manutencaoRepository.save(m);
+//        var oldManutencao = manutencaoRepository.findById(m.getId()).orElseThrow();
+//        String oldStatus = oldManutencao.getStatus();
+//        // 1. Defina o agente como nulo inicialmente
+//        AgenteEntity agente = null;
+//
+//// 2. Tente buscar pelo AgentId (se ele existir)
+//        if (stus.getAgentId() != null) {
+//            agente = agenteRepository.findByAgentId(stus.getAgentId()).orElse(null);
+//        }
+//
+//// 3. SE NÃO achou, tente buscar pelo Patrimônio (se o patrimônio existir no objeto 'm')
+//        if (agente == null && m.getPatrimonio() != null) {
+//            agente = agenteRepository.findByPatrimonio(m.getPatrimonio()).orElse(null);
+//        }
+//
+//// 4. Só incrementa se, depois de todas as tentativas, encontramos um agente
+//        if (agente != null) {
+//            agente.setNumManutencoes(agente.getNumManutencoes() + 1);
+//            // Se não estiver usando @Transactional no método, descomente:
+//            // agenteRepository.save(agente);
+//        } else {
+//            // Apenas logue o erro, não quebre a requisição do usuário
+//            System.out.println("Aviso: Nao foi possivel identificar o agente para manutencao ID: " + id);
+//        }
 
         var userOpt = usuarioRepository.findByUsername(usuario);
         String nomeUsuario = userOpt.map(u -> u.getNome() != null ? u.getNome() : u.getUsername()).orElse(usuario);
@@ -327,6 +369,52 @@ public class ManutencaoControler {
             return r;
         }).toList();
         return ResponseEntity.ok(lista);
+    }
+
+    // ===== DETALHE de uma manutencao + snapshot do equipamento + historico =====
+    @Operation(summary = "Detalhes completos de uma manutencao: info do equipamento, manutencao e historico do agente")
+    @GetMapping("/{id}/detalhe")
+    public ResponseEntity<?> detalheManutencao(@PathVariable long id,
+                                               @RequestHeader(value = "Authorization", required = false) String token) {
+        if (!authService.temPermissao(token, "acessoUsuarios")) {
+            return ResponseEntity.status(403).body(Map.of("message", "Sem permissao"));
+        }
+        var opt = manutencaoRepository.findById(id);
+        if (opt.isEmpty()) return ResponseEntity.notFound().build();
+        var m = opt.get();
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("manutencao", toMap(m));
+
+        var agOpt = agenteRepository.findByAgentId(m.getAgentId());
+        if (agOpt.isPresent()) {
+            var ag = agOpt.get();
+            Map<String, Object> eq = new HashMap<>();
+            eq.put("id", ag.getId());
+            eq.put("agentId", nz(ag.getAgentId()));
+            eq.put("hostname", nz(ag.getHostname()));
+            eq.put("patrimonio", nz(ag.getPatrimonio()));
+            eq.put("tipo", nz(ag.getTipo()));
+            eq.put("marca", nz(ag.getMarca()));
+            eq.put("modelo", nz(ag.getModelo()));
+            eq.put("numeroSerie", nz(ag.getNumeroSerie()));
+            eq.put("setor", nz(ag.getSetor()));
+            eq.put("filial", nz(ag.getFilial()));
+            eq.put("ip", nz(ag.getIp()));
+            eq.put("anydesk", nz(ag.getAnydesk()));
+            eq.put("dominio", nz(ag.getDominio()));
+            eq.put("status", nz(ag.getStatus()));
+            eq.put("statusUso", nz(ag.getStatusUso()));
+            eq.put("numManutencoes", ag.getNumManutencoes());
+            eq.put("temImagem", ag.getImagemUrl() != null && !ag.getImagemUrl().isBlank());
+            resp.put("equipamento", eq);
+        }
+
+        var historico = manutencaoRepository.findByAgentIdOrderByDataManutencaoDesc(m.getAgentId())
+                .stream().map(this::toMap).toList();
+        resp.put("historico", historico);
+
+        return ResponseEntity.ok(resp);
     }
 
     // ===== LISTAR manutencoes em aberto com filtros (rota /manutencoes/list) =====

@@ -505,21 +505,45 @@ public class AgenteController {
                 a.getDataCadastro().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) : "");
         return m;
     }
+    private Long totalManutencaoes (AgenteEntity a){
+        long totalManut;
 
+        if (a.getAgentId() != null && !a.getAgentId().isBlank()) {
+            totalManut = manutencaoRepository.countByAgentId(a.getAgentId());
+
+            // fallback se não encontrou nada
+            if (totalManut == 0 && a.getPatrimonio() != null) {
+                totalManut = manutencaoRepository.countByPatrimonio(a.getPatrimonio());
+            }
+        } else {
+            totalManut = manutencaoRepository.countByPatrimonio(a.getPatrimonio());
+        }
+        return totalManut;
+    }
     private Map<String, Object> toMapDetalhado(AgenteEntity a) {
+        long manutencao = totalManutencaoes(a);
         Map<String, Object> m = toMap(a);
         var manuts = manutencaoRepository.findByAgentIdOrderByDataManutencaoDesc(a.getAgentId());
+        var fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
         var listaManut = manuts.stream().map(x -> {
             Map<String, Object> r = new HashMap<>();
             r.put("id", x.getId());
             r.put("tecnico", nz(x.getTecnicoNome()) + " (" + nz(x.getTecnicoUsername()) + ")");
+            r.put("tecnicoNome", nz(x.getTecnicoNome()));
             r.put("tecnicoUsername", nz(x.getTecnicoUsername()));
-            r.put("data", x.getDataManutencao() != null ?
-                    x.getDataManutencao().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) : "");
+            r.put("responsavelNome", nz(x.getResponsavelNome()));
+            r.put("responsavelUsername", nz(x.getResponsavelUsername()));
+            r.put("status", nz(x.getStatus()));
+            r.put("tipoManutencao", nz(x.getTipoManutencao()));
+            r.put("data", x.getDataManutencao() != null ? x.getDataManutencao().format(fmt) : "");
+            r.put("dataEntrada", x.getDataEntrada() != null ? x.getDataEntrada().format(fmt) : "");
+            r.put("dataEntrega", x.getDataEntrega() != null ? x.getDataEntrega().format(fmt) : "");
             r.put("descricao", nz(x.getDescricao()));
             r.put("laudo", nz(x.getLaudoFinal()));
             r.put("anexo", nz(x.getAnexoOriginal()));
             r.put("imagem", nz(x.getImagem()));
+            r.put("temAnexo", x.getAnexoArquivo() != null);
+            r.put("temImagem", x.getImagem() != null);
             return r;
         }).toList();
         m.put("manutencoes", listaManut);

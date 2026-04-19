@@ -34,12 +34,14 @@
         <div class="filtro-grupo">
             <label>Status</label>
             <select id="f-status" onchange="aplicarFiltros()">
-                <option value="">Todos</option>
+                <option value="">Ativos (nao entregues)</option>
                 <option value="AGUARDANDO_MANUTENCAO">Aguardando manutencao</option>
                 <option value="PENDENTE">Pendente</option>
                 <option value="AGUARDANDO_PECAS">Aguardando pecas</option>
+                <option value="EM_ANALISE">Em analise</option>
                 <option value="FINALIZADO">Finalizado</option>
-                <option value="ENTREGUE">Entregue</option>
+                <option value="ENTREGUE">Entregue (arquivado)</option>
+                <option value="CONDENADO">Condenado (arquivado)</option>
             </select>
         </div>
         <div class="filtro-grupo">
@@ -87,10 +89,12 @@
                 <option value="AGUARDANDO_MANUTENCAO">Aguardando manutencao</option>
                 <option value="PENDENTE">Pendente</option>
                 <option value="AGUARDANDO_PECAS">Aguardando pecas</option>
-                <option value="FINALIZADO">Finalizado</option>
-                <option value="ENTREGUE">Entregue</option>
-                <option value="CONDENADO">Condenar</option>
+                <option value="EM_ANALISE">Em analise</option>
+                <option value="FINALIZADO">Finalizado (apos analise)</option>
+                <option value="ENTREGUE">Entregue (apos finalizado)</option>
+                <option value="CONDENADO">Condenar (apos analise)</option>
             </select>
+            <small class="form-hint">Fluxo obrigatorio: ... &rarr; EM_ANALISE &rarr; FINALIZADO &rarr; ENTREGUE. Para CONDENAR e necessario passar antes por EM_ANALISE.</small>
         </div>
         <div class="form-row">
             <label>Observacao (opcional)</label>
@@ -114,6 +118,46 @@
             <button class="btn btn-primary" onclick="confirmarStatus()">Confirmar</button>
         </div>
     </div>
+</div>
+
+<!-- Modal Detalhes da manutencao + equipamento -->
+<div id="modal-detalhe" class="modal">
+    <div class="modal-content modal-large">
+        <div class="det-head">
+            <h3 id="det-titulo">Detalhes</h3>
+            <button class="modal-close" onclick="fecharDetalhe()" aria-label="Fechar">&times;</button>
+        </div>
+        <div class="det-tabs">
+            <button class="det-tab active" data-tab="equip" onclick="trocarDetTab('equip')">Equipamento</button>
+            <button class="det-tab" data-tab="manut" onclick="trocarDetTab('manut')">Esta Manutencao</button>
+            <button class="det-tab" data-tab="hist" onclick="trocarDetTab('hist')">Historico <span id="det-hist-count" class="pill">0</span></button>
+        </div>
+        <div class="det-body">
+            <div class="det-pane active" id="pane-equip">
+                <div class="det-equip-grid">
+                    <div class="det-equip-img" id="det-equip-img">
+                        <span class="det-empty">Sem imagem</span>
+                    </div>
+                    <div id="det-equip-info" class="det-info-grid"></div>
+                </div>
+            </div>
+            <div class="det-pane" id="pane-manut">
+                <div id="det-manut-info"></div>
+            </div>
+            <div class="det-pane" id="pane-hist">
+                <div id="det-hist-list"></div>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn" onclick="fecharDetalhe()">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Lightbox de imagens -->
+<div id="img-viewer" class="img-viewer" onclick="fecharImgViewer(event)">
+    <button class="close" onclick="fecharImgViewer(event)" title="Fechar">&times;</button>
+    <img id="img-viewer-img" src="" alt="">
 </div>
 
 <div id="toast" class="popup-toast"></div>

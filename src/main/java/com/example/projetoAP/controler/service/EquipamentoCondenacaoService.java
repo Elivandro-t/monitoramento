@@ -52,6 +52,10 @@ public class EquipamentoCondenacaoService {
             r.put("status", m.getStatus());
             r.put("tipoManutencao", m.getTipoManutencao());
             r.put("anexo", m.getAnexoOriginal());
+            r.put("anexoPath", m.getAnexoArquivo());
+            r.put("imagemPath", m.getImagem());
+            r.put("temAnexo", m.getAnexoArquivo() != null);
+            r.put("temImagem", m.getImagem() != null);
             return r;
         }).toList();
 
@@ -76,6 +80,7 @@ public class EquipamentoCondenacaoService {
         cond.setLaudoFinal(laudoFinalTextual == null || laudoFinalTextual.isBlank()
                 ? ultimoLaudo : laudoFinalTextual);
         cond.setHistoricoManutencoes(historicoJson);
+        cond.setImagemPrincipal(ag.getImagemUrl());
         cond.setTotalManutencoes(ag.getNumManutencoes());
         cond.setCondenadoPor(condenadoPor);
         cond.setDataCondenacao(LocalDateTime.now());

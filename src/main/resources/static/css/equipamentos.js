@@ -4,8 +4,8 @@ var filiaisCache = [];
 var mtsetoresCache = [];
 var agenteSelecionado = null;
 var usuarioLogado = null; // { username, nome, perfil }
-// Guarda qual campo esta sendo desbloqueado no modal de autenticacao
-var desbloqueioAlvo = null; // { inputId, badgeId }
+// Modal de credenciais reutilizavel: { tipo: 'unlock'|'delete', ...dados }
+var acaoAuth = null;
 
 function authHeaders(extra) {
     var h = extra || {};
@@ -56,7 +56,27 @@ function destravarCampo(inputId, badgeId) {
 }
 
 function pedirDesbloqueio(inputId, badgeId) {
-    desbloqueioAlvo = { inputId: inputId, badgeId: badgeId };
+    abrirModalAuth({
+        tipo: 'unlock',
+        inputId: inputId,
+        badgeId: badgeId,
+        titulo: 'Confirmar credenciais',
+        subtitulo: 'Para alterar este campo, confirme seu usuario e senha.',
+        textoBtn: 'Confirmar'
+    });
+}
+
+function abrirModalAuth(opts) {
+    acaoAuth = opts || {};
+    var t = document.getElementById('auth-titulo');
+    var s = document.getElementById('auth-subtitulo');
+    var b = document.getElementById('auth-btn-confirm');
+    if (t) t.innerText = acaoAuth.titulo || 'Confirmar credenciais';
+    if (s) s.innerText = acaoAuth.subtitulo || 'Confirme seu usuario e senha.';
+    if (b) {
+        b.innerText = acaoAuth.textoBtn || 'Confirmar';
+        b.className = 'btn ' + (acaoAuth.tipo === 'delete' ? 'btn-danger' : 'btn-primary');
+    }
     document.getElementById('auth-user').value = '';
     document.getElementById('auth-pass').value = '';
     document.getElementById('auth-err').style.display = 'none';
@@ -65,12 +85,13 @@ function pedirDesbloqueio(inputId, badgeId) {
 }
 
 function confirmarDesbloqueio() {
-    if (!desbloqueioAlvo) return;
+    if (!acaoAuth) return;
     var user = document.getElementById('auth-user').value.trim();
     var pass = document.getElementById('auth-pass').value;
+    var errEl = document.getElementById('auth-err');
     if (!user || !pass) {
-        document.getElementById('auth-err').innerText = 'Preencha usuario e senha';
-        document.getElementById('auth-err').style.display = 'block';
+        errEl.innerText = 'Preencha usuario e senha';
+        errEl.style.display = 'block';
         return;
     }
     fetch('/auth/revalidar', {
@@ -81,19 +102,59 @@ function confirmarDesbloqueio() {
     .then(function(r){ return r.json().then(function(d){ return {s:r.status, d:d}; }); })
     .then(function(res){
         if (res.s >= 200 && res.s < 300 && res.d.autorizado) {
-            destravarCampo(desbloqueioAlvo.inputId, desbloqueioAlvo.badgeId);
+            var acao = acaoAuth;
             fecharModal('modal-auth-field');
-            desbloqueioAlvo = null;
-            toast('Campo liberado para edicao', 'ok');
+            acaoAuth = null;
+            if (acao.tipo === 'unlock') {
+                destravarCampo(acao.inputId, acao.badgeId);
+                toast('Campo liberado para edicao', 'ok');
+            } else if (acao.tipo === 'delete') {
+                executarDelete(acao.id, acao.nome);
+            }
         } else {
-            document.getElementById('auth-err').innerText = res.d.message || 'Credenciais invalidas';
-            document.getElementById('auth-err').style.display = 'block';
+            errEl.innerText = res.d.message || 'Credenciais invalidas';
+            errEl.style.display = 'block';
         }
     })
     .catch(function(){
-        document.getElementById('auth-err').innerText = 'Erro de conexao';
-        document.getElementById('auth-err').style.display = 'block';
+        errEl.innerText = 'Erro de conexao';
+        errEl.style.display = 'block';
     });
+}
+
+// ===== MENU DROPDOWNS =====
+function toggleMenu(id, btn) {
+    var drop = document.getElementById(id);
+    var aberto = drop.classList.contains('show');
+    fecharMenus();
+    if (!aberto) {
+        drop.classList.add('show');
+        if (btn) btn.classList.add('open');
+    }
+}
+function fecharMenus() {
+    document.querySelectorAll('.menu-drop').forEach(function(m){ m.classList.remove('show'); });
+    document.querySelectorAll('.menu-btn').forEach(function(b){ b.classList.remove('open'); });
+}
+document.addEventListener('click', function(ev){
+    if (!ev.target.closest('.menu-wrap')) fecharMenus();
+});
+document.addEventListener('keydown', function(ev){
+    if (ev.key === 'Escape') { fecharMenus(); fecharImgViewer(); }
+});
+
+// ===== IMAGE VIEWER (lightbox) =====
+function abrirImgViewer(src) {
+    if (!src) return;
+    var v = document.getElementById('img-viewer');
+    var img = document.getElementById('img-viewer-img');
+    img.src = src;
+    v.classList.add('show');
+}
+function fecharImgViewer(ev) {
+    if (ev && ev.target && ev.target.tagName === 'IMG' && ev.target.id === 'img-viewer-img') return;
+    var v = document.getElementById('img-viewer');
+    if (v) v.classList.remove('show');
 }
 
 // ===== LISTAR =====
@@ -417,13 +478,28 @@ function salvarEquip() {
 }
 
 function deletarEquip(id, nome) {
-    if (!confirm('Excluir equipamento "' + nome + '"? Esta acao nao pode ser desfeita.')) return;
+    abrirModalAuth({
+        tipo: 'delete',
+        id: id,
+        nome: nome,
+        titulo: 'Confirmar exclusao',
+        subtitulo: 'Para excluir "' + (nome || '') + '" confirme usuario e senha. A acao sera registrada no log.',
+        textoBtn: 'Excluir'
+    });
+}
+
+function executarDelete(id, nome) {
     fetch('/agentes/' + id, { method: 'DELETE', headers: authHeaders() })
     .then(function(r){ return r.json().then(function(d){ return {s:r.status, d:d}; }); })
     .then(function(res){
-        if (res.s >= 200 && res.s < 300) { toast(res.d.message, 'ok'); carregar(); }
-        else toast(res.d.message || 'Erro', 'err');
-    });
+        if (res.s >= 200 && res.s < 300) {
+            toast('Equipamento "' + (nome || '') + '" excluido', 'ok');
+            carregar();
+        } else {
+            toast(res.d.message || 'Erro ao excluir', 'err');
+        }
+    })
+    .catch(function(){ toast('Erro de conexao', 'err'); });
 }
 
 // ===== DETALHES =====
@@ -506,24 +582,44 @@ function renderManutList(ms) {
     var box = document.getElementById('manut-list');
     if (!ms.length) { box.innerHTML = '<div class="empty-state">Nenhuma manutencao registrada</div>'; return; }
     box.innerHTML = ms.map(function(m){
+        var status = m.status || '';
+        var tipo = m.tipoManutencao || '';
+        var statusBadge = status ? '<span class="badge badge-' + esc(status) + '">' +
+            esc(String(status).replace(/_/g,' ')) + '</span>' : '';
+        var tipoBadge = tipo ? '<span class="tipo tipo-' + esc(tipo) + '">' + esc(tipo) + '</span>' : '';
+
+        var thumbs = '';
+        if (m.temImagem || m.imagem) {
+            var imgUrl = '/manutencoes/' + m.id + '/imagem?t=' + Date.now();
+            thumbs += '<a class="manut-thumb" onclick="abrirImgViewer(\'' + imgUrl + '\')">' +
+                      '<img src="' + imgUrl + '" alt="imagem manutencao"></a>';
+        }
+
         var acoes = '';
-        if (m.anexo) {
-            acoes += '<button class="btn" onclick="window.open(\'/manutencoes/' + m.id + '/arquivo\',\'_blank\')">Ver Anexo</button>';
-            acoes += '<button class="btn" onclick="window.open(\'/manutencoes/' + m.id + '/download\',\'_blank\')">Baixar</button>';
+        if (m.temAnexo || m.anexo) {
+            acoes += '<button class="btn btn-sm" onclick="window.open(\'/manutencoes/' + m.id + '/arquivo\',\'_blank\')">Ver Laudo</button>';
+            acoes += '<button class="btn btn-sm" onclick="window.open(\'/manutencoes/' + m.id + '/download\',\'_blank\')">Baixar</button>';
         }
-        if (m.imagem) {
-            acoes += '<button class="btn" onclick="window.open(\'/manutencoes/' + m.id + '/imagem\',\'_blank\')">Ver Imagem</button>';
-        }
-        acoes += '<button class="btn btn-danger" onclick="deletarManut(' + m.id + ')">Excluir</button>';
+        acoes += '<button class="btn btn-sm btn-danger" onclick="deletarManut(' + m.id + ')">Excluir</button>';
+
+        var tec = m.tecnicoNome || m.tecnico || '--';
+        var resp = m.responsavelNome || m.responsavelUsername || '--';
 
         return '<div class="manut-item">' +
             '<div class="manut-header">' +
-                '<div class="manut-tecnico">' + esc(m.tecnico || '--') + '</div>' +
-                '<div class="manut-data">' + esc(m.data || '') + '</div>' +
+                '<div class="manut-title">' +
+                    '<span class="manut-id">#' + m.id + '</span> ' +
+                    statusBadge + ' ' + tipoBadge +
+                '</div>' +
+                '<div class="manut-data">' + esc(m.dataEntrada || m.data || '') + '</div>' +
             '</div>' +
-            '<div class="manut-desc"><strong>Descricao:</strong> ' + esc(m.descricao || '--') + '</div>' +
-            (m.laudo ? '<div class="manut-laudo">' + esc(m.laudo) + '</div>' : '') +
-            (m.anexo ? '<div class="cell-muted">Anexo: ' + esc(m.anexo) + '</div>' : '') +
+            '<div class="manut-people">' +
+                '<div><span class="lbl">Tecnico:</span> ' + esc(tec) + '</div>' +
+                '<div><span class="lbl">Responsavel:</span> ' + esc(resp) + '</div>' +
+            '</div>' +
+            (m.descricao ? '<div class="manut-desc"><span class="lbl">Descricao:</span> ' + esc(m.descricao) + '</div>' : '') +
+            (m.laudo ? '<div class="manut-laudo"><span class="lbl">Laudo Final:</span><div class="laudo-body">' + esc(m.laudo) + '</div></div>' : '') +
+            (thumbs ? '<div class="manut-thumbs">' + thumbs + '</div>' : '') +
             '<div class="manut-actions">' + acoes + '</div>' +
         '</div>';
     }).join('');
@@ -532,20 +628,26 @@ function renderManutList(ms) {
 function renderImagemBig(a) {
     var big = document.getElementById('img-big');
     var empty = document.getElementById('img-empty');
-    if (a.imagemUrl) {
-        big.src = '/manutencoes/agente/' + encodeURIComponent(a.agentId) + '/imagem?t=' + Date.now();
+    var src = a.imagemUrl ? '/manutencoes/agente/' + encodeURIComponent(a.agentId) + '/imagem?t=' + Date.now() : '';
+    if (src) {
+        big.src = src;
         big.style.display = 'inline-block';
+        big.style.cursor = 'zoom-in';
+        big.onclick = function(){ abrirImgViewer(src); };
         empty.style.display = 'none';
     } else {
         big.style.display = 'none';
+        big.onclick = null;
         empty.style.display = 'block';
     }
     // Thumb na aba Info
     var box = document.getElementById('det-imagem-box');
-    if (a.imagemUrl) {
-        box.innerHTML = '<img src="/manutencoes/agente/' + encodeURIComponent(a.agentId) + '/imagem?t=' + Date.now() + '">';
+    if (src) {
+        box.innerHTML = '<img src="' + src + '" alt="Imagem do equipamento">';
+        box.onclick = function(){ abrirImgViewer(src); };
     } else {
         box.innerHTML = '<span class="detail-image-empty">Sem imagem</span>';
+        box.onclick = null;
     }
 }
 
@@ -730,24 +832,55 @@ function verCondenado(id) {
                 ['Data Condenacao', c.dataCondenacao || '--'],
                 ['Motivo', c.motivoCondenacao || '--']
             ];
-            document.getElementById('cond-det-info').innerHTML = items.map(function(it){
+            var infoHtml = items.map(function(it){
                 return '<div class="info-item"><span class="info-label">' + esc(it[0]) + '</span>' +
                        '<span class="info-value">' + esc(it[1]) + '</span></div>';
             }).join('');
-            document.getElementById('cond-det-laudo').innerText = c.laudoFinal || '(sem laudo final)';
+            // Imagem principal (se salva no momento da condenacao)
+            if (c.temImagemPrincipal) {
+                var imgUrl = '/equipamentos-condenados/' + c.id + '/imagem-principal?t=' + Date.now();
+                infoHtml = '<div class="info-item" style="grid-column:1/-1; align-items:center; text-align:center;">' +
+                              '<span class="info-label">Imagem do Equipamento</span>' +
+                              '<img src="' + imgUrl + '" alt="Equipamento" ' +
+                              'style="max-width:220px; max-height:220px; border-radius:8px; margin-top:6px; cursor:zoom-in; border:1px solid #30363d;" ' +
+                              'onclick="abrirImgViewer(\'' + imgUrl + '\')">' +
+                          '</div>' + infoHtml;
+            }
+            document.getElementById('cond-det-info').innerHTML = infoHtml;
+
+            var laudoEl = document.getElementById('cond-det-laudo');
+            laudoEl.textContent = c.laudoFinal || '(sem laudo final)';
+            laudoEl.style.whiteSpace = 'pre-wrap';
+
             var hist = Array.isArray(c.historicoManutencoes) ? c.historicoManutencoes : [];
             var histBox = document.getElementById('cond-det-hist');
             if (!hist.length) {
                 histBox.innerHTML = '<div class="empty-state">Sem manutencoes registradas</div>';
             } else {
                 histBox.innerHTML = hist.map(function(m){
+                    var acoes = '';
+                    var thumbs = '';
+                    var idx = (m.indice != null) ? m.indice : 0;
+                    if (m.temImagem) {
+                        var imgUrl = '/equipamentos-condenados/' + c.id + '/manutencao/' + idx + '/imagem?t=' + Date.now();
+                        thumbs += '<a class="manut-thumb" onclick="abrirImgViewer(\'' + imgUrl + '\')">' +
+                                  '<img src="' + imgUrl + '" alt="imagem manutencao"></a>';
+                    }
+                    if (m.temAnexo) {
+                        var anexoUrl = '/equipamentos-condenados/' + c.id + '/manutencao/' + idx + '/anexo';
+                        acoes += '<button class="btn" onclick="window.open(\'' + anexoUrl + '\',\'_blank\')">Ver Laudo/Anexo</button>';
+                    }
+                    var header = '<div class="manut-header">' +
+                                    '<div class="manut-tecnico">' + esc(m.tecnico || '--') + '</div>' +
+                                    '<div class="manut-data">' + esc(m.data || '') + '</div>' +
+                                 '</div>';
                     return '<div class="manut-item">' +
-                        '<div class="manut-header">' +
-                            '<div class="manut-tecnico">' + esc(m.tecnico || '--') + '</div>' +
-                            '<div class="manut-data">' + esc(m.data || '') + '</div>' +
-                        '</div>' +
+                        header +
                         '<div class="manut-desc"><strong>Descricao:</strong> ' + esc(m.descricao || '--') + '</div>' +
+                        (m.status ? '<div class="cell-muted">Status: ' + esc(m.status) + (m.tipoManutencao ? ' | ' + esc(m.tipoManutencao) : '') + '</div>' : '') +
                         (m.laudo ? '<div class="manut-laudo">' + esc(m.laudo) + '</div>' : '') +
+                        (thumbs ? '<div class="manut-thumbs">' + thumbs + '</div>' : '') +
+                        (acoes ? '<div class="manut-actions">' + acoes + '</div>' : '') +
                     '</div>';
                 }).join('');
             }
