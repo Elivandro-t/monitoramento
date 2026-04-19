@@ -4,34 +4,104 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Metricas por Usuario</title>
+    <link rel="stylesheet" href="/css/equipamentos.css">
     <link rel="stylesheet" href="/css/manutencoes.css">
+    <style>
+        .met-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+        .met-card { background:#161b22; border:1px solid #30363d; border-radius:10px; padding:14px 16px; }
+        .met-card .lab { font-size:10px; color:#8b949e; text-transform:uppercase; letter-spacing:.4px; }
+        .met-card .val { font-size:22px; font-weight:700; color:#c9d1d9; margin-top:2px; }
+        .met-card.ok .val { color:#3fb950; }
+        .met-card.info .val { color:#58a6ff; }
+        .met-card.warn .val { color:#d29922; }
+
+        /* tabela */
+        .met-table th { text-transform: uppercase; letter-spacing:.4px; font-size:10.5px; }
+        .met-table td.num { text-align:right; font-variant-numeric: tabular-nums; font-weight:600; }
+        .met-bar { display:flex; align-items:center; gap:6px; }
+        .met-bar .pct { height:6px; background:#1f6feb; border-radius:4px; min-width:3px; max-width:140px; }
+        .met-bar .pct.ok { background:#2ea043; }
+
+        .perfil-chip {
+            display:inline-block; padding:2px 9px; border-radius:999px; font-size:10px; font-weight:700;
+            background:#21262d; border:1px solid #30363d;
+        }
+        .perfil-ADMIN       { background: rgba(218,54,51,.15); color:#ff7b72; border-color: rgba(218,54,51,.4); }
+        .perfil-INFORMATICA { background: rgba(31,111,235,.15); color:#58a6ff; border-color: rgba(31,111,235,.4); }
+        .perfil-OPERADOR    { background: rgba(163,113,247,.15); color:#a371f7; border-color: rgba(163,113,247,.4); }
+        .perfil-USUARIO     { background: rgba(139,148,158,.15); color:#c9d1d9; border-color: #484f58; }
+        .cargo-tag { color:#8b949e; font-size:11px; }
+    </style>
 </head>
 <body>
-<div class="mnt-container">
-    <header class="mnt-header">
+<div class="eq-container">
+    <header class="eq-header">
         <div>
             <h1>Metricas por Usuario</h1>
-            <div class="subtitle">Quantidade, concluidos e tempo medio</div>
+            <div class="subtitle">Quantidade, concluidos e tempo medio de atendimento</div>
         </div>
-        <div class="mnt-header-actions">
+        <div class="eq-header-actions">
             <button class="btn btn-back" onclick="window.location.href='/endpoint/equipamentos'">&larr; Equipamentos</button>
             <button class="btn" onclick="window.location.href='/relatorios/ranking'">Ranking</button>
-            <button class="btn" onclick="verPdf()">Ver PDF</button>
-            <button class="btn" onclick="baixarPdf()">Baixar PDF</button>
+            <button class="btn" onclick="carregar()">Recarregar</button>
+            <button class="btn btn-excel" onclick="verPdf()">Ver PDF</button>
+            <button class="btn btn-excel" onclick="baixarPdf()">Baixar PDF</button>
         </div>
     </header>
 
-    <div class="mnt-table-wrap">
-        <table class="mnt-table">
+    <div class="met-grid">
+        <div class="met-card info"><div class="lab">Usuarios listados</div><div class="val" id="k-total">0</div></div>
+        <div class="met-card"><div class="lab">Manutencoes totais</div><div class="val" id="k-manut">0</div></div>
+        <div class="met-card ok"><div class="lab">Concluidos</div><div class="val" id="k-conc">0</div></div>
+        <div class="met-card warn"><div class="lab">Tempo medio geral (h)</div><div class="val" id="k-tempo">0</div></div>
+    </div>
+
+    <div class="eq-filtros">
+        <div class="filtro-grupo" style="min-width:220px;flex:1;">
+            <label>Busca (nome, username, cargo)</label>
+            <input id="f-busca" type="text" oninput="aplicar()" placeholder="Digite para filtrar...">
+        </div>
+        <div class="filtro-grupo">
+            <label>Perfil</label>
+            <select id="f-perfil" onchange="aplicar()">
+                <option value="">Todos</option>
+                <option value="ADMIN">Admin</option>
+                <option value="INFORMATICA">Informatica</option>
+                <option value="OPERADOR">Operador</option>
+                <option value="USUARIO">Usuario</option>
+            </select>
+        </div>
+        <div class="filtro-grupo">
+            <label>Ordenar por</label>
+            <select id="f-ord" onchange="aplicar()">
+                <option value="total">Total (maior)</option>
+                <option value="concluidos">Concluidos (maior)</option>
+                <option value="tempo">Tempo medio (menor)</option>
+                <option value="tempo_desc">Tempo medio (maior)</option>
+                <option value="nome">Nome (A-Z)</option>
+            </select>
+        </div>
+        <div class="filtro-grupo">
+            <label>Com atividade?</label>
+            <select id="f-ativ" onchange="aplicar()">
+                <option value="">Todos</option>
+                <option value="sim">Apenas com manutencoes</option>
+                <option value="nao">Sem manutencoes</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="eq-table-wrapper">
+        <table class="eq-table met-table">
             <thead>
             <tr>
-                <th>Nome</th>
-                <th>Username</th>
+                <th>Usuario</th>
                 <th>Cargo</th>
                 <th>Perfil</th>
-                <th>Total</th>
-                <th>Concluidos</th>
-                <th>Tempo medio (h)</th>
+                <th class="num">Total</th>
+                <th class="num">Concluidos</th>
+                <th class="num">% Concluidos</th>
+                <th class="num">Tempo medio (h)</th>
             </tr>
             </thead>
             <tbody id="m-tbody"></tbody>
@@ -43,6 +113,8 @@
 
 <script>
 var AUTH_TOKEN = localStorage.getItem('auth_token') || '';
+var dados = [];
+
 function authHeaders(e){ e=e||{}; if(AUTH_TOKEN) e['Authorization']=AUTH_TOKEN; return e; }
 function toast(m,t){ var el=document.getElementById('toast'); el.className='popup-toast show '+(t||''); el.innerText=m; setTimeout(function(){ el.className='popup-toast'; },3200); }
 function esc(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
@@ -50,23 +122,82 @@ function esc(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g,func
 function carregar() {
     fetch('/relatorios/metricas/dados', { headers: authHeaders() })
         .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-        .then(function(d){ render(d.usuarios || []); })
+        .then(function(d){ dados = d.usuarios || []; aplicar(); })
         .catch(function(e){ toast('Falha: '+e.message,'error'); });
+}
+
+function aplicar() {
+    var q = (document.getElementById('f-busca').value || '').toLowerCase();
+    var perfil = document.getElementById('f-perfil').value;
+    var ord = document.getElementById('f-ord').value;
+    var ativ = document.getElementById('f-ativ').value;
+
+    var list = dados.filter(function(u){
+        if (perfil && (u.perfil||'') !== perfil) return false;
+        if (ativ === 'sim' && !u.total) return false;
+        if (ativ === 'nao' && u.total) return false;
+        if (!q) return true;
+        return (u.nome||'').toLowerCase().indexOf(q) >= 0
+            || (u.username||'').toLowerCase().indexOf(q) >= 0
+            || (u.cargo||'').toLowerCase().indexOf(q) >= 0;
+    });
+
+    list.sort(function(a,b){
+        switch (ord) {
+            case 'concluidos': return (b.concluidos||0) - (a.concluidos||0);
+            case 'tempo':      return (a.tempoMedioHoras||0) - (b.tempoMedioHoras||0);
+            case 'tempo_desc': return (b.tempoMedioHoras||0) - (a.tempoMedioHoras||0);
+            case 'nome':       return String(a.nome||a.username).localeCompare(String(b.nome||b.username));
+            default:           return (b.total||0) - (a.total||0);
+        }
+    });
+
+    render(list);
+    resumo(list);
 }
 
 function render(itens) {
     var tb = document.getElementById('m-tbody');
+    var maxTotal = itens.reduce(function(m,u){ return Math.max(m, u.total||0); }, 1);
     tb.innerHTML = itens.map(function(u){
+        var nome = u.nome || u.username || '-';
+        var ini = String(nome).trim().charAt(0).toUpperCase() || '?';
+        var pct = u.total ? Math.round((u.concluidos * 100) / u.total) : 0;
+        var larg = u.total ? Math.round((u.total * 140) / maxTotal) : 0;
+        var perfilChip = '<span class="perfil-chip perfil-' + esc(u.perfil||'USUARIO') + '">' + esc(u.perfil||'-') + '</span>';
         return '<tr>' +
-            '<td>'+esc(u.nome)+'</td>' +
-            '<td>'+esc(u.username)+'</td>' +
-            '<td>'+esc(u.cargo)+'</td>' +
-            '<td>'+esc(u.perfil)+'</td>' +
-            '<td>'+u.total+'</td>' +
-            '<td>'+u.concluidos+'</td>' +
-            '<td>'+u.tempoMedioHoras+'</td>' +
+            '<td>' +
+                '<div class="equip-cell">' +
+                    '<div class="equip-avatar">' + esc(ini) + '</div>' +
+                    '<div class="equip-info">' +
+                        '<div class="equip-host">' + esc(nome) + '</div>' +
+                        '<div class="equip-sub">@' + esc(u.username) + '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</td>' +
+            '<td><span class="cargo-tag">' + esc(u.cargo || '-') + '</span></td>' +
+            '<td>' + perfilChip + '</td>' +
+            '<td class="num">' +
+                '<div class="met-bar"><span class="pct" style="width:' + larg + 'px"></span>' + u.total + '</div>' +
+            '</td>' +
+            '<td class="num">' +
+                '<div class="met-bar"><span class="pct ok" style="width:' + (u.total ? Math.round((u.concluidos * 140)/maxTotal) : 0) + 'px"></span>' + u.concluidos + '</div>' +
+            '</td>' +
+            '<td class="num">' + pct + '%</td>' +
+            '<td class="num">' + (u.tempoMedioHoras || 0) + '</td>' +
         '</tr>';
-    }).join('') || '<tr><td colspan="7" style="text-align:center;color:#8b949e">Sem dados</td></tr>';
+    }).join('') || '<tr><td colspan="7" style="text-align:center;color:#8b949e;padding:16px">Sem dados</td></tr>';
+}
+
+function resumo(list) {
+    var tot = list.reduce(function(s,u){ return s + (u.total||0); }, 0);
+    var conc = list.reduce(function(s,u){ return s + (u.concluidos||0); }, 0);
+    var tempos = list.filter(function(u){ return u.tempoMedioHoras > 0; }).map(function(u){ return u.tempoMedioHoras; });
+    var mediaH = tempos.length ? Math.round(tempos.reduce(function(a,b){return a+b;},0) / tempos.length) : 0;
+    document.getElementById('k-total').textContent = list.length;
+    document.getElementById('k-manut').textContent = tot;
+    document.getElementById('k-conc').textContent = conc;
+    document.getElementById('k-tempo').textContent = mediaH;
 }
 
 function abrirPdf(forceDownload) {

@@ -1,11 +1,25 @@
 package com.example.projetoAP.controler;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -82,33 +96,37 @@ public class ApControler {
     }
     @GetMapping("/lista")
     public String getVierListPage(Model model, @RequestParam(name = "mac", required = false) String mac, @RequestParam(name = "ReceiveGrupoId",required = false) String ReceiveGrupoId, HttpSession sessionAttribute){
-        if(ReceiveGrupoId!=null){
-            sessionAttribute.setAttribute("search",ReceiveGrupoId);
+        // Normaliza: string vazia equivale a nulo (evita salvar filtro vazio na sessao)
+        if (mac != null && mac.trim().isEmpty()) mac = null;
+        if (ReceiveGrupoId != null && ReceiveGrupoId.trim().isEmpty()) ReceiveGrupoId = null;
+
+        if (ReceiveGrupoId != null) {
+            sessionAttribute.setAttribute("search", ReceiveGrupoId);
         }
         List<EndpointDTO> l = new ArrayList<>();
-       var re = sessionAttribute.getAttribute("search");
-        if (mac != null && !mac.isEmpty()) {
+        var re = sessionAttribute.getAttribute("search");
+        if (mac != null) {
             sessionAttribute.removeAttribute("search");
-            // Filtra a lista baseado no MAC
+            final String termo = mac.trim();
             var lista = endpointService.getLista().stream()
-                    .filter(e -> e.mac().contains(mac.trim())
-                            ||e.ip().contains(mac.trim())
-                            ||e.localizacao().contains(mac.trim())
+                    .filter(e -> e.mac().contains(termo)
+                            || e.ip().contains(termo)
+                            || e.localizacao().contains(termo)
                     ).toList();
-          l.addAll(lista);
-        }else if(re!=null){
+            l.addAll(lista);
+        } else if (re != null && !re.toString().isEmpty()) {
             var lista = endpointService.getLista().stream()
                     .filter(e -> e.grupo().equals(re.toString())).toList();
             l.addAll(lista);
-        }
-        else {
-            model.addAttribute("off",endpointService.getLista().stream().filter(e->e.status().equals("DOWN") ).toList());
-            l.addAll( endpointService.getLista());
+        } else {
+            // Sem filtro: garante que a sessao fique limpa e mostra tudo
+            sessionAttribute.removeAttribute("search");
+            model.addAttribute("off", endpointService.getLista().stream().filter(e -> e.status().equals("DOWN")).toList());
+            l.addAll(endpointService.getLista());
         }
         var lista = groupService.findAll();
-        model.addAttribute("groups",lista);
+        model.addAttribute("groups", lista);
         model.addAttribute("lista", l);
-        // Passa a lista para o front-end
         return "lista";
     }
     @GetMapping("/antenas")
@@ -221,6 +239,164 @@ public class ApControler {
                 "Deletou endpoint ID: " + id, getClientIp(request), request.getHeader("User-Agent"));
         return org.springframework.http.ResponseEntity.ok(Map.of("message", "Endpoint excluido com sucesso"));
     }
+
+    @GetMapping("/export")
+    @ResponseBody
+    public ResponseEntity<ByteArrayResource> exportarExcel(
+            @RequestParam(name = "mac", required = false) String mac,
+            @RequestParam(name = "ReceiveGrupoId", required = false) String ReceiveGrupoId) throws IOException {
+
+        if (mac != null && mac.trim().isEmpty()) mac = null;
+        if (ReceiveGrupoId != null && ReceiveGrupoId.trim().isEmpty()) ReceiveGrupoId = null;
+
+        List<EndpointDTO> lista = endpointService.getLista();
+        if (mac != null) {
+            final String termo = mac.trim();
+            lista = lista.stream().filter(e -> e.mac().contains(termo)
+                    || e.ip().contains(termo)
+                    || e.localizacao().contains(termo)).toList();
+        } else if (ReceiveGrupoId != null) {
+            final String grupo = ReceiveGrupoId;
+            lista = lista.stream().filter(e -> e.grupo() != null && e.grupo().equals(grupo)).toList();
+        }
+
+        try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = wb.createSheet("Endpoints");
+
+            CellStyle header = wb.createCellStyle();
+            Font fontHdr = wb.createFont();
+            fontHdr.setBold(true);
+            fontHdr.setColor(IndexedColors.WHITE.getIndex());
+            header.setFont(fontHdr);
+            header.setFillForegroundColor(IndexedColors.DARK_BLUE.getIndex());
+            header.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
+
+            String[] cols = {"Localizacao", "MAC", "Hostname", "Status", "IPv4", "Modelo", "SN", "Grupo", "Filial", "Complexo", "Data", "Ultima Vez Online"};
+            Row h = sheet.createRow(0);
+            for (int i = 0; i < cols.length; i++) {
+                Cell c = h.createCell(i);
+                c.setCellValue(cols[i]);
+                c.setCellStyle(header);
+            }
+
+            int r = 1;
+            for (EndpointDTO e : lista) {
+                Row row = sheet.createRow(r++);
+                row.createCell(0).setCellValue(safe(e.localizacao()));
+                row.createCell(1).setCellValue(safe(e.mac()));
+                row.createCell(2).setCellValue(safe(e.nome()));
+                row.createCell(3).setCellValue(safe(e.status()));
+                row.createCell(4).setCellValue(safe(e.ip()));
+                row.createCell(5).setCellValue(safe(e.modelo()));
+                row.createCell(6).setCellValue(safe(e.sn()));
+                row.createCell(7).setCellValue(safe(e.grupo()));
+                row.createCell(8).setCellValue(e.filial() != null ? String.valueOf(e.filial()) : "");
+                row.createCell(9).setCellValue(safe(e.nomeComplexo()));
+                row.createCell(10).setCellValue(safe(e.data()));
+                row.createCell(11).setCellValue(safe(e.dataUltimaVezOnline()));
+            }
+
+            for (int i = 0; i < cols.length; i++) sheet.autoSizeColumn(i);
+
+            wb.write(out);
+            byte[] bytes = out.toByteArray();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentDisposition(org.springframework.http.ContentDisposition.attachment()
+                    .filename("endpoints-" + System.currentTimeMillis() + ".xlsx").build());
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .contentLength(bytes.length)
+                    .body(new ByteArrayResource(bytes));
+        }
+    }
+
+    @GetMapping("/modelo")
+    @ResponseBody
+    public ResponseEntity<ByteArrayResource> baixarModelo() throws IOException {
+        try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
+            CellStyle header = wb.createCellStyle();
+            Font fontHdr = wb.createFont();
+            fontHdr.setBold(true);
+            fontHdr.setColor(IndexedColors.WHITE.getIndex());
+            header.setFont(fontHdr);
+            header.setFillForegroundColor(IndexedColors.DARK_BLUE.getIndex());
+            header.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
+
+            CellStyle bold = wb.createCellStyle();
+            Font fb = wb.createFont(); fb.setBold(true);
+            bold.setFont(fb);
+
+            // Sheet 0: dados para importacao (ordem esperada por EndpointService.processarLinha)
+            Sheet sheet = wb.createSheet("Endpoints");
+            String[] cols = {"Localizacao", "MAC", "Hostname", "Descricao", "IPv4", "Modelo", "SN"};
+            Row h = sheet.createRow(0);
+            for (int i = 0; i < cols.length; i++) {
+                Cell c = h.createCell(i);
+                c.setCellValue(cols[i]);
+                c.setCellStyle(header);
+            }
+
+            String[][] exemplos = {
+                {"F116-SC-ADM01", "24:1F:BD:D9:8F:E6", "SLZ-CD116-ADM01", "", "10.220.113.4", "Aruba IAP-305", "SN000123"},
+                {"F111-LG-AP02",  "B0:27:CF:CF:29:90", "SLZ-CD356-SPZ-AP13", "", "10.220.113.204", "Aruba IAP-305", "SN000124"},
+                {"F90-FT-03",     "B8:50:01:72:94:98", "SLZ-CD116-FAT03",     "", "10.220.113.186", "Aruba IAP-225", "SN000125"}
+            };
+            for (int r = 0; r < exemplos.length; r++) {
+                Row row = sheet.createRow(r + 1);
+                for (int c = 0; c < exemplos[r].length; c++) {
+                    row.createCell(c).setCellValue(exemplos[r][c]);
+                }
+            }
+            for (int i = 0; i < cols.length; i++) sheet.autoSizeColumn(i);
+
+            // Sheet 1: instrucoes
+            Sheet ajuda = wb.createSheet("Instrucoes");
+            int k = 0;
+            Row t = ajuda.createRow(k++);
+            Cell tc = t.createCell(0); tc.setCellValue("INSTRUCOES DE IMPORTACAO"); tc.setCellStyle(header);
+            k++;
+            ajuda.createRow(k++).createCell(0).setCellValue("1. Antes de enviar, selecione o COMPLEXO e a CATEGORIA no formulario de upload.");
+            ajuda.createRow(k++).createCell(0).setCellValue("2. Apague os exemplos antes de preencher com seus dados reais.");
+            ajuda.createRow(k++).createCell(0).setCellValue("3. Mantenha a ORDEM e NOMES das colunas da aba 'Endpoints'.");
+            ajuda.createRow(k++).createCell(0).setCellValue("4. A coluna Descricao fica reservada para notas; pode ficar em branco.");
+            k++;
+            Row t2 = ajuda.createRow(k++);
+            Cell tc2 = t2.createCell(0); tc2.setCellValue("COLUNAS"); tc2.setCellStyle(header);
+            String[][] guia = {
+                {"A - Localizacao", "Profile / sala / posicao. Ex: F116-SC-ADM01"},
+                {"B - MAC",          "Endereco MAC. Ex: 24:1F:BD:D9:8F:E6"},
+                {"C - Hostname",     "Nome do dispositivo. Ex: SLZ-CD116-ADM01"},
+                {"D - Descricao",    "Opcional (nao e obrigatorio preencher)"},
+                {"E - IPv4",         "IP v4. Ex: 10.220.113.4"},
+                {"F - Modelo",       "Modelo do equipamento. Ex: Aruba IAP-305"},
+                {"G - SN",           "Numero de serie"}
+            };
+            for (String[] g : guia) {
+                Row r = ajuda.createRow(k++);
+                Cell a = r.createCell(0); a.setCellValue(g[0]); a.setCellStyle(bold);
+                r.createCell(1).setCellValue(g[1]);
+            }
+            ajuda.autoSizeColumn(0);
+            ajuda.autoSizeColumn(1);
+
+            wb.write(out);
+            byte[] bytes = out.toByteArray();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentDisposition(org.springframework.http.ContentDisposition.attachment()
+                    .filename("modelo-endpoints.xlsx").build());
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .contentLength(bytes.length)
+                    .body(new ByteArrayResource(bytes));
+        }
+    }
+
+    private String safe(String s) { return s == null ? "" : s; }
 
     private String getClientIp(HttpServletRequest request) {
         String xForwarded = request.getHeader("X-Forwarded-For");

@@ -303,6 +303,27 @@ function esc(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
+// Converte bytes em formato legivel (GB ou MB)
+function bytesParaGB(bytes) {
+    var n = Number(bytes);
+    if (!n || isNaN(n) || n <= 0) return null;
+    var gb = n / 1073741824;
+    if (gb >= 1) return gb.toFixed(2) + ' GB';
+    var mb = n / 1048576;
+    return mb.toFixed(0) + ' MB';
+}
+
+// "2.34 GB / 7.89 GB (29.7%)"
+function formatarUso(usada, total, percent) {
+    var pct = (percent || 0).toFixed(1) + '%';
+    var t = bytesParaGB(total);
+    var u = bytesParaGB(usada);
+    if (!t && !u) return pct;
+    if (!t) return (u || '--') + ' (' + pct + ')';
+    if (!u) return '-- / ' + t + ' (' + pct + ')';
+    return u + ' / ' + t + ' (' + pct + ')';
+}
+
 // ===== CRUD EQUIP =====
 function abrirModalNovo() {
     document.getElementById('modal-equip-titulo').innerText = 'Novo Equipamento';
@@ -464,8 +485,8 @@ function renderDetInfo(a) {
         ['Status de Uso', (a.statusUso || 'NORMAL') + (a.usoTooltip ? ' (' + a.usoTooltip + ')' : ''), statusUsoClass],
         ['Status', a.status || '--', a.status === 'ONLINE' ? 'ok' : 'bad'],
         ['CPU', (a.cpu || 0).toFixed(1) + '%'],
-        ['Memoria', (a.memoriaPercent || 0).toFixed(1) + '%'],
-        ['Disco', (a.discoPercent || 0).toFixed(1) + '%'],
+        ['Memoria', formatarUso(a.memoriaUsada, a.memoriaTotal, a.memoriaPercent)],
+        ['Disco', formatarUso(a.discoUsado, a.discoTotal, a.discoPercent)],
         ['Data Cadastro', a.dataCadastro || '--'],
         ['Ultimo Contato', a.ultimoContato || '--']
     ];

@@ -1,148 +1,444 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="pt-br" xmlns:th="http://www.thymeleaf.org">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lista de APs</title>
+    <title>Interface List</title>
+    <link rel="stylesheet" th:href="@{/css/equipamentos.css}">
+    <link rel="stylesheet" th:href="@{/css/manutencoes.css}">
     <link rel="stylesheet" th:href="@{/css/lista.css}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
+    <style>
+        html, body { height: 100%; margin: 0; padding: 0; }
+        body { overflow: hidden; display:flex; flex-direction:column; box-sizing: border-box; }
+        .lst-container {
+            max-width: none; width:100%; margin: 0; padding: 0;
+            flex: 1; display: flex; flex-direction: column; min-height: 0;
+        }
+        .lst-hdr, .lst-toolbar { margin-left: 0; margin-right: 0; }
+
+        /* Header em uma linha so, com contadores inline */
+        .lst-hdr {
+            display:flex; justify-content:space-between; align-items:center;
+            padding: 10px 16px; background: linear-gradient(90deg,#161b22 0%,#1c2128 100%);
+            border:1px solid #30363d; border-radius:10px; margin-bottom:12px;
+            gap: 14px; flex-wrap: wrap;
+        }
+        .lst-hdr h1 { font-size:16px; color:#58a6ff; font-weight:700; }
+        .lst-hdr .sub { font-size:10.5px; color:#8b949e; margin-top:1px; }
+
+        .lst-stats { display:flex; gap:10px; align-items:center; margin-left:auto; }
+        .lst-stat {
+            display:inline-flex; align-items:center; gap:6px;
+            background:#0d1117; border:1px solid #30363d;
+            padding: 4px 10px; border-radius: 999px; font-size: 11px;
+        }
+        .lst-stat .dot { width:8px; height:8px; border-radius:50%; }
+        .lst-stat .n { font-weight:700; font-size: 12px; }
+        .lst-stat.t .n { color:#58a6ff; }
+        .lst-stat.u .n { color:#3fb950; }
+        .lst-stat.u .dot { background:#3fb950; box-shadow:0 0 6px #3fb950; }
+        .lst-stat.d .n { color:#f85149; }
+        .lst-stat.d .dot { background:#f85149; box-shadow:0 0 6px #f85149; }
+        .lst-stat .lab { color:#8b949e; text-transform:uppercase; font-size:9.5px; letter-spacing:.4px; }
+
+        .lst-actions { display:flex; gap:6px; align-items:center; }
+
+        /* Toolbar / search */
+        .lst-toolbar {
+            display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+            background:#161b22; border:1px solid #30363d; border-radius:10px;
+            padding:8px 10px; margin-bottom:10px;
+        }
+        .lst-toolbar form { display:flex; gap:8px; flex:1; min-width: 260px; }
+        .lst-toolbar input[type=text], .lst-toolbar select {
+            background:#0d1117; border:1px solid #30363d; color:#c9d1d9;
+            padding:7px 10px; border-radius:6px; font-size:11.5px;
+        }
+        .lst-toolbar input[type=text]:focus, .lst-toolbar select:focus {
+            outline:none; border-color:#58a6ff; box-shadow:0 0 0 2px rgba(88,166,255,.2);
+        }
+        .lst-toolbar .grow { flex:1; }
+
+        /* Tabela - fontes menores, padding mais curto, scroll vertical + horizontal */
+        .lst-wrap {
+            background:#161b22; border:1px solid #30363d; border-radius:10px;
+            overflow: auto;
+            flex: 1; min-height: 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        .lst-wrap::-webkit-scrollbar { width: 10px; height: 10px; }
+        .lst-wrap::-webkit-scrollbar-track { background:#0d1117; border-radius: 6px; }
+        .lst-wrap::-webkit-scrollbar-thumb { background:#30363d; border-radius: 6px; }
+        .lst-wrap::-webkit-scrollbar-thumb:hover { background:#58a6ff; }
+        table.lst-table { width:100%; border-collapse: collapse; font-size: 11px; min-width: 950px; }
+        table.lst-table th {
+            text-align:left; padding: 8px 11px; background:#1c2128; color:#58a6ff;
+            text-transform: uppercase; font-size: 9.5px; letter-spacing:.4px;
+            border-bottom:1px solid #30363d; position: sticky; top:0; z-index: 1; cursor:pointer;
+            user-select: none; font-weight: 700;
+        }
+        table.lst-table th.th-sort-asc::after  { content:" \25B2"; font-size:8px; color:#58a6ff; }
+        table.lst-table th.th-sort-desc::after { content:" \25BC"; font-size:8px; color:#58a6ff; }
+        table.lst-table td {
+            padding: 6px 11px; border-bottom:1px solid #21262d; vertical-align: middle;
+            white-space: nowrap; line-height: 1.4;
+        }
+        /* Status compacto mas sem esmagar a pill */
+        table.lst-table th:nth-child(1),
+        table.lst-table td:nth-child(1) { padding-right: 8px; white-space: nowrap; }
+        table.lst-table th:nth-child(2),
+        table.lst-table td:nth-child(2) { padding-left: 8px; }
+        table.lst-table tbody tr.tr { cursor: context-menu; transition: background .12s; }
+        table.lst-table tbody tr.tr:hover td { background:#1c2128; }
+        table.lst-table tbody tr.tr.down td { background: rgba(248,81,73,.05); }
+
+        .host-cell { display:flex; align-items:center; gap:8px; }
+        .host-dot { width:8px; height:8px; border-radius:50%; box-shadow:0 0 5px currentColor; flex-shrink:0; }
+        .host-dot.up   { color:#3fb950; background:#3fb950; }
+        .host-dot.down { color:#f85149; background:#f85149; }
+        .host-name { color:#f0f6fc; font-weight:600; font-size:11.5px; }
+
+        .status-pill {
+            display:inline-flex; align-items:center;
+            padding: 2px 8px; border-radius: 999px; font-size: 9.5px; font-weight:700;
+            text-transform: uppercase; letter-spacing:.3px;
+        }
+        .status-pill.up   { background: rgba(63,185,80,.15); color:#3fb950; border:1px solid rgba(63,185,80,.4); }
+        .status-pill.down { background: rgba(248,81,73,.15); color:#ff7b72; border:1px solid rgba(248,81,73,.45); }
+
+        .mono { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 10.5px; }
+        .ip-cell  { color:#79c0ff; }
+        .mac-cell { color:#7ee787; }
+
+        .pill {
+            display:inline-block; padding: 1px 8px; border-radius: 999px; font-size: 9.5px;
+            background:#21262d; color:#c9d1d9; border:1px solid #30363d;
+        }
+        .pill.cpd { background: rgba(163,113,247,.12); color:#a371f7; border-color: rgba(163,113,247,.35); }
+
+        /* Botoes de acao na linha */
+        .row-actions { display:flex; gap:4px; }
+        .btn-row {
+            background:#21262d; border:1px solid #30363d; color:#c9d1d9;
+            padding: 3px 9px; border-radius: 5px; cursor:pointer; font-size: 10.5px; font-weight: 600;
+        }
+        .btn-row:hover.ping { background:#1f6feb; border-color:#1f6feb; color:#fff; }
+        .btn-row:hover.det  { background:#6e40c9; border-color:#6e40c9; color:#fff; }
+
+        /* Ping modal inline (mesma logica de visual.js) */
+        .modal-container {
+            display: none; position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); z-index: 10000;
+            background: #0d1117; border: 1px solid #30363d; border-radius: 10px;
+            padding: 14px; width: 92%; max-width: 640px;
+            box-shadow: 0 6px 32px rgba(0,0,0,.6);
+        }
+        .modal-container .btn-as { display:flex; justify-content:flex-end; margin-bottom:6px; }
+        .modal-container .btn-as button {
+            background:#21262d; border:1px solid #30363d; color:#c9d1d9;
+            width:26px; height:26px; border-radius:5px; cursor:pointer;
+        }
+        .modal-container .area-propt {
+            font-family: ui-monospace, monospace; font-size: 11.5px; color:#58a6ff;
+            background:#161b22; border:1px solid #30363d; border-radius:6px;
+            padding: 5px 10px; margin-bottom: 6px;
+        }
+        .modal-container #container1, .modal-container #container12 {
+            background: #010409; border:1px solid #30363d; border-radius:6px;
+            padding: 8px 10px; height: 220px; overflow-y:auto;
+            font-family: ui-monospace, monospace; font-size: 11px; color:#c9d1d9;
+        }
+
+        /* Context menu (lista_mac.js) - visual refeito */
+        .context-container {
+            background:#161b22; border:1px solid #30363d; border-radius:8px;
+            padding:4px; box-shadow: 0 4px 16px rgba(0,0,0,.5); min-width:160px;
+        }
+        .context-container ul { list-style:none; margin:0; padding:0; }
+        .context-container li {
+            padding: 7px 12px; font-size: 11.5px; color:#c9d1d9; cursor:pointer; border-radius:5px;
+        }
+        .context-container li:hover { background:#1f6feb; color:#fff; }
+
+        /* Modal de detalhes */
+        .det-overlay {
+            display:none; position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:9999;
+            justify-content:center; align-items:center;
+        }
+        .det-overlay.show { display:flex; }
+        .det-box {
+            background:#0d1117; border:1px solid #30363d; border-radius:12px;
+            width: 92%; max-width: 780px; max-height: 90vh; overflow-y: auto;
+            padding: 0;
+        }
+        .det-head {
+            display:flex; justify-content:space-between; align-items:center;
+            padding: 14px 18px; border-bottom:1px solid #30363d;
+            background: linear-gradient(90deg,#161b22 0%,#1c2128 100%);
+            border-radius: 12px 12px 0 0;
+        }
+        .det-head h3 {
+            font-size:15px; color:#58a6ff; font-weight:700;
+            display:flex; align-items:center; gap:10px;
+        }
+        .det-head button.close {
+            background:none; border:none; color:#8b949e; font-size:22px; cursor:pointer;
+        }
+        .det-body { padding: 18px; }
+        .det-grid {
+            display:grid; grid-template-columns: repeat(2, 1fr); gap: 12px 20px;
+        }
+        .det-grid .full { grid-column: 1 / -1; }
+        .det-item { display:flex; flex-direction:column; gap:3px; }
+        .det-item .k {
+            font-size:9.5px; color:#8b949e; text-transform:uppercase; letter-spacing:.4px; font-weight:600;
+        }
+        .det-item .v {
+            font-size:12.5px; color:#f0f6fc; background:#161b22; border:1px solid #30363d;
+            padding:7px 10px; border-radius:6px; word-break: break-word; font-weight:500;
+        }
+        .det-item .v.mono { font-family: ui-monospace, monospace; font-size: 12px; }
+        .det-foot {
+            display:flex; justify-content:flex-end; gap:8px;
+            padding: 12px 18px; border-top:1px solid #30363d;
+        }
+    </style>
 </head>
 
 <body>
 
-<script th:src="@{/css/javascript.js}"></script>
-<script th:src="@{/css/visual.js}"></script>
+<div class="lst-container">
 
+    <!-- HEADER com contadores inline -->
+    <header class="lst-hdr">
+        <div>
+            <h1>Interface List</h1>
+            <div class="sub">Lista de dispositivos monitorados - clique com botao direito para acoes</div>
+        </div>
 
+        <div class="lst-stats">
+            <span class="lst-stat t"><span class="lab">Total</span>
+                <span class="n" th:text="${#lists.size(lista)}">0</span></span>
+            <span class="lst-stat u"><span class="dot"></span><span class="lab">Online</span>
+                <span class="n"
+                      th:text="${off != null} ? ${#lists.size(lista) - #lists.size(off)} : ${#lists.size(lista)}">0</span></span>
+            <span class="lst-stat d"><span class="dot"></span><span class="lab">Offline</span>
+                <span class="n" th:text="${off != null} ? ${#lists.size(off)} : 0">0</span></span>
+        </div>
 
-<section class="area_container" id="sumi">
-    <div class="container_int container_registro">
-        <a th:href="@{/endpoint/registro}" class="btn-a" onclick="app2('/registro/registro',this );">Novo</a>
-        <a th:href="@{/setores}" class="btn-a" onclick="app2('/setores',this );">Filial</a>
+        <div class="lst-actions">
+            <a th:href="@{/endpoint/registro}" class="btn btn-primary" onclick="app2('/registro/registro',this);">+ Novo</a>
+            <a href="#" class="btn btn-excel" onclick="exportarExcel(event)" title="Baixar planilha com o filtro atual"
+               style="background:#107c41; border-color:#107c41; color:#fff;">
+                &#8615; Excel
+            </a>
+            <a th:href="@{/setores}" class="btn" onclick="app2('/setores',this);">Filial</a>
+            <button class="btn" onclick="toggleFullscreen()">Tela Cheia</button>
+        </div>
+    </header>
 
-    </div>
-    <!-- <div id="modals"></div> -->
-    <p th:text="'Total '+${#lists.size(lista)}"></p>
-    <div th:if="${off}" th:text="'OFF '+${#lists.size(off)}"></div>
-    <div class="container">
-        <form method="get" class="modal_2" action="/endpoint/lista">
-            <label for="mac">Busca</label>
-            <input type="text" id="mac" name="mac" placeholder="00:00:00:00:00:00">
-            <select name="ReceiveGrupoId" id="stc">
-                <option value="">Selecione o grupo</option>
+    <!-- Toolbar -->
+    <div class="lst-toolbar">
+        <form method="get" action="/endpoint/lista">
+            <input type="text" id="mac" name="mac" class="grow" placeholder="Busca por MAC / IP / localizacao">
+            <select name="ReceiveGrupoId">
+                <option value="">Todos os grupos</option>
                 <option th:each="item:${groups}" th:value="${item.nome}" th:text="${item.nome}"></option>
             </select>
-            <button id="enviar">enviar</button>
+            <button id="enviar" class="btn btn-primary" type="submit">Buscar</button>
+            <a th:href="@{/endpoint/lista}" class="btn">Limpar</a>
         </form>
     </div>
-    <div><button onclick="toggleFullscreen()">Tela Cheia</button></div>
-</section>
-<div class="area_table" id="meuContainer">
-    <table>
-        <thead>
-        <tr>
-            <th>
-                STATUS
-            </th>
-            <th>
-                PROFILE
-            </th>
-            <th>
 
-                HOSTNAME
-
-            </th>
-            <th>
-                MODEL
-            </th>
-            <th>
-                S/N
-            </th>
-
-            <th>
-                MAC_ADRESS
-            </th>
-            <th>
-                IPv4
-            </th>
-            <th>CPD</th>
-            <th>FILIAL</th>
-            <th>COMPLEXO</th>
-            <th>GROUP</th>
-            <th>ICM PING</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="item:${lista}" class="tr" th:data-location="${item.localizacao}" th:data-id="${item.id}"
-            th:data-ip="${item.ip}" th:if="${item.status.toUpperCase() == 'DOWN'}">
-            <td th:text="${item.status}" th:id="ad" class="th-text ad"
-                th:style="'background-color: ' + (${item.status != null && item.status.toUpperCase() == 'UP'} ? 'rgba(0, 128, 0, 0.8)' : 'rgba(255, 0, 0, 0.5)')">
-            </td>
-            <td th:text="${item.localizacao}"></td>
-            <td th:text="${item.nome}"></td>
-            <td th:text="${item.modelo}"></td>
-            <td th:text="${item.sn}"></td>
-            <td th:text="${item.mac}"></td>
-            <td th:text="${item.ip}"></td>
-            <td>EM DESENVOLVIMENTO</td>
-            <td th:text="${item.filial}"></td>
-            <td th:text="${item.nomeComplexo}"></td>
-            <td th:text="${item.grupo}"></td>
-            <td>
-                <button onclick="visual(this);" th:data-ip="${item.ip}">
-                    Ping</button>
-                <div class="modal-container modal">
-                    <div class="btn-as">
-                        <button onclick="fecharModal(this)">X</button>
+    <!-- Tabela -->
+    <div class="lst-wrap" id="meuContainer">
+        <table class="lst-table">
+            <thead>
+            <tr>
+                <th>Status</th>
+                <th>Profile</th>
+                <th>Hostname</th>
+                <th>MAC</th>
+                <th>IPv4</th>
+                <th>Filial</th>
+                <th>Group</th>
+                <th>Acoes</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- Offline primeiro -->
+            <tr th:each="item:${lista}" class="tr down"
+                th:data-location="${item.localizacao}" th:data-id="${item.id}" th:data-ip="${item.ip}"
+                th:if="${item.status.toUpperCase() == 'DOWN'}"
+                th:attr="data-nome=${item.nome}, data-modelo=${item.modelo}, data-sn=${item.sn},
+                         data-mac=${item.mac}, data-ip=${item.ip}, data-filial=${item.filial},
+                         data-complexo=${item.nomeComplexo}, data-grupo=${item.grupo},
+                         data-status=${item.status}, data-data=${item.data},
+                         data-link=${item.link}, data-localizacao=${item.localizacao},
+                         data-ultimo=${item.dataUltimaVezOnline}">
+                <td>
+                    <div class="host-cell">
+                        <span class="host-dot down"></span>
+                        <span class="status-pill down" th:text="${item.status}"></span>
                     </div>
-                    <section class="modal_s">
-                        <div class="area-propt" th:text="${item.ip}"></div>
-                        <div id="container1" ></div>
-                    </section>
-                </div>
-
-
-        </tr>
-        <tr th:each="item:${lista}" class="tr" th:data-location="${item.localizacao}" th:data-id="${item.id}"
-            th:data-ip="${item.ip}" th:if="${item.status.toUpperCase() == 'UP'}">
-            <td th:text="${item.status}" id="ad" class="th-text ad"
-                th:style="'background-color: ' + (${item.status != null && item.status.toUpperCase() == 'UP'} ? '#51c061' : '#f12011')">
-            </td>
-            <td th:text="${item.localizacao}"></td>
-            <td th:text="${item.nome}"></td>
-            <td th:text="${item.modelo}"></td>
-            <td th:text="${item.sn}"></td>
-            <td th:text="${item.mac}"></td>
-            <td th:text="${item.ip}"></td>
-            <td>EM PROCESSO</td>
-            <td th:text="${item.filial}"></td>
-            <td th:text="${item.nomeComplexo}"></td>
-            <td th:text="${item.grupo}">EM PROCESSO</td>
-            <td>
-                <button onclick="visual(this);" th:data-ip="${item.ip}">
-                    Ping</button>
-                <div class="modal-container modal">
-                    <div class="btn-as">
-                        <button onclick="fecharModal(this)">X</button>
+                </td>
+                <td th:text="${item.localizacao}"></td>
+                <td><span class="host-name" th:text="${item.nome}"></span></td>
+                <td class="mono mac-cell" th:text="${item.mac}"></td>
+                <td class="mono ip-cell" th:text="${item.ip}"></td>
+                <td th:text="${item.filial}"></td>
+                <td><span class="pill" th:text="${item.grupo}"></span></td>
+                <td>
+                    <div class="row-actions">
+                        <button class="btn-row det" onclick="abrirDetalhesLinha(this)">Detalhes</button>
+                        <button class="btn-row ping" onclick="visual(this);" th:data-ip="${item.ip}">Ping</button>
                     </div>
-                    <section class="modal_s">
-                        <div class="area-propt" th:text="${item.ip}"></div>
-                        <div id="container12" ></div>
-                    </section>
-                </div>
-</div>
-</td>
-
-
-</tr>
-</tbody>
-</table>
+                    <div class="modal-container modal">
+                        <div class="btn-as"><button onclick="fecharModal(this)">X</button></div>
+                        <section class="modal_s">
+                            <div class="area-propt" th:text="${item.ip}"></div>
+                            <div id="container1"></div>
+                        </section>
+                    </div>
+                </td>
+            </tr>
+            <!-- Online -->
+            <tr th:each="item:${lista}" class="tr"
+                th:data-location="${item.localizacao}" th:data-id="${item.id}" th:data-ip="${item.ip}"
+                th:if="${item.status.toUpperCase() == 'UP'}"
+                th:attr="data-nome=${item.nome}, data-modelo=${item.modelo}, data-sn=${item.sn},
+                         data-mac=${item.mac}, data-ip=${item.ip}, data-filial=${item.filial},
+                         data-complexo=${item.nomeComplexo}, data-grupo=${item.grupo},
+                         data-status=${item.status}, data-data=${item.data},
+                         data-link=${item.link}, data-localizacao=${item.localizacao},
+                         data-ultimo=${item.dataUltimaVezOnline}">
+                <td>
+                    <div class="host-cell">
+                        <span class="host-dot up"></span>
+                        <span class="status-pill up" th:text="${item.status}"></span>
+                    </div>
+                </td>
+                <td th:text="${item.localizacao}"></td>
+                <td><span class="host-name" th:text="${item.nome}"></span></td>
+                <td class="mono mac-cell" th:text="${item.mac}"></td>
+                <td class="mono ip-cell" th:text="${item.ip}"></td>
+                <td th:text="${item.filial}"></td>
+                <td><span class="pill" th:text="${item.grupo}"></span></td>
+                <td>
+                    <div class="row-actions">
+                        <button class="btn-row det" onclick="abrirDetalhesLinha(this)">Detalhes</button>
+                        <button class="btn-row ping" onclick="visual(this);" th:data-ip="${item.ip}">Ping</button>
+                    </div>
+                    <div class="modal-container modal">
+                        <div class="btn-as"><button onclick="fecharModal(this)">X</button></div>
+                        <section class="modal_s">
+                            <div class="area-propt" th:text="${item.ip}"></div>
+                            <div id="container12"></div>
+                        </section>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 
 </div>
+
+<!-- Modal de Detalhes -->
+<div id="det-modal" class="det-overlay" onclick="if(event.target===this) fecharDetalhes()">
+    <div class="det-box">
+        <div class="det-head">
+            <h3>
+                <span id="det-dot" class="host-dot up" style="width:12px;height:12px;"></span>
+                <span id="det-titulo">Detalhes do Endpoint</span>
+            </h3>
+            <button class="close" onclick="fecharDetalhes()">&times;</button>
+        </div>
+        <div class="det-body">
+            <div class="det-grid" id="det-grid"></div>
+        </div>
+        <div class="det-foot">
+            <button class="btn" onclick="fecharDetalhes()">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/css/javascript.js}"></script>
+<script th:src="@{/css/visual.js}"></script>
 <script th:src="@{/css/javascrip.js}"></script>
 <script th:src="@{/css/lista_mac.js}"></script>
-</body>
 
+<script>
+    function abrirDetalhesLinha(btn) {
+        var tr = btn.closest('tr');
+        if (!tr) return;
+        var d = tr.dataset;
+        var status = (d.status || '').toUpperCase();
+        var isDown = status === 'DOWN' || status === 'OFFLINE';
+
+        var dot = document.getElementById('det-dot');
+        dot.className = 'host-dot ' + (isDown ? 'down' : 'up');
+        document.getElementById('det-titulo').innerText = d.nome || 'Endpoint';
+
+        var campos = [
+            { k: 'Hostname', v: d.nome },
+            { k: 'Status', v: d.status, cls: isDown ? 'status-pill down' : 'status-pill up' },
+            { k: 'Profile / Localizacao', v: d.localizacao },
+            { k: 'Modelo', v: d.modelo },
+            { k: 'Numero de Serie', v: d.sn, mono: true },
+            { k: 'MAC Address', v: d.mac, mono: true },
+            { k: 'IP', v: d.ip, mono: true },
+            { k: 'Filial', v: d.filial },
+            { k: 'Complexo', v: d.complexo },
+            { k: 'Grupo', v: d.grupo },
+            { k: 'Data de Cadastro', v: d.data },
+            { k: 'Ultima vez Online', v: d.ultimo },
+            { k: 'Link', v: d.link, full: true }
+        ];
+
+        var html = '';
+        campos.forEach(function (c) {
+            var val = (c.v && c.v !== 'null') ? c.v : '-';
+            html += '<div class="det-item' + (c.full ? ' full' : '') + '">' +
+                '<span class="k">' + c.k + '</span>' +
+                '<span class="v' + (c.mono ? ' mono' : '') + '">' + escapeHtml(val) + '</span>' +
+                '</div>';
+        });
+        document.getElementById('det-grid').innerHTML = html;
+        document.getElementById('det-modal').classList.add('show');
+    }
+
+    function fecharDetalhes() {
+        document.getElementById('det-modal').classList.remove('show');
+    }
+
+    function exportarExcel(e) {
+        if (e) e.preventDefault();
+        var mac = document.getElementById('mac') ? document.getElementById('mac').value.trim() : '';
+        var grupoSel = document.querySelector('select[name="ReceiveGrupoId"]');
+        var grupo = grupoSel ? grupoSel.value : '';
+        var params = new URLSearchParams();
+        if (mac) params.append('mac', mac);
+        if (grupo) params.append('ReceiveGrupoId', grupo);
+        var url = '/endpoint/export' + (params.toString() ? '?' + params.toString() : '');
+        window.location.href = url;
+    }
+
+    function escapeHtml(s) {
+        if (s == null) return '';
+        return String(s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    // ESC fecha o modal de detalhes
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') fecharDetalhes();
+    });
+</script>
+
+</body>
 </html>
