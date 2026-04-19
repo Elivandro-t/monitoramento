@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equipamentos Condenados | Informatica CD-116</title>
+    <link rel="stylesheet" href="/css/manutencoes.css">
+    <link rel="stylesheet" href="/css/condenados.css">
+</head>
+<body>
+<div class="mnt-container">
+    <header class="mnt-header">
+        <div>
+            <h1>Equipamentos Condenados</h1>
+            <div class="subtitle">Historico de equipamentos eliminados / descartados</div>
+        </div>
+        <div class="mnt-header-actions">
+            <button class="btn btn-back" onclick="window.location.href='/endpoint/equipamentos'">&larr; Equipamentos</button>
+            <button class="btn" onclick="window.location.href='/manutencoes'">Manutencoes</button>
+            <button class="btn btn-excel" onclick="carregar()">Recarregar</button>
+        </div>
+    </header>
+
+    <div class="mnt-summary">
+        <div class="summary-card"><span>Total condenados</span><strong id="sum-total">0</strong></div>
+        <div class="summary-card"><span>Este mes</span><strong id="sum-mes">0</strong></div>
+        <div class="summary-card"><span>Tecnicos responsaveis</span><strong id="sum-tec">0</strong></div>
+    </div>
+
+    <div class="mnt-filtros">
+        <div class="filtro-grupo">
+            <label>Patrimonio</label>
+            <input id="f-patrimonio" type="text" oninput="aplicarFiltros()" placeholder="patrimonio">
+        </div>
+        <div class="filtro-grupo">
+            <label>Setor</label>
+            <input id="f-setor" type="text" oninput="aplicarFiltros()" placeholder="setor">
+        </div>
+        <div class="filtro-grupo">
+            <label>Filial</label>
+            <input id="f-filial" type="text" oninput="aplicarFiltros()" placeholder="filial">
+        </div>
+        <div class="filtro-grupo">
+            <label>Tecnico responsavel</label>
+            <input id="f-tecnico" type="text" oninput="aplicarFiltros()" placeholder="condenadoPor">
+        </div>
+    </div>
+
+    <div class="mnt-table-wrap">
+        <table class="mnt-table">
+            <thead>
+            <tr>
+                <th>Patrimonio</th>
+                <th>Hostname</th>
+                <th>Marca/Modelo</th>
+                <th>Setor</th>
+                <th>Filial</th>
+                <th>Total manutencoes</th>
+                <th>Condenado por</th>
+                <th>Data</th>
+                <th>Acoes</th>
+            </tr>
+            </thead>
+            <tbody id="cond-tbody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="modal-detalhe" class="modal">
+    <div class="modal-content modal-large">
+        <h3>Detalhes do equipamento condenado</h3>
+        <div id="det-body"></div>
+        <div class="modal-actions">
+            <button class="btn" onclick="fecharDetalhe()">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="popup-toast"></div>
+
+<script src="/css/condenados.js"></script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranking de Manutencoes</title>
+    <link rel="stylesheet" href="/css/manutencoes.css">
+</head>
+<body>
+<div class="mnt-container">
+    <header class="mnt-header">
+        <div>
+            <h1>Ranking de Manutencoes</h1>
+            <div class="subtitle">Tecnicos com mais manutencoes realizadas no periodo</div>
+        </div>
+        <div class="mnt-header-actions">
+            <button class="btn btn-back" onclick="window.location.href='/endpoint/equipamentos'">&larr; Equipamentos</button>
+            <button class="btn" onclick="window.location.href='/relatorios/metricas'">Metricas</button>
+            <button class="btn" onclick="verPdf()">Ver PDF</button>
+            <button class="btn" onclick="baixarPdf()">Baixar PDF</button>
+        </div>
+    </header>
+
+    <div class="mnt-filtros">
+        <div class="filtro-grupo">
+            <label>Periodo</label>
+            <select id="f-periodo" onchange="carregar()">
+                <option value="dia">Hoje</option>
+                <option value="semana">Ultimos 7 dias</option>
+                <option value="mes" selected>Ultimos 30 dias</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="mnt-table-wrap">
+        <table class="mnt-table">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Tecnico</th>
+                <th>Username</th>
+                <th>Cargo</th>
+                <th>Total manutencoes</th>
+            </tr>
+            </thead>
+            <tbody id="rk-tbody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="toast" class="popup-toast"></div>
+
+<script>
+var AUTH_TOKEN = localStorage.getItem('auth_token') || '';
+function authHeaders(e){ e=e||{}; if(AUTH_TOKEN) e['Authorization']=AUTH_TOKEN; return e; }
+function toast(m,t){ var el=document.getElementById('toast'); el.className='popup-toast show '+(t||''); el.innerText=m; setTimeout(function(){ el.className='popup-toast'; },3200); }
+function esc(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+function carregar() {
+    var p = document.getElementById('f-periodo').value;
+    fetch('/relatorios/ranking-manutencoes?periodo=' + p, { headers: authHeaders() })
+        .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+        .then(function(d){ render(d.ranking || []); })
+        .catch(function(e){ toast('Falha: '+e.message,'error'); });
+}
+
+function render(itens) {
+    var tb = document.getElementById('rk-tbody');
+    tb.innerHTML = itens.map(function(r, i){
+        return '<tr>' +
+            '<td><strong>'+(i+1)+'</strong></td>' +
+            '<td>'+esc(r.nome)+'</td>' +
+            '<td>'+esc(r.username)+'</td>' +
+            '<td>'+esc(r.cargo)+'</td>' +
+            '<td>'+r.total+'</td>' +
+        '</tr>';
+    }).join('') || '<tr><td colspan="5" style="text-align:center;color:#8b949e">Sem dados</td></tr>';
+}
+
+function abrirPdf(forceDownload) {
+    var p = document.getElementById('f-periodo').value;
+    var url = '/relatorios/ranking-manutencoes.pdf?periodo='+p+(forceDownload?'&download=1':'');
+    fetch(url, { headers: authHeaders() })
+        .then(function(r){ if(!r.ok) throw new Error('PDF falhou'); return r.blob(); })
+        .then(function(blob){
+            var u = URL.createObjectURL(blob);
+            if (forceDownload) {
+                var a=document.createElement('a'); a.href=u; a.download='ranking.pdf';
+                document.body.appendChild(a); a.click(); a.remove();
+            } else {
+                window.open(u,'_blank');
+            }
+            setTimeout(function(){URL.revokeObjectURL(u);},30000);
+        })
+        .catch(function(e){ toast('Erro: '+e.message,'error'); });
+}
+function verPdf(){ abrirPdf(false); }
+function baixarPdf(){ abrirPdf(true); }
+
+document.addEventListener('DOMContentLoaded', carregar);
+</script>
+</body>
+</html>

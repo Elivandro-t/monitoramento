@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metricas por Usuario</title>
+    <link rel="stylesheet" href="/css/manutencoes.css">
+</head>
+<body>
+<div class="mnt-container">
+    <header class="mnt-header">
+        <div>
+            <h1>Metricas por Usuario</h1>
+            <div class="subtitle">Quantidade, concluidos e tempo medio</div>
+        </div>
+        <div class="mnt-header-actions">
+            <button class="btn btn-back" onclick="window.location.href='/endpoint/equipamentos'">&larr; Equipamentos</button>
+            <button class="btn" onclick="window.location.href='/relatorios/ranking'">Ranking</button>
+            <button class="btn" onclick="verPdf()">Ver PDF</button>
+            <button class="btn" onclick="baixarPdf()">Baixar PDF</button>
+        </div>
+    </header>
+
+    <div class="mnt-table-wrap">
+        <table class="mnt-table">
+            <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Username</th>
+                <th>Cargo</th>
+                <th>Perfil</th>
+                <th>Total</th>
+                <th>Concluidos</th>
+                <th>Tempo medio (h)</th>
+            </tr>
+            </thead>
+            <tbody id="m-tbody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="toast" class="popup-toast"></div>
+
+<script>
+var AUTH_TOKEN = localStorage.getItem('auth_token') || '';
+function authHeaders(e){ e=e||{}; if(AUTH_TOKEN) e['Authorization']=AUTH_TOKEN; return e; }
+function toast(m,t){ var el=document.getElementById('toast'); el.className='popup-toast show '+(t||''); el.innerText=m; setTimeout(function(){ el.className='popup-toast'; },3200); }
+function esc(s){ if(s==null) return ''; return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+function carregar() {
+    fetch('/relatorios/metricas/dados', { headers: authHeaders() })
+        .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+        .then(function(d){ render(d.usuarios || []); })
+        .catch(function(e){ toast('Falha: '+e.message,'error'); });
+}
+
+function render(itens) {
+    var tb = document.getElementById('m-tbody');
+    tb.innerHTML = itens.map(function(u){
+        return '<tr>' +
+            '<td>'+esc(u.nome)+'</td>' +
+            '<td>'+esc(u.username)+'</td>' +
+            '<td>'+esc(u.cargo)+'</td>' +
+            '<td>'+esc(u.perfil)+'</td>' +
+            '<td>'+u.total+'</td>' +
+            '<td>'+u.concluidos+'</td>' +
+            '<td>'+u.tempoMedioHoras+'</td>' +
+        '</tr>';
+    }).join('') || '<tr><td colspan="7" style="text-align:center;color:#8b949e">Sem dados</td></tr>';
+}
+
+function abrirPdf(forceDownload) {
+    var url = '/relatorios/metricas.pdf' + (forceDownload?'?download=1':'');
+    fetch(url, { headers: authHeaders() })
+        .then(function(r){ if(!r.ok) throw new Error('PDF falhou'); return r.blob(); })
+        .then(function(blob){
+            var u = URL.createObjectURL(blob);
+            if (forceDownload) {
+                var a=document.createElement('a'); a.href=u; a.download='metricas.pdf';
+                document.body.appendChild(a); a.click(); a.remove();
+            } else {
+                window.open(u,'_blank');
+            }
+            setTimeout(function(){URL.revokeObjectURL(u);},30000);
+        })
+        .catch(function(e){ toast('Erro: '+e.message,'error'); });
+}
+function verPdf(){ abrirPdf(false); }
+function baixarPdf(){ abrirPdf(true); }
+
+document.addEventListener('DOMContentLoaded', carregar);
+</script>
+</body>
+</html>

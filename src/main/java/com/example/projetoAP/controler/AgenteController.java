@@ -2,7 +2,10 @@ package com.example.projetoAP.controler;
 
 import com.example.projetoAP.controler.service.AuditService;
 import com.example.projetoAP.controler.service.AuthService;
+import com.example.projetoAP.controler.service.PdfService;
 import com.example.projetoAP.repository.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,6 +41,7 @@ public class AgenteController {
     private final SimpMessagingTemplate messagingTemplate;
     private final EquipamentoSetoresRepository equipamentoSetoresRepository;
     private final EquipamentoCondenadoRepository condenadoRepository;
+    private final PdfService pdfService;
 
     public AgenteController(AgenteRepository agenteRepository,
                            AgenteMetricaRepository metricaRepository,
@@ -46,7 +50,8 @@ public class AgenteController {
                            AuditService auditService,
                            SimpMessagingTemplate messagingTemplate,
                            EquipamentoSetoresRepository equipamentoSetoresRepository,
-                           EquipamentoCondenadoRepository condenadoRepository) {
+                           EquipamentoCondenadoRepository condenadoRepository,
+                           PdfService pdfService) {
         this.agenteRepository = agenteRepository;
         this.metricaRepository = metricaRepository;
         this.manutencaoRepository = manutencaoRepository;
@@ -55,6 +60,25 @@ public class AgenteController {
         this.messagingTemplate = messagingTemplate;
         this.equipamentoSetoresRepository = equipamentoSetoresRepository;
         this.condenadoRepository = condenadoRepository;
+        this.pdfService = pdfService;
+    }
+
+    // ===== PDF: lista de equipamentos =====
+    @Operation(summary = "Exporta lista de equipamentos em PDF (inline por padrao; download=1 forca download)")
+    @GetMapping("/relatorio.pdf")
+    public ResponseEntity<byte[]> relatorioPdf(@RequestParam(required = false) String download,
+                                               @RequestHeader(value = "Authorization", required = false) String token) {
+        if (!authService.temPermissao(token, "acessoUsuarios")) {
+            return ResponseEntity.status(403).build();
+        }
+        var lista = agenteRepository.findAll().stream().map(this::toMap).toList();
+        byte[] pdf = pdfService.gerarRelatorioEquipamentos(lista);
+        String dispo = ("1".equals(download) ? "attachment" : "inline")
+                + "; filename=\"equipamentos.pdf\"";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, dispo)
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 
     // ===== ENDPOINT QUE O AGENTE CHAMA PARA ENVIAR METRICAS =====
@@ -165,10 +189,12 @@ public class AgenteController {
             return ResponseEntity.status(403).body(Map.of("message", "Sem permissao"));
         }
         String agentId = str(body.get("agentId"));
+        boolean manual = false;
         if (agentId == null || agentId.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "ID do agente obrigatorio"));
-        }
-        if (agenteRepository.findByAgentId(agentId).isPresent()) {
+            // Cadastro manual (sem agente instalado). Gera ID interno.
+            agentId = "MAN-" + UUID.randomUUID().toString().substring(0, 12).toUpperCase();
+            manual = true;
+        } else if (agenteRepository.findByAgentId(agentId).isPresent()) {
             return ResponseEntity.badRequest().body(Map.of("message", "Agente ja cadastrado"));
         }
 
@@ -179,7 +205,8 @@ public class AgenteController {
                 str(body.get("filial")),
                 str(body.get("anydesk")),
                 str(body.get("dominio")));
-        agente.setIpRecebido(ipRecebido); // Configurar o IP recebido
+        agente.setIpRecebido(ipRecebido);
+        agente.setCadastroManual(manual);
         aplicarCamposEquipamento(agente, body);
         agente.recalcularStatusUso();
         agenteRepository.save(agente);
@@ -432,6 +459,7 @@ public class AgenteController {
         Map<String, Object> m = new HashMap<>();
         m.put("id", a.getId());
         m.put("agentId", a.getAgentId());
+        m.put("cadastroManual", a.isCadastroManual());
         m.put("hostname", nz(a.getHostname()));
         m.put("ip", nz(a.getIp()));
         m.put("setor", nz(a.getSetor()));

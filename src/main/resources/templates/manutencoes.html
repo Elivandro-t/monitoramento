@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manutencoes | Informatica CD-116</title>
+    <link rel="stylesheet" href="/css/manutencoes.css">
+</head>
+<body>
+<div class="mnt-container">
+    <header class="mnt-header">
+        <div>
+            <h1>Equipamentos em Manutencao</h1>
+            <div class="subtitle">Controle de manutencoes ativas - exclui condenados</div>
+        </div>
+        <div class="mnt-header-actions">
+            <button class="btn btn-back" onclick="window.location.href='/endpoint/equipamentos'">&larr; Equipamentos</button>
+            <button class="btn" onclick="window.location.href='/equipamentos/condenados'">Condenados</button>
+            <button class="btn btn-excel" onclick="carregar()">Recarregar</button>
+            <button class="btn" onclick="visualizarPdf()">Ver PDF</button>
+            <button class="btn" onclick="baixarPdf()">Baixar PDF</button>
+        </div>
+    </header>
+
+    <div class="mnt-summary">
+        <div class="summary-card"><span>Total ativas</span><strong id="sum-total">0</strong></div>
+        <div class="summary-card"><span>Aguardando</span><strong id="sum-aguardando">0</strong></div>
+        <div class="summary-card"><span>Pendentes</span><strong id="sum-pendentes">0</strong></div>
+        <div class="summary-card"><span>Aguardando Pecas</span><strong id="sum-pecas">0</strong></div>
+        <div class="summary-card alert"><span>Alertas (&gt; 2 dias)</span><strong id="sum-alertas">0</strong></div>
+    </div>
+
+    <div class="mnt-filtros">
+        <div class="filtro-grupo">
+            <label>Status</label>
+            <select id="f-status" onchange="aplicarFiltros()">
+                <option value="">Todos</option>
+                <option value="AGUARDANDO_MANUTENCAO">Aguardando manutencao</option>
+                <option value="PENDENTE">Pendente</option>
+                <option value="AGUARDANDO_PECAS">Aguardando pecas</option>
+                <option value="FINALIZADO">Finalizado</option>
+                <option value="ENTREGUE">Entregue</option>
+            </select>
+        </div>
+        <div class="filtro-grupo">
+            <label>Setor</label>
+            <input id="f-setor" type="text" oninput="aplicarFiltros()" placeholder="Setor">
+        </div>
+        <div class="filtro-grupo">
+            <label>Responsavel (username)</label>
+            <input id="f-responsavel" type="text" oninput="aplicarFiltros()" placeholder="tecnico">
+        </div>
+        <div class="filtro-grupo">
+            <label>Busca livre</label>
+            <input id="f-busca" type="text" oninput="aplicarFiltros()" placeholder="hostname, patrimonio, usuario...">
+        </div>
+    </div>
+
+    <div class="mnt-table-wrap">
+        <table class="mnt-table">
+            <thead>
+            <tr>
+                <th>Equipamento</th>
+                <th>Patrimonio</th>
+                <th>Setor</th>
+                <th>Filial</th>
+                <th>Tipo</th>
+                <th>Status</th>
+                <th>Responsavel</th>
+                <th>Entrada</th>
+                <th>Tempo</th>
+                <th class="col-acoes">Acoes</th>
+            </tr>
+            </thead>
+            <tbody id="mnt-tbody"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal mudar status -->
+<div id="modal-status" class="modal">
+    <div class="modal-content">
+        <h3>Alterar status da manutencao <span id="mnt-id"></span></h3>
+        <div class="form-row">
+            <label>Novo status</label>
+            <select id="ns-status">
+                <option value="AGUARDANDO_MANUTENCAO">Aguardando manutencao</option>
+                <option value="PENDENTE">Pendente</option>
+                <option value="AGUARDANDO_PECAS">Aguardando pecas</option>
+                <option value="FINALIZADO">Finalizado</option>
+                <option value="ENTREGUE">Entregue</option>
+                <option value="CONDENADO">Condenar</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <label>Observacao (opcional)</label>
+            <textarea id="ns-obs" rows="2"></textarea>
+        </div>
+        <div class="form-row" id="row-laudo" style="display:none">
+            <label>Laudo tecnico (arquivo PDF - obrigatorio para condenar)</label>
+            <input type="file" id="ns-laudo" accept=".pdf,image/*">
+        </div>
+        <hr>
+        <div class="form-row">
+            <label>Usuario (tecnico)</label>
+            <input id="ns-user" type="text" autocomplete="username">
+        </div>
+        <div class="form-row">
+            <label>Senha</label>
+            <input id="ns-pass" type="password" autocomplete="current-password">
+        </div>
+        <div class="modal-actions">
+            <button class="btn" onclick="fecharModalStatus()">Cancelar</button>
+            <button class="btn btn-primary" onclick="confirmarStatus()">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="popup-toast"></div>
+
+<script src="/css/manutencoes.js"></script>
+</body>
+</html>

@@ -371,7 +371,9 @@ function salvarEquip() {
         garantiaExpiracao: document.getElementById('eq-garantia').value,
         descricao: document.getElementById('eq-descricao').value.trim()
     };
-    if (!body.agentId) { toast('Agent ID e obrigatorio', 'err'); return; }
+    // Cadastro manual: envia agentId vazio (backend gera MAN-xxxx).
+    if (!body.agentId && id) { toast('Agent ID obrigatorio ao editar', 'err'); return; }
+    if (!body.agentId) { delete body.agentId; }
 
     var url = id ? '/agentes/' + id : '/agentes';
     var method = id ? 'PUT' : 'POST';
@@ -902,6 +904,27 @@ function deletarMTsetor(id) {
 }
 
 // ===== EXPORTAR EXCEL =====
+function abrirPdfEquipamentos(forceDownload) {
+    fetch('/agentes/relatorio.pdf' + (forceDownload ? '?download=1' : ''), { headers: authHeaders() })
+        .then(function(r){
+            if (!r.ok) { toast('Erro ao gerar PDF', 'err'); throw new Error(); }
+            return r.blob();
+        })
+        .then(function(blob){
+            var url = URL.createObjectURL(blob);
+            if (forceDownload) {
+                var a = document.createElement('a');
+                a.href = url; a.download = 'equipamentos.pdf';
+                document.body.appendChild(a); a.click(); a.remove();
+            } else {
+                window.open(url, '_blank');
+            }
+            setTimeout(function(){ URL.revokeObjectURL(url); }, 30000);
+        }).catch(function(){});
+}
+function visualizarPdfEquipamentos() { abrirPdfEquipamentos(false); }
+function baixarPdfEquipamentos() { abrirPdfEquipamentos(true); }
+
 function exportarExcel() {
     var setor = document.getElementById('f-mtsetor').value;
     var filial = document.getElementById('f-filial').value;

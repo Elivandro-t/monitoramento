@@ -1,0 +1,14 @@
+.mnt-summary { grid-template-columns: repeat(3, 1fr) !important; }
+.mnt-filtros { grid-template-columns: repeat(4, 1fr) !important; }
+.modal-large { max-width: 720px !important; }
+.det-section {
+    background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
+    padding: 12px; margin-bottom: 10px;
+}
+.det-section h4 { color: #58a6ff; font-size: 13px; margin-bottom: 8px; }
+.det-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; font-size: 12px; }
+.det-grid div span { color: #8b949e; margin-right: 6px; }
+.historico-item {
+    border-left: 2px solid #30363d; padding: 6px 10px; margin-bottom: 6px; font-size: 12px;
+}
+.historico-item strong { color: #58a6ff; }

@@ -2,9 +2,13 @@ package com.example.projetoAP.controler;
 
 import com.example.projetoAP.controler.service.AuditService;
 import com.example.projetoAP.controler.service.AuthService;
+import com.example.projetoAP.controler.service.EquipamentoCondenacaoService;
+import com.example.projetoAP.controler.service.PdfService;
 import com.example.projetoAP.repository.AgenteRepository;
 import com.example.projetoAP.repository.ManutencaoEntity;
 import com.example.projetoAP.repository.ManutencaoRepository;
+import com.example.projetoAP.repository.ManutencaoStatusLogEntity;
+import com.example.projetoAP.repository.ManutencaoStatusLogRepository;
 import com.example.projetoAP.repository.UsuarioRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -34,22 +38,60 @@ public class ManutencaoControler {
 
     private static final String UPLOAD_DIR = "uploads/manutencoes";
 
+    private static final Set<String> STATUS_VALIDOS = Set.of(
+            "AGUARDANDO_MANUTENCAO", "PENDENTE", "AGUARDANDO_PECAS",
+            "CONDENADO", "FINALIZADO", "ENTREGUE");
+
+    private static final Set<String> TIPOS_VALIDOS = Set.of("PREVENTIVA", "CORRETIVA");
+
     private final ManutencaoRepository manutencaoRepository;
+    private final ManutencaoStatusLogRepository statusLogRepository;
     private final AgenteRepository agenteRepository;
     private final UsuarioRepository usuarioRepository;
     private final AuthService authService;
     private final AuditService auditService;
+    private final PdfService pdfService;
+    private final EquipamentoCondenacaoService condenacaoService;
 
     public ManutencaoControler(ManutencaoRepository manutencaoRepository,
+                               ManutencaoStatusLogRepository statusLogRepository,
                                AgenteRepository agenteRepository,
                                UsuarioRepository usuarioRepository,
                                AuthService authService,
-                               AuditService auditService) {
+                               AuditService auditService,
+                               PdfService pdfService,
+                               EquipamentoCondenacaoService condenacaoService) {
         this.manutencaoRepository = manutencaoRepository;
+        this.statusLogRepository = statusLogRepository;
         this.agenteRepository = agenteRepository;
         this.usuarioRepository = usuarioRepository;
         this.authService = authService;
         this.auditService = auditService;
+        this.pdfService = pdfService;
+        this.condenacaoService = condenacaoService;
+    }
+
+    // ===== PDF: relatorio de manutencoes em aberto =====
+    @Operation(summary = "Exporta manutencoes (exclui CONDENADAS) em PDF")
+    @GetMapping("/relatorio.pdf")
+    public ResponseEntity<byte[]> relatorioPdf(@RequestParam(required = false) String status,
+                                               @RequestParam(required = false) String setor,
+                                               @RequestParam(required = false) String responsavel,
+                                               @RequestParam(required = false) String download,
+                                               @RequestHeader(value = "Authorization", required = false) String token) {
+        if (!authService.isAutorizado(token)) return ResponseEntity.status(401).build();
+        String st = (status == null || status.isBlank()) ? null : status.trim().toUpperCase();
+        String sr = (setor == null || setor.isBlank()) ? null : setor.trim();
+        String rs = (responsavel == null || responsavel.isBlank()) ? null : responsavel.trim();
+        var lista = manutencaoRepository.filtrarAtivas(st, sr, rs).stream()
+                .map(this::toMap).toList();
+        byte[] pdf = pdfService.gerarRelatorioManutencoes(lista);
+        String dispo = ("1".equals(download) ? "attachment" : "inline")
+                + "; filename=\"manutencoes.pdf\"";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, dispo)
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 
     // ===== LISTAR manutencoes de um agente =====
@@ -66,13 +108,15 @@ public class ManutencaoControler {
     }
 
     // ===== CRIAR manutencao (apenas tecnico) =====
-    // Recebe multipart: descricao, laudoFinal, arquivo (anexo), imagem
+    // Recebe multipart: descricao, laudoFinal, tipoManutencao, status, arquivo (anexo), imagem
     @Operation(summary = "Registra nova manutencao (apenas tecnicos/admin). Aceita imagem e arquivo de laudo.")
     @PostMapping(value = "/agente/{agentId}", consumes = {"multipart/form-data"})
     @Transactional
     public ResponseEntity<?> criar(@PathVariable String agentId,
                                    @RequestParam(required = false) String descricao,
                                    @RequestParam(required = false) String laudoFinal,
+                                   @RequestParam(required = false) String tipoManutencao,
+                                   @RequestParam(required = false) String status,
                                    @RequestParam(required = false) MultipartFile arquivo,
                                    @RequestParam(required = false) MultipartFile imagem,
                                    @RequestHeader(value = "Authorization", required = false) String token,
@@ -103,13 +147,32 @@ public class ManutencaoControler {
         Path baseDir = Paths.get(UPLOAD_DIR, agentId);
         Files.createDirectories(baseDir);
 
+        String nomeUsuario = user.getNome() != null ? user.getNome() : username;
+        String statusInicial = normalizeStatus(status, "AGUARDANDO_MANUTENCAO");
+        if (!STATUS_VALIDOS.contains(statusInicial)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Status invalido: " + statusInicial));
+        }
+        String tipo = tipoManutencao == null ? null : tipoManutencao.trim().toUpperCase();
+        if (tipo != null && !tipo.isEmpty() && !TIPOS_VALIDOS.contains(tipo)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Tipo invalido: " + tipo));
+        }
+
         ManutencaoEntity m = new ManutencaoEntity();
         m.setAgentId(agentId);
         m.setTecnicoUsername(username);
-        m.setTecnicoNome(user.getNome() != null ? user.getNome() : username);
+        m.setTecnicoNome(nomeUsuario);
+        m.setResponsavelUsername(username);
+        m.setResponsavelNome(nomeUsuario);
+        m.setSetor(ag.getSetor());
+        m.setFilial(ag.getFilial());
+        m.setPatrimonio(ag.getPatrimonio());
+        m.setHostname(ag.getHostname());
         m.setDescricao(descricao);
         m.setLaudoFinal(laudoFinal);
+        m.setStatus(statusInicial);
+        m.setTipoManutencao(tipo);
         m.setDataManutencao(LocalDateTime.now());
+        m.setDataEntrada(LocalDateTime.now());
 
         if (arquivo != null && !arquivo.isEmpty()) {
             String nome = sanitize(arquivo.getOriginalFilename());
@@ -134,6 +197,11 @@ public class ManutencaoControler {
 
         manutencaoRepository.save(m);
 
+        // Log inicial de status
+        statusLogRepository.save(new ManutencaoStatusLogEntity(
+                m.getId(), agentId, null, statusInicial, username, nomeUsuario,
+                "Abertura de manutencao"));
+
         // Atualiza contador e status do agente
         long total = manutencaoRepository.countByAgentId(agentId);
         ag.setNumManutencoes((int) total);
@@ -141,9 +209,145 @@ public class ManutencaoControler {
         agenteRepository.save(ag);
 
         auditService.registrar(username, "CRIAR_MANUTENCAO", "/manutencoes/agente/" + agentId,
-                "Registrou manutencao: id=" + m.getId(), getClientIp(request), request.getHeader("User-Agent"));
+                "Registrou manutencao: id=" + m.getId() + " status=" + statusInicial,
+                getClientIp(request), request.getHeader("User-Agent"));
 
-        return ResponseEntity.ok(Map.of("message", "Manutencao registrada", "id", m.getId()));
+        return ResponseEntity.ok(Map.of("message", "Manutencao registrada",
+                "id", m.getId(), "status", statusInicial));
+    }
+
+    // ===== ALTERAR STATUS (exige reautenticacao usuario+senha) =====
+    @Operation(summary = "Altera o status de uma manutencao (exige reautenticacao). " +
+            "Para CONDENADO, use o endpoint /condenar com anexo obrigatorio.")
+    @PostMapping(value = "/{id}/status", consumes = {"multipart/form-data"})
+    @Transactional
+    public ResponseEntity<?> alterarStatus(@PathVariable long id,
+                                           @RequestParam String novoStatus,
+                                           @RequestParam String usuario,
+                                           @RequestParam String senha,
+                                           @RequestParam(required = false) String observacao,
+                                           @RequestParam(required = false) MultipartFile laudo,
+                                           @RequestHeader(value = "Authorization", required = false) String token,
+                                           HttpServletRequest request) throws IOException {
+        if (!authService.isAutorizado(token)) {
+            return ResponseEntity.status(401).body(Map.of("message", "Nao autenticado"));
+        }
+        String novo = normalizeStatus(novoStatus, null);
+        if (novo == null || !STATUS_VALIDOS.contains(novo)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Status invalido"));
+        }
+        if (!authService.revalidar(usuario, senha)) {
+            return ResponseEntity.status(403).body(Map.of("message", "Usuario ou senha invalidos"));
+        }
+
+        var opt = manutencaoRepository.findById(id);
+        if (opt.isEmpty()) return ResponseEntity.notFound().build();
+        var m = opt.get();
+        String anterior = m.getStatus();
+
+        if ("CONDENADO".equals(novo)) {
+            if (laudo == null || laudo.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "message", "Laudo tecnico (arquivo) obrigatorio para CONDENADO"));
+            }
+            var userOpt = usuarioRepository.findByUsername(usuario);
+            boolean ehTecnico = userOpt.isPresent() && (
+                    (userOpt.get().getCargo() != null && userOpt.get().getCargo().toUpperCase().contains("TECNICO"))
+                            || "ADMIN".equals(userOpt.get().getPerfil())
+                            || "INFORMATICA".equals(userOpt.get().getPerfil()));
+            if (!ehTecnico) {
+                return ResponseEntity.status(403).body(Map.of(
+                        "message", "Apenas tecnico pode condenar equipamento"));
+            }
+            Path baseDir = Paths.get(UPLOAD_DIR, m.getAgentId());
+            Files.createDirectories(baseDir);
+            String nome = sanitize(laudo.getOriginalFilename());
+            Path dest = baseDir.resolve("laudo_final_" + System.currentTimeMillis() + "_" + nome);
+            Files.copy(laudo.getInputStream(), dest, StandardCopyOption.REPLACE_EXISTING);
+            m.setAnexoArquivo(dest.toString().replace('\\', '/'));
+            m.setAnexoOriginal(nome);
+            if (observacao != null && !observacao.isBlank()) m.setLaudoFinal(observacao);
+        }
+
+        m.setStatus(novo);
+        if ("ENTREGUE".equals(novo) || "FINALIZADO".equals(novo) || "CONDENADO".equals(novo)) {
+            if (m.getDataEntrega() == null) m.setDataEntrega(LocalDateTime.now());
+        }
+        manutencaoRepository.save(m);
+
+        var userOpt = usuarioRepository.findByUsername(usuario);
+        String nomeUsuario = userOpt.map(u -> u.getNome() != null ? u.getNome() : u.getUsername()).orElse(usuario);
+
+        statusLogRepository.save(new ManutencaoStatusLogEntity(
+                m.getId(), m.getAgentId(), anterior, novo, usuario, nomeUsuario, observacao));
+
+        auditService.registrar(usuario, "ALTERAR_STATUS_MANUTENCAO", "/manutencoes/" + id + "/status",
+                "Status " + anterior + " -> " + novo, getClientIp(request), request.getHeader("User-Agent"));
+
+        boolean snapshotCriado = false;
+        if ("CONDENADO".equals(novo)) {
+            var ag = agenteRepository.findByAgentId(m.getAgentId()).orElse(null);
+            if (ag != null) {
+                try {
+                    condenacaoService.condenar(ag,
+                            observacao != null ? observacao : "Condenado via manutencao " + id,
+                            m.getLaudoFinal(), usuario);
+                    snapshotCriado = true;
+                } catch (IllegalStateException ignore) {
+                    // ja condenado antes; mantem apenas o log de status
+                }
+            }
+        }
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("message", "Status alterado");
+        resp.put("id", id);
+        resp.put("statusAnterior", anterior == null ? "" : anterior);
+        resp.put("statusNovo", novo);
+        resp.put("snapshotCondenacao", snapshotCriado);
+        return ResponseEntity.ok(resp);
+    }
+
+    // ===== HISTORICO de logs de status =====
+    @Operation(summary = "Retorna historico de mudancas de status de uma manutencao")
+    @GetMapping("/{id}/historico-status")
+    public ResponseEntity<?> historicoStatus(@PathVariable long id,
+                                             @RequestHeader(value = "Authorization", required = false) String token) {
+        if (!authService.isAutorizado(token)) return ResponseEntity.status(401).build();
+        var lista = statusLogRepository.findByManutencaoIdOrderByDataHoraDesc(id).stream().map(l -> {
+            Map<String, Object> r = new HashMap<>();
+            r.put("id", l.getId());
+            r.put("statusAnterior", nz(l.getStatusAnterior()));
+            r.put("statusNovo", nz(l.getStatusNovo()));
+            r.put("usuario", nz(l.getUsuario()));
+            r.put("usuarioNome", nz(l.getUsuarioNome()));
+            r.put("observacao", nz(l.getObservacao()));
+            r.put("dataHora", l.getDataHora() != null ?
+                    l.getDataHora().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) : "");
+            return r;
+        }).toList();
+        return ResponseEntity.ok(lista);
+    }
+
+    // ===== LISTAR manutencoes em aberto com filtros (rota /manutencoes/list) =====
+    @Operation(summary = "Lista manutencoes (exclui CONDENADAS) com filtros opcionais")
+    @GetMapping("/list")
+    public ResponseEntity<?> listarAtivas(@RequestParam(required = false) String status,
+                                          @RequestParam(required = false) String setor,
+                                          @RequestParam(required = false) String responsavel,
+                                          @RequestHeader(value = "Authorization", required = false) String token) {
+        if (!authService.isAutorizado(token)) return ResponseEntity.status(401).build();
+        String st = (status == null || status.isBlank()) ? null : status.trim().toUpperCase();
+        String sr = (setor == null || setor.isBlank()) ? null : setor.trim();
+        String rs = (responsavel == null || responsavel.isBlank()) ? null : responsavel.trim();
+        var lista = manutencaoRepository.filtrarAtivas(st, sr, rs).stream()
+                .map(this::toMap).toList();
+        return ResponseEntity.ok(lista);
+    }
+
+    private String normalizeStatus(String s, String def) {
+        if (s == null || s.isBlank()) return def;
+        return s.trim().toUpperCase();
     }
 
     // ===== EDITAR manutencao (apenas o tecnico que criou ou ADMIN) =====
@@ -165,6 +369,24 @@ public class ManutencaoControler {
         }
         if (body.containsKey("descricao")) m.setDescricao(body.get("descricao"));
         if (body.containsKey("laudoFinal")) m.setLaudoFinal(body.get("laudoFinal"));
+        if (body.containsKey("tipoManutencao")) {
+            String t = body.get("tipoManutencao");
+            if (t != null) {
+                t = t.trim().toUpperCase();
+                if (!t.isEmpty() && !TIPOS_VALIDOS.contains(t)) {
+                    return ResponseEntity.badRequest().body(Map.of("message", "Tipo invalido: " + t));
+                }
+                m.setTipoManutencao(t.isEmpty() ? null : t);
+            }
+        }
+        if (body.containsKey("responsavelUsername")) {
+            String r = body.get("responsavelUsername");
+            m.setResponsavelUsername(r);
+            if (r != null && !r.isBlank()) {
+                usuarioRepository.findByUsername(r).ifPresent(u ->
+                        m.setResponsavelNome(u.getNome() != null ? u.getNome() : u.getUsername()));
+            }
+        }
         manutencaoRepository.save(m);
         auditService.registrar(username, "EDITAR_MANUTENCAO", "/manutencoes/" + id,
                 "Editou manutencao " + id, getClientIp(request), request.getHeader("User-Agent"));
@@ -287,17 +509,36 @@ public class ManutencaoControler {
 
     private Map<String, Object> toMap(ManutencaoEntity m) {
         Map<String, Object> r = new HashMap<>();
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
         r.put("id", m.getId());
         r.put("agentId", m.getAgentId());
         r.put("tecnicoUsername", nz(m.getTecnicoUsername()));
         r.put("tecnicoNome", nz(m.getTecnicoNome()));
+        r.put("responsavelUsername", nz(m.getResponsavelUsername()));
+        r.put("responsavelNome", nz(m.getResponsavelNome()));
+        r.put("setor", nz(m.getSetor()));
+        r.put("filial", nz(m.getFilial()));
+        r.put("patrimonio", nz(m.getPatrimonio()));
+        r.put("hostname", nz(m.getHostname()));
         r.put("descricao", nz(m.getDescricao()));
         r.put("laudoFinal", nz(m.getLaudoFinal()));
+        r.put("status", nz(m.getStatus()));
+        r.put("tipoManutencao", nz(m.getTipoManutencao()));
         r.put("anexoOriginal", nz(m.getAnexoOriginal()));
         r.put("temAnexo", m.getAnexoArquivo() != null);
         r.put("temImagem", m.getImagem() != null);
-        r.put("data", m.getDataManutencao() != null ?
-                m.getDataManutencao().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) : "");
+        r.put("data", m.getDataManutencao() != null ? m.getDataManutencao().format(fmt) : "");
+        r.put("dataEntrada", m.getDataEntrada() != null ? m.getDataEntrada().format(fmt) : "");
+        r.put("dataEntrega", m.getDataEntrega() != null ? m.getDataEntrega().format(fmt) : "");
+        var dur = m.duracao();
+        if (dur != null) {
+            r.put("duracaoHoras", dur.toHours());
+            r.put("duracaoDias", dur.toDays());
+        } else {
+            r.put("duracaoHoras", 0);
+            r.put("duracaoDias", 0);
+        }
+        r.put("alerta", m.alertaTempo());
         return r;
     }
 

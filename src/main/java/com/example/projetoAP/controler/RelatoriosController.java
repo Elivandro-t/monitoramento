@@ -1,12 +1,15 @@
 package com.example.projetoAP.controler;
 
 import com.example.projetoAP.controler.service.AuthService;
+import com.example.projetoAP.controler.service.PdfService;
 import com.example.projetoAP.repository.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,14 +27,151 @@ public class RelatoriosController {
 
     private final ManutencaoRepository manutencaoRepository;
     private final EquipamentoCondenadoRepository condenadoRepository;
+    private final UsuarioRepository usuarioRepository;
     private final AuthService authService;
+    private final PdfService pdfService;
 
     public RelatoriosController(ManutencaoRepository manutencaoRepository,
                                 EquipamentoCondenadoRepository condenadoRepository,
-                                AuthService authService) {
+                                UsuarioRepository usuarioRepository,
+                                AuthService authService,
+                                PdfService pdfService) {
         this.manutencaoRepository = manutencaoRepository;
         this.condenadoRepository = condenadoRepository;
+        this.usuarioRepository = usuarioRepository;
         this.authService = authService;
+        this.pdfService = pdfService;
+    }
+
+    // ===== PDF: Ranking =====
+    @Operation(summary = "PDF - Ranking de manutencoes (inline)")
+    @GetMapping("/ranking-manutencoes.pdf")
+    public ResponseEntity<byte[]> rankingPdf(@RequestParam(defaultValue = "mes") String periodo,
+                                             @RequestParam(required = false) String download,
+                                             @RequestHeader(value = "Authorization", required = false) String token) {
+        if (!authService.temPermissao(token, "acessoUsuarios")) {
+            return ResponseEntity.status(403).build();
+        }
+        @SuppressWarnings("unchecked")
+        var body = (Map<String, Object>) ranking(periodo, token).getBody();
+        if (body == null) return ResponseEntity.internalServerError().build();
+        @SuppressWarnings("unchecked")
+        var rank = (List<Map<String, Object>>) body.get("ranking");
+        byte[] pdf = pdfService.gerarRelatorioRanking(rank, periodo);
+        return pdfResponse(pdf, "ranking_manutencoes.pdf", "1".equals(download));
+    }
+
+    // ===== PDF: Metricas =====
+    @Operation(summary = "PDF - Metricas por tecnico/operador")
+    @GetMapping("/metricas.pdf")
+    public ResponseEntity<byte[]> metricasPdf(@RequestParam(required = false) String download,
+                                              @RequestHeader(value = "Authorization", required = false) String token) {
+        if (!authService.temPermissao(token, "acessoUsuarios")) {
+            return ResponseEntity.status(403).build();
+        }
+        @SuppressWarnings("unchecked")
+        var body = (Map<String, Object>) metricas(token).getBody();
+        if (body == null) return ResponseEntity.internalServerError().build();
+        @SuppressWarnings("unchecked")
+        var usuarios = (List<Map<String, Object>>) body.get("usuarios");
+        byte[] pdf = pdfService.gerarRelatorioMetricas(usuarios);
+        return pdfResponse(pdf, "metricas_usuarios.pdf", "1".equals(download));
+    }
+
+    private ResponseEntity<byte[]> pdfResponse(byte[] pdf, String filename, boolean forceDownload) {
+        String dispo = (forceDownload ? "attachment" : "inline") + "; filename=\"" + filename + "\"";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, dispo)
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
+
+    // ===== RANKING (/relatorios/ranking-manutencoes) =====
+    @Operation(summary = "Ranking de tecnicos por manutencoes realizadas (dia/semana/mes)")
+    @GetMapping("/ranking-manutencoes")
+    public ResponseEntity<?> ranking(@RequestParam(defaultValue = "mes") String periodo,
+                                     @RequestHeader(value = "Authorization", required = false) String token) {
+        if (!authService.temPermissao(token, "acessoUsuarios")) {
+            return ResponseEntity.status(403).body(Map.of("message", "Sem permissao"));
+        }
+        LocalDateTime inicio;
+        LocalDateTime fim = LocalDate.now().atTime(23, 59, 59);
+        switch (periodo.toLowerCase()) {
+            case "dia": inicio = LocalDate.now().atStartOfDay(); break;
+            case "semana": inicio = LocalDate.now().minusDays(7).atStartOfDay(); break;
+            case "mes":
+            default: inicio = LocalDate.now().minusDays(30).atStartOfDay();
+        }
+        Map<String, String> nomes = new HashMap<>();
+        Map<String, String> cargos = new HashMap<>();
+        usuarioRepository.findAll().forEach(u -> {
+            nomes.put(u.getUsername(), u.getNome() != null ? u.getNome() : u.getUsername());
+            cargos.put(u.getUsername(), u.getCargo() != null ? u.getCargo() : "");
+        });
+        var dados = manutencaoRepository.rankingPorPeriodo(inicio, fim);
+        List<Map<String, Object>> rank = new ArrayList<>();
+        for (Object[] row : dados) {
+            String user = (String) row[0];
+            Long total = ((Number) row[1]).longValue();
+            Map<String, Object> r = new HashMap<>();
+            r.put("username", user);
+            r.put("nome", nomes.getOrDefault(user, user));
+            r.put("cargo", cargos.getOrDefault(user, ""));
+            r.put("total", total);
+            rank.add(r);
+        }
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("periodo", periodo.toLowerCase());
+        resp.put("inicio", inicio.format(DateTimeFormatter.ISO_DATE));
+        resp.put("fim", fim.format(DateTimeFormatter.ISO_DATE));
+        resp.put("ranking", rank);
+        return ResponseEntity.ok(resp);
+    }
+
+    // ===== METRICAS POR USUARIO (/relatorios/metricas/dados) =====
+    @Operation(summary = "Metricas por tecnico/operador: total, tempo medio, concluidos")
+    @GetMapping("/metricas/dados")
+    public ResponseEntity<?> metricas(@RequestHeader(value = "Authorization", required = false) String token) {
+        if (!authService.temPermissao(token, "acessoUsuarios")) {
+            return ResponseEntity.status(403).body(Map.of("message", "Sem permissao"));
+        }
+        var usuarios = usuarioRepository.findAll().stream()
+                .filter(u -> {
+                    String cargo = u.getCargo() == null ? "" : u.getCargo().toUpperCase();
+                    return cargo.contains("TECNICO") || cargo.contains("OPERADOR")
+                            || "INFORMATICA".equals(u.getPerfil()) || "ADMIN".equals(u.getPerfil());
+                })
+                .toList();
+
+        Map<String, List<ManutencaoEntity>> porUser = new HashMap<>();
+        for (var m : manutencaoRepository.findAll()) {
+            if (m.getTecnicoUsername() == null) continue;
+            porUser.computeIfAbsent(m.getTecnicoUsername(), k -> new ArrayList<>()).add(m);
+        }
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (var u : usuarios) {
+            var ms = porUser.getOrDefault(u.getUsername(), Collections.emptyList());
+            long total = ms.size();
+            long concluidos = ms.stream().filter(m -> "ENTREGUE".equals(m.getStatus())
+                    || "FINALIZADO".equals(m.getStatus())).count();
+            OptionalDouble mediaHoras = ms.stream()
+                    .filter(m -> m.getDataEntrada() != null && m.getDataEntrega() != null)
+                    .mapToLong(m -> Duration.between(m.getDataEntrada(), m.getDataEntrega()).toHours())
+                    .average();
+            Map<String, Object> r = new HashMap<>();
+            r.put("username", u.getUsername());
+            r.put("nome", u.getNome() != null ? u.getNome() : u.getUsername());
+            r.put("cargo", u.getCargo() != null ? u.getCargo() : "");
+            r.put("perfil", u.getPerfil());
+            r.put("total", total);
+            r.put("concluidos", concluidos);
+            r.put("tempoMedioHoras", mediaHoras.isPresent() ? Math.round(mediaHoras.getAsDouble()) : 0);
+            result.add(r);
+        }
+        result.sort((a, b) -> Long.compare(((Number) b.get("total")).longValue(),
+                                          ((Number) a.get("total")).longValue()));
+        return ResponseEntity.ok(Map.of("usuarios", result));
     }
 
     /**

@@ -56,6 +56,9 @@ public class AgenteEntity {
     private Integer numManutencoes = 0;  // contador de manutencoes
     private String statusUso = "NORMAL"; // NORMAL / USADO / CRITICO
 
+    @Column(nullable = false)
+    private boolean cadastroManual = false; // true quando cadastrado pela web (sem agente)
+
     public AgenteEntity() {}
 
     public AgenteEntity(String agentId, String hostname, String setor, String filial,
@@ -103,6 +106,7 @@ public class AgenteEntity {
     public String getImagemUrl() { return imagemUrl; }
     public Integer getNumManutencoes() { return numManutencoes == null ? 0 : numManutencoes; }
     public String getStatusUso() { return statusUso == null ? "NORMAL" : statusUso; }
+    public boolean isCadastroManual() { return cadastroManual; }
 
     public void setHostname(String hostname) { this.hostname = hostname; }
     public void setIp(String ip) { this.ip = ip; }
@@ -135,6 +139,7 @@ public class AgenteEntity {
     public void setImagemUrl(String imagemUrl) { this.imagemUrl = imagemUrl; }
     public void setNumManutencoes(Integer numManutencoes) { this.numManutencoes = numManutencoes; }
     public void setStatusUso(String statusUso) { this.statusUso = statusUso; }
+    public void setCadastroManual(boolean cadastroManual) { this.cadastroManual = cadastroManual; }
 
     // ===== Helpers de calculo =====
     public Integer anosDesdeCompra() {

@@ -22,6 +22,12 @@
             <button class="btn btn-back" onclick="window.location.href='/endpoint/monitoramento'">&larr; Voltar</button>
             <button class="btn" onclick="window.location.href='/endpoint/monitoramento/equipamentos'">Monitor Tempo Real</button>
             <button class="btn btn-excel" onclick="exportarExcel()">Exportar Excel</button>
+            <button class="btn" onclick="visualizarPdfEquipamentos()">Ver PDF</button>
+            <button class="btn" onclick="baixarPdfEquipamentos()">Baixar PDF</button>
+            <button class="btn" onclick="window.location.href='/manutencoes'">Manutencoes</button>
+            <button class="btn" onclick="window.location.href='/equipamentos/condenados'">Condenados</button>
+            <button class="btn" onclick="window.location.href='/relatorios/ranking'">Ranking</button>
+            <button class="btn" onclick="window.location.href='/relatorios/metricas'">Metricas</button>
             <button class="btn btn-primary" onclick="abrirModalNovo()">+ Novo Equipamento</button>
         </div>
     </header>
@@ -153,10 +159,10 @@
             <form id="form-equip" onsubmit="event.preventDefault(); salvarEquip();">
                 <input type="hidden" id="eq-id">
                 <div class="form-grid">
-                    <div class="form-field">
-                        <label>Agent ID * <span id="lock-agentId" class="lock-badge" title="Travado">&#128274;</span></label>
+                    <div class="form-field" id="field-agentId">
+                        <label>Agent ID <small style="color:#8b949e">(opcional - so quando existe agente)</small> <span id="lock-agentId" class="lock-badge" title="Travado">&#128274;</span></label>
                         <div class="field-lock-wrap">
-                            <input id="eq-agentId" required readonly>
+                            <input id="eq-agentId" readonly placeholder="Deixe em branco para cadastro manual">
                             <button type="button" class="btn btn-unlock" onclick="pedirDesbloqueio('eq-agentId','lock-agentId')">Desbloquear</button>
                         </div>
                     </div>

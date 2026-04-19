@@ -2,6 +2,7 @@ package com.example.projetoAP.controler;
 
 import com.example.projetoAP.controler.service.AuditService;
 import com.example.projetoAP.controler.service.AuthService;
+import com.example.projetoAP.controler.service.EquipamentoCondenacaoService;
 import com.example.projetoAP.repository.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,18 +27,21 @@ public class EquipamentoCondenadoController {
     private final ManutencaoRepository manutencaoRepository;
     private final AuthService authService;
     private final AuditService auditService;
+    private final EquipamentoCondenacaoService condenacaoService;
     private final ObjectMapper mapper = new ObjectMapper();
 
     public EquipamentoCondenadoController(EquipamentoCondenadoRepository repository,
                                           AgenteRepository agenteRepository,
                                           ManutencaoRepository manutencaoRepository,
                                           AuthService authService,
-                                          AuditService auditService) {
+                                          AuditService auditService,
+                                          EquipamentoCondenacaoService condenacaoService) {
         this.repository = repository;
         this.agenteRepository = agenteRepository;
         this.manutencaoRepository = manutencaoRepository;
         this.authService = authService;
         this.auditService = auditService;
+        this.condenacaoService = condenacaoService;
     }
 
     @Operation(summary = "Lista todos os equipamentos condenados (historico)")
@@ -80,49 +84,14 @@ public class EquipamentoCondenadoController {
         var opt = agenteRepository.findById(agenteId);
         if (opt.isEmpty()) return ResponseEntity.notFound().build();
         var ag = opt.get();
+        String motivo = body != null ? body.getOrDefault("motivo", "") : "";
+        String laudoTexto = body != null ? body.get("laudoFinal") : null;
 
-        var manuts = manutencaoRepository.findByAgentIdOrderByDataManutencaoDesc(ag.getAgentId());
-        List<Map<String, Object>> historico = manuts.stream().map(m -> {
-            Map<String, Object> r = new HashMap<>();
-            r.put("id", m.getId());
-            r.put("tecnico", m.getTecnicoNome() + " (" + m.getTecnicoUsername() + ")");
-            r.put("data", m.getDataManutencao() != null ?
-                    m.getDataManutencao().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) : "");
-            r.put("descricao", m.getDescricao());
-            r.put("laudo", m.getLaudoFinal());
-            r.put("anexo", m.getAnexoOriginal());
-            return r;
-        }).toList();
-
-        String historicoJson;
-        try { historicoJson = mapper.writeValueAsString(historico); }
-        catch (Exception e) { historicoJson = "[]"; }
-
-        String ultimoLaudo = manuts.stream().map(ManutencaoEntity::getLaudoFinal)
-                .filter(l -> l != null && !l.isBlank()).findFirst().orElse("");
-
-        EquipamentoCondenadoEntity cond = new EquipamentoCondenadoEntity();
-        cond.setAgentId(ag.getAgentId());
-        cond.setHostname(ag.getHostname());
-        cond.setPatrimonio(ag.getPatrimonio());
-        cond.setMarca(ag.getMarca());
-        cond.setModelo(ag.getModelo());
-        cond.setNumeroSerie(ag.getNumeroSerie());
-        cond.setSetor(ag.getSetor());
-        cond.setFilial(ag.getFilial());
-        cond.setTipo(ag.getTipo());
-        cond.setMotivoCondenacao(body != null ? body.getOrDefault("motivo", "") : "");
-        cond.setLaudoFinal(body != null && body.get("laudoFinal") != null && !body.get("laudoFinal").isBlank()
-                ? body.get("laudoFinal") : ultimoLaudo);
-        cond.setHistoricoManutencoes(historicoJson);
-        cond.setTotalManutencoes(ag.getNumManutencoes());
-        cond.setCondenadoPor(authService.getUsername(token));
-        cond.setDataCondenacao(LocalDateTime.now());
-        repository.save(cond);
-
-        // Remove manutencoes e o agente original
-        if (!manuts.isEmpty()) manutencaoRepository.deleteAll(manuts);
-        agenteRepository.delete(ag);
+        try {
+            condenacaoService.condenar(ag, motivo, laudoTexto, authService.getUsername(token));
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
+        }
 
         auditService.registrar(authService.getUsername(token), "CONDENAR_EQUIPAMENTO",
                 "/equipamentos-condenados/condenar/" + agenteId,
