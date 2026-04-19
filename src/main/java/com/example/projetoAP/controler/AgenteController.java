@@ -105,7 +105,8 @@ public class AgenteController {
                     str(body.get("setor")),
                     str(body.get("filial")),
                     str(body.get("anydesk")),
-                    str(body.get("dominio"))
+                    str(body.get("dominio")),
+                    str(body.get("tempoUso"))
             );
             novo.setDataCadastro(LocalDateTime.now());
             isNovo[0] = true;
@@ -126,6 +127,7 @@ public class AgenteController {
         if (body.containsKey("ip")) agente.setIp(str(body.get("ip")));
         if (body.containsKey("so")) agente.setSistemaOperacional(str(body.get("so")));
         if (body.containsKey("usuario")) agente.setUsuario(str(body.get("usuario")));
+        if(body.containsKey("tempoUso")) agente.setTempoUso(str(body.get("tempoUso")));
         // Campos de cadastro (anydesk, dominio, setor, filial, patrimonio):
         // Agente so preenche se ainda estiver vazio no banco OU na criacao do agente.
         // Isso evita que edicoes manuais no painel sejam sobrescritas pelo heartbeat.
@@ -140,7 +142,7 @@ public class AgenteController {
         // Salvar metrica historica
         metricaRepository.save(new AgenteMetricaEntity(
                 agentId, agente.getCpuPercent(), agente.getMemoriaPercent(),
-                agente.getMemoriaUsada(), "ONLINE"));
+                agente.getMemoriaUsada(), "ONLINE",agente.getTempoUso()));
 
         // Notificar via WebSocket
         messagingTemplate.convertAndSend("/topic/agentes", Map.of(
@@ -204,7 +206,7 @@ public class AgenteController {
                 str(body.get("setor")),
                 str(body.get("filial")),
                 str(body.get("anydesk")),
-                str(body.get("dominio")));
+                str(body.get("dominio")),null);
         agente.setIpRecebido(ipRecebido);
         agente.setCadastroManual(manual);
         aplicarCamposEquipamento(agente, body);
@@ -440,7 +442,7 @@ public class AgenteController {
                 ag.setAtivo(false);
                 ag.setStatus("OFFLINE");
                 agenteRepository.save(ag);
-                metricaRepository.save(new AgenteMetricaEntity(ag.getAgentId(), 0.0, 0.0, 0L, "OFFLINE"));
+                metricaRepository.save(new AgenteMetricaEntity(ag.getAgentId(), 0.0, 0.0, 0L, "OFFLINE",""));
             }
         }
     }

@@ -19,17 +19,19 @@ public class AgenteMetricaEntity {
     private Long memoriaUsada;
     private String status;
     private LocalDateTime timestamp;
+    private String tempoUso;
 
     public AgenteMetricaEntity() {}
 
     public AgenteMetricaEntity(String agentId, Double cpuPercent, Double memoriaPercent,
-                               Long memoriaUsada, String status) {
+                               Long memoriaUsada, String status,String tempoUso) {
         this.agentId = agentId;
         this.cpuPercent = cpuPercent;
         this.memoriaPercent = memoriaPercent;
         this.memoriaUsada = memoriaUsada;
         this.status = status;
         this.timestamp = LocalDateTime.now();
+        this.tempoUso = tempoUso;
     }
 
     public long getId() { return id; }
@@ -39,4 +41,8 @@ public class AgenteMetricaEntity {
     public Long getMemoriaUsada() { return memoriaUsada; }
     public String getStatus() { return status; }
     public LocalDateTime getTimestamp() { return timestamp; }
+
+    public String getTempoUso() {
+        return tempoUso;
+    }
 }

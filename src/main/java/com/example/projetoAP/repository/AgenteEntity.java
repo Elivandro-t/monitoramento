@@ -52,7 +52,8 @@ public class AgenteEntity {
     private LocalDate garantiaExpiracao;
     @Column(columnDefinition = "TEXT")
     private String descricao;
-    private String imagemUrl;            // caminho/URL da imagem do equipamento
+    private String imagemUrl;           // caminho/URL da imagem do equipamento
+    private String tempoUso;
     private Integer numManutencoes = 0;  // contador de manutencoes
     private String statusUso = "NORMAL"; // NORMAL / USADO / CRITICO
 
@@ -62,7 +63,7 @@ public class AgenteEntity {
     public AgenteEntity() {}
 
     public AgenteEntity(String agentId, String hostname, String setor, String filial,
-                        String anydesk, String dominio) {
+                        String anydesk, String dominio,String tempoUso) {
         this.agentId = agentId;
         this.hostname = hostname;
         this.setor = setor;
@@ -72,6 +73,7 @@ public class AgenteEntity {
         this.dataCadastro = LocalDateTime.now();
         this.ativo = false;
         this.status = "OFFLINE";
+        this.tempoUso = tempoUso;
     }
 
     public long getId() { return id; }
@@ -167,5 +169,13 @@ public class AgenteEntity {
         } else {
             this.statusUso = "NORMAL";
         }
+    }
+
+    public String getTempoUso() {
+        return tempoUso;
+    }
+
+    public void setTempoUso(String tempoUso) {
+        this.tempoUso = tempoUso;
     }
 }
