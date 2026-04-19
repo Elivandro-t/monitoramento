@@ -93,6 +93,10 @@
                 <option value="">Todos</option>
                 <option value="LAPTOP">Laptop</option>
                 <option value="DESKTOP">Desktop</option>
+                <option value="IMPRESSORA_ARGOX">Impressora Argox</option>
+                <option value="IMPRESSORA_LASER">Impressora Laser</option>
+                <option value="TABLET">Tablet</option>
+                <option value="CELULAR">Celular Corporativo</option>
             </select>
         </div>
         <div class="filtro-grupo">
@@ -106,6 +110,10 @@
         <div class="filtro-grupo">
             <label>&nbsp;</label>
             <button class="btn" onclick="abrirModalFiliais()">Gerenciar Filiais</button>
+        </div>
+        <div class="filtro-grupo">
+            <label>&nbsp;</label>
+            <button class="btn btn-danger" onclick="abrirModalCondenados()">Equipamentos Condenados</button>
         </div>
     </div>
 
@@ -158,6 +166,10 @@
                             <option value="">--</option>
                             <option value="LAPTOP">Laptop</option>
                             <option value="DESKTOP">Desktop</option>
+                            <option value="IMPRESSORA_ARGOX">Impressora Argox</option>
+                            <option value="IMPRESSORA_LASER">Impressora Laser</option>
+                            <option value="TABLET">Tablet</option>
+                            <option value="CELULAR">Celular Corporativo</option>
                         </select>
                     </div>
                     <div class="form-field">
@@ -241,6 +253,7 @@
             </div>
 
             <div class="tab-content active" id="tab-info">
+                <div id="det-manut-badge" class="manut-badge manut-badge-emdia" style="display:none;"></div>
                 <div class="detail-grid">
                     <div class="detail-image" id="det-imagem-box">
                         <span class="detail-image-empty">Sem imagem</span>
@@ -273,7 +286,76 @@
             </div>
         </div>
         <div class="modal-foot">
+            <button class="btn btn-danger" onclick="abrirModalCondenar()">Condenar/Eliminar</button>
             <button class="btn" onclick="fecharModal('modal-detalhe')">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Condenar -->
+<div id="modal-condenar" class="modal-overlay">
+    <div class="modal sm">
+        <div class="modal-head">
+            <h2>Condenar / Eliminar Equipamento</h2>
+            <button class="modal-close" onclick="fecharModal('modal-condenar')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="font-size:12px; color:#f85149; margin-bottom:10px;">
+                Atencao: o equipamento sera removido da lista ativa e movido para o historico
+                de equipamentos condenados (somente visualizacao).
+            </p>
+            <form onsubmit="event.preventDefault(); confirmarCondenacao();">
+                <div class="form-grid">
+                    <div class="form-field full">
+                        <label>Motivo *</label>
+                        <textarea id="cond-motivo" required placeholder="Ex: Placa-mae queimada, sem reparo viavel..."></textarea>
+                    </div>
+                    <div class="form-field full">
+                        <label>Laudo final</label>
+                        <textarea id="cond-laudo" placeholder="Texto completo do laudo tecnico final"></textarea>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-foot">
+            <button class="btn" onclick="fecharModal('modal-condenar')">Cancelar</button>
+            <button class="btn btn-danger" onclick="confirmarCondenacao()">Confirmar Condenacao</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Historico de Condenados -->
+<div id="modal-condenados" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-head">
+            <h2>Historico de Equipamentos Condenados</h2>
+            <button class="modal-close" onclick="fecharModal('modal-condenados')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="lista-condenados"></div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn" onclick="fecharModal('modal-condenados')">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalhes do Condenado (somente leitura) -->
+<div id="modal-condenado-det" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-head">
+            <h2 id="cond-det-titulo">Detalhes do Equipamento Condenado</h2>
+            <button class="modal-close" onclick="fecharModal('modal-condenado-det')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="detail-info-grid" id="cond-det-info"></div>
+            <div class="section-title" style="margin-top:16px;">Laudo Final</div>
+            <div id="cond-det-laudo" class="manut-laudo"></div>
+            <div class="section-title" style="margin-top:16px;">Historico de Manutencoes</div>
+            <div id="cond-det-hist"></div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn" onclick="fecharModal('modal-condenado-det')">Fechar</button>
         </div>
     </div>
 </div>
@@ -288,6 +370,10 @@
         <div class="modal-body">
             <form id="form-manut" onsubmit="event.preventDefault(); salvarManut();" enctype="multipart/form-data">
                 <div class="form-grid">
+                    <div class="form-field full">
+                        <label>Tecnico responsavel</label>
+                        <input id="mn-tecnico" readonly style="background:rgba(88,166,255,0.08); color:#58a6ff; font-weight:600;">
+                    </div>
                     <div class="form-field full">
                         <label>Descricao (item)</label>
                         <textarea id="mn-descricao" required placeholder="Ex: Troca de SSD de 240GB por 480GB"></textarea>
@@ -404,6 +490,22 @@
 .btn-unlock { padding:0 10px; font-size:11px; white-space:nowrap; }
 .lock-badge { font-size:11px; margin-left:4px; }
 .lock-badge.unlocked { color:#3fb950; }
+
+/* Status de manutencao (aba Detalhes) */
+.manut-badge { padding:10px 14px; border-radius:8px; font-size:13px; font-weight:600; margin-bottom:12px; border:1px solid transparent; display:flex; align-items:center; gap:10px; }
+.manut-badge::before { content:'\25CF'; font-size:14px; }
+.manut-badge-emdia    { background:rgba(63,185,80,0.12);  color:#3fb950; border-color:#3fb950; }
+.manut-badge-atencao  { background:rgba(210,153,34,0.15); color:#e3b341; border-color:#d29922; }
+.manut-badge-semmanut { background:rgba(219,109,40,0.15); color:#f0883e; border-color:#db6d28; }
+.manut-badge-critico  { background:rgba(248,81,73,0.18);  color:#ff7b72; border-color:#f85149; animation: piscar 1s infinite; }
+@keyframes piscar { 0%,100% { opacity:1; box-shadow:0 0 0 rgba(248,81,73,0); } 50% { opacity:.55; box-shadow:0 0 14px rgba(248,81,73,.55); } }
+
+/* Linha de equipamento condenado - vermelho readonly */
+.cond-item { border:1px solid #f85149; background:rgba(248,81,73,0.08); border-radius:8px; padding:10px 12px; margin-bottom:10px; }
+.cond-item .cond-titulo { color:#ff7b72; font-weight:600; font-size:13px; }
+.cond-item .cond-meta { color:#8b949e; font-size:11px; margin-top:2px; }
+.cond-item .cond-motivo { color:#c9d1d9; font-size:12px; margin-top:6px; }
+.cond-item .cond-acoes { display:flex; gap:6px; margin-top:8px; }
 </style>
 
 <!-- Toast -->

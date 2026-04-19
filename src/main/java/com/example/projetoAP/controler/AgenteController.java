@@ -37,6 +37,7 @@ public class AgenteController {
     private final AuditService auditService;
     private final SimpMessagingTemplate messagingTemplate;
     private final EquipamentoSetoresRepository equipamentoSetoresRepository;
+    private final EquipamentoCondenadoRepository condenadoRepository;
 
     public AgenteController(AgenteRepository agenteRepository,
                            AgenteMetricaRepository metricaRepository,
@@ -44,7 +45,8 @@ public class AgenteController {
                            AuthService authService,
                            AuditService auditService,
                            SimpMessagingTemplate messagingTemplate,
-                           EquipamentoSetoresRepository equipamentoSetoresRepository) {
+                           EquipamentoSetoresRepository equipamentoSetoresRepository,
+                           EquipamentoCondenadoRepository condenadoRepository) {
         this.agenteRepository = agenteRepository;
         this.metricaRepository = metricaRepository;
         this.manutencaoRepository = manutencaoRepository;
@@ -52,6 +54,7 @@ public class AgenteController {
         this.auditService = auditService;
         this.messagingTemplate = messagingTemplate;
         this.equipamentoSetoresRepository = equipamentoSetoresRepository;
+        this.condenadoRepository = condenadoRepository;
     }
 
     // ===== ENDPOINT QUE O AGENTE CHAMA PARA ENVIAR METRICAS =====
@@ -64,6 +67,10 @@ public class AgenteController {
         String agentId = (String) body.get("agentId");
         if (agentId == null || agentId.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("message", "agentId obrigatorio"));
+        }
+        // Se o equipamento foi condenado, ignora heartbeats para nao ressuscitar o registro.
+        if (condenadoRepository.existsByAgentId(agentId)) {
+            return ResponseEntity.status(410).body(Map.of("message", "Equipamento condenado - heartbeat ignorado"));
         }
 
         boolean[] isNovo = { false };
@@ -446,8 +453,17 @@ public class AgenteController {
         m.put("memoriaUsada", a.getMemoriaUsada() != null ? a.getMemoriaUsada() : 0);
         m.put("discoTotal", a.getDiscoTotal() != null ? a.getDiscoTotal() : 0);
         m.put("discoUsado", a.getDiscoUsado() != null ? a.getDiscoUsado() : 0);
-        m.put("discoPercent", calcDiscoPercent(a));
-        m.put("statusUso", nz(a.getStatusUso()));
+        double discoPct = calcDiscoPercent(a);
+        m.put("discoPercent", discoPct);
+        // Calcula status de uso combinando desgaste (manut/idade) + carga em tempo real.
+        Map<String, String> usoInfo = calcularStatusUsoDinamico(a, discoPct);
+        m.put("statusUso", usoInfo.get("status"));
+        m.put("usoTooltip", usoInfo.get("tooltip"));
+        Map<String, Object> manutInfo = calcularStatusManutencao(a);
+        m.put("statusManutencao", manutInfo.get("status"));
+        m.put("statusManutencaoMsg", manutInfo.get("msg"));
+        m.put("ultimaManutencao", manutInfo.get("ultima"));
+        m.put("diasSemManutencao", manutInfo.get("dias"));
         m.put("numManutencoes", a.getNumManutencoes());
         m.put("dataCompra", a.getDataCompra() != null ? a.getDataCompra().toString() : "");
         m.put("garantiaExpiracao", a.getGarantiaExpiracao() != null ? a.getGarantiaExpiracao().toString() : "");
@@ -521,6 +537,95 @@ public class AgenteController {
     private double calcDiscoPercent(AgenteEntity a) {
         if (a.getDiscoTotal() == null || a.getDiscoTotal() <= 0 || a.getDiscoUsado() == null) return 0;
         return ((double) a.getDiscoUsado() / a.getDiscoTotal()) * 100.0;
+    }
+
+    /**
+     * Status de uso combina o desgaste (manutencoes/idade) com a carga em tempo real
+     * (CPU/memoria/disco). Retorna o pior dos dois e um tooltip com o motivo.
+     *   - >= 85% em qualquer metrica  -> CRITICO
+     *   - >= 50% em qualquer metrica  -> USADO
+     *   - caso contrario              -> mantem o statusUso de desgaste (NORMAL por padrao)
+     */
+    private Map<String, String> calcularStatusUsoDinamico(AgenteEntity a, double discoPct) {
+        double cpu = a.getCpuPercent() != null ? a.getCpuPercent() : 0.0;
+        double mem = a.getMemoriaPercent() != null ? a.getMemoriaPercent() : 0.0;
+        String wear = a.getStatusUso() == null ? "NORMAL" : a.getStatusUso();
+
+        String runtime = "NORMAL";
+        if (cpu >= 85 || mem >= 85 || discoPct >= 85) runtime = "CRITICO";
+        else if (cpu >= 50 || mem >= 50 || discoPct >= 50) runtime = "USADO";
+
+        String finalStatus = piorStatus(wear, runtime);
+
+        List<String> motivos = new ArrayList<>();
+        if (cpu >= 50) motivos.add(String.format(Locale.ROOT, "CPU em %.1f%%", cpu));
+        if (mem >= 50) motivos.add(String.format(Locale.ROOT, "Memoria em %.1f%%", mem));
+        if (discoPct >= 50) motivos.add(String.format(Locale.ROOT, "Disco em %.1f%%", discoPct));
+        if ("CRITICO".equals(wear)) {
+            motivos.add("Equipamento com muitas manutencoes (" + a.getNumManutencoes() + ")");
+        } else if ("USADO".equals(wear)) {
+            Integer anos = a.anosDesdeCompra();
+            motivos.add("Equipamento com uso avancado" + (anos != null ? " (" + anos + " anos)" : ""));
+        }
+        String tooltip = motivos.isEmpty() ? "Uso normal" : String.join("; ", motivos);
+
+        Map<String, String> r = new HashMap<>();
+        r.put("status", finalStatus);
+        r.put("tooltip", tooltip);
+        return r;
+    }
+
+    /**
+     * Status de manutencao para a aba de detalhes:
+     *   - CRITICO   : numManutencoes >= 10 (vermelho piscante no frontend)
+     *   - ATENCAO   : numManutencoes >= 5 (amarelo)
+     *   - SEM_MANUT : ultima manutencao ha mais de 3 meses (laranja - precisa manutencao)
+     *   - EM_DIA    : manutencao em dia
+     * Critico prevalece sobre os demais.
+     */
+    private Map<String, Object> calcularStatusManutencao(AgenteEntity a) {
+        int total = a.getNumManutencoes();
+        LocalDateTime ultima = manutencaoRepository.findByAgentIdOrderByDataManutencaoDesc(a.getAgentId())
+                .stream().findFirst().map(ManutencaoEntity::getDataManutencao).orElse(null);
+        Long dias = ultima == null ? null : java.time.Duration.between(ultima, LocalDateTime.now()).toDays();
+
+        String status;
+        String msg;
+        if (total >= 10) {
+            status = "CRITICO";
+            msg = "Equipamento com " + total + " manutencoes - atencao critica";
+        } else if (total >= 5) {
+            status = "ATENCAO";
+            msg = "Equipamento com " + total + " manutencoes - monitorar";
+        } else if (dias != null && dias > 90) {
+            status = "SEM_MANUT";
+            msg = "Sem manutencao ha " + dias + " dias - precisa revisao";
+        } else if (ultima == null) {
+            status = "SEM_MANUT";
+            msg = "Nenhuma manutencao registrada";
+        } else {
+            status = "EM_DIA";
+            msg = "Manutencao em dia (ultima ha " + dias + " dias)";
+        }
+
+        Map<String, Object> r = new HashMap<>();
+        r.put("status", status);
+        r.put("msg", msg);
+        r.put("ultima", ultima != null ? ultima.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) : "");
+        r.put("dias", dias != null ? dias : -1L);
+        return r;
+    }
+
+    private String piorStatus(String a, String b) {
+        int ra = rankStatus(a);
+        int rb = rankStatus(b);
+        return ra >= rb ? a : b;
+    }
+
+    private int rankStatus(String s) {
+        if ("CRITICO".equals(s)) return 2;
+        if ("USADO".equals(s)) return 1;
+        return 0;
     }
 
     private String nz(String s) {

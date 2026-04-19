@@ -3,6 +3,7 @@ var todosEquipamentos = [];
 var filiaisCache = [];
 var mtsetoresCache = [];
 var agenteSelecionado = null;
+var usuarioLogado = null; // { username, nome, perfil }
 // Guarda qual campo esta sendo desbloqueado no modal de autenticacao
 var desbloqueioAlvo = null; // { inputId, badgeId }
 
@@ -121,9 +122,14 @@ function carregarFiliais() {
             selFiltro.innerHTML = '<option value="">Todas</option>';
             selEq.innerHTML = '<option value="">--</option>';
             filiaisCache.forEach(function(f){
+                // Filtro continua por nome (para casar com o que esta gravado)
                 var o1 = document.createElement('option'); o1.value = f.nome; o1.textContent = f.nome;
                 selFiltro.appendChild(o1);
-                var o2 = document.createElement('option'); o2.value = f.nome; o2.textContent = f.nome;
+                // Editor envia o NUMERO (codigo) da filial, mas mostra "codigo - nome"
+                var codigo = (f.codigo != null && String(f.codigo).trim() !== '') ? String(f.codigo) : String(f.id);
+                var o2 = document.createElement('option');
+                o2.value = codigo;
+                o2.textContent = codigo + (f.nome ? ' - ' + f.nome : '');
                 selEq.appendChild(o2);
             });
             atualizarListaFiliais();
@@ -161,6 +167,20 @@ function carregarMTsetores() {
             atualizarListaMTsetores();
         })
         .catch(function(){});
+}
+
+// Converte um valor de filial (codigo OU nome) no codigo correspondente,
+// para o select do editor, que opera por numero/codigo.
+function resolverCodigoFilial(valor) {
+    if (!valor) return '';
+    var s = String(valor).trim();
+    for (var i = 0; i < filiaisCache.length; i++) {
+        var f = filiaisCache[i];
+        var cod = (f.codigo != null && String(f.codigo).trim() !== '') ? String(f.codigo) : String(f.id);
+        if (cod === s) return cod;
+        if (f.nome && f.nome === s) return cod;
+    }
+    return s; // desconhecido: mantem o valor, sera adicionado via garantirOpcao
 }
 
 // Garante que o select contenha a opcao <value>, adicionando-a se ausente.
@@ -266,7 +286,7 @@ function renderTabela(lista) {
             '<td>' + metricBar(a.memoriaPercent) + '</td>' +
             '<td>' + metricBar(a.discoPercent) + '</td>' +
             '<td><span class="status-chip ' + statusClass + '"><span class="status-dot"></span>' + esc(a.status || '--') + '</span></td>' +
-            '<td><span class="uso-chip uso-' + (a.statusUso || 'NORMAL') + '">' + (a.statusUso || 'NORMAL') + '</span></td>' +
+            '<td><span class="uso-chip uso-' + (a.statusUso || 'NORMAL') + '" title="' + esc(a.usoTooltip || 'Uso normal') + '">' + (a.statusUso || 'NORMAL') + '</span></td>' +
             '<td>' + manutChip + '</td>' +
             '<td class="row-actions">' +
                 '<button class="btn" onclick="verDetalhes(' + a.id + ')">Detalhes</button>' +
@@ -319,11 +339,14 @@ function editarEquip(id) {
     document.getElementById('eq-anydesk').value = a.anydesk || '';
     document.getElementById('eq-dominio').value = a.dominio || '';
     document.getElementById('eq-tipo').value = a.tipo || '';
-    // Garante que o setor/filial vindo do agente aparecam mesmo sem cadastro previo
+    // Garante que o setor vindo do agente apareca mesmo sem cadastro previo
     garantirOpcao('eq-mtsetor', a.setor || '');
-    garantirOpcao('eq-filial', a.filial || '');
     document.getElementById('eq-mtsetor').value = a.setor || '';
-    document.getElementById('eq-filial').value = a.filial || '';
+    // Filial no editor usa o NUMERO (codigo). Se o valor salvo for o nome da filial,
+    // convertemos para o codigo correspondente (sem alterar o registro).
+    var filialValor = resolverCodigoFilial(a.filial || '');
+    garantirOpcao('eq-filial', filialValor);
+    document.getElementById('eq-filial').value = filialValor;
     document.getElementById('eq-dataCompra').value = a.dataCompra || '';
     document.getElementById('eq-garantia').value = a.garantiaExpiracao || '';
     document.getElementById('eq-descricao').value = a.descricao || '';
@@ -395,7 +418,24 @@ function verDetalhes(id) {
         });
 }
 
+function renderBadgeManutencao(a) {
+    var el = document.getElementById('det-manut-badge');
+    if (!el) return;
+    var s = a.statusManutencao || 'EM_DIA';
+    var msg = a.statusManutencaoMsg || 'Manutencao em dia';
+    var map = {
+        'CRITICO':   'manut-badge manut-badge-critico',
+        'ATENCAO':   'manut-badge manut-badge-atencao',
+        'SEM_MANUT': 'manut-badge manut-badge-semmanut',
+        'EM_DIA':    'manut-badge manut-badge-emdia'
+    };
+    el.className = map[s] || map['EM_DIA'];
+    el.innerHTML = '<span>' + esc(msg) + '</span>';
+    el.style.display = 'flex';
+}
+
 function renderDetInfo(a) {
+    renderBadgeManutencao(a);
     var statusGar = a.garantiaVencida ? 'bad' : (a.garantiaExpiracao ? 'ok' : '');
     var anos = a.anosUso;
     var statusUsoClass = a.statusUso === 'CRITICO' ? 'bad' : (a.statusUso === 'USADO' ? 'warn' : 'ok');
@@ -419,7 +459,7 @@ function renderDetInfo(a) {
         ['Expiracao Garantia', a.garantiaExpiracao || '--', statusGar],
         ['Garantia Vencida?', a.garantiaVencida ? 'SIM' : 'NAO', a.garantiaVencida ? 'bad' : 'ok'],
         ['Num. Manutencoes', a.numManutencoes || 0, a.numManutencoes >= 10 ? 'bad' : (a.numManutencoes >= 5 ? 'warn' : 'ok')],
-        ['Status de Uso', a.statusUso || 'NORMAL', statusUsoClass],
+        ['Status de Uso', (a.statusUso || 'NORMAL') + (a.usoTooltip ? ' (' + a.usoTooltip + ')' : ''), statusUsoClass],
         ['Status', a.status || '--', a.status === 'ONLINE' ? 'ok' : 'bad'],
         ['CPU', (a.cpu || 0).toFixed(1) + '%'],
         ['Memoria', (a.memoriaPercent || 0).toFixed(1) + '%'],
@@ -498,7 +538,33 @@ function abrirModalManut() {
     document.getElementById('mn-laudo').value = '';
     document.getElementById('mn-arquivo').value = '';
     document.getElementById('mn-imagem').value = '';
+    var tecInp = document.getElementById('mn-tecnico');
+    if (tecInp) {
+        if (usuarioLogado) {
+            tecInp.value = (usuarioLogado.nome || usuarioLogado.username || '') +
+                ' (' + (usuarioLogado.username || '') + ')';
+        } else {
+            tecInp.value = '(sem login - faca login para registrar)';
+        }
+    }
     abrirModal('modal-manut');
+}
+
+function carregarUsuarioLogado() {
+    if (!AUTH_TOKEN) return Promise.resolve(null);
+    return fetch('/auth/verificar', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ token: AUTH_TOKEN })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (d && d.autorizado) {
+            usuarioLogado = { username: d.username, nome: d.nome || d.username, perfil: d.perfil };
+        }
+        return usuarioLogado;
+    })
+    .catch(function(){ return null; });
 }
 
 function salvarManut() {
@@ -540,6 +606,144 @@ function deletarManut(id) {
                 if (agenteSelecionado) verDetalhes(agenteSelecionado.id);
                 carregar();
             } else { toast(res.d.message || 'Erro', 'err'); }
+        });
+}
+
+// ===== CONDENAR EQUIPAMENTO =====
+function abrirModalCondenar() {
+    if (!agenteSelecionado) return;
+    document.getElementById('cond-motivo').value = '';
+    document.getElementById('cond-laudo').value = '';
+    abrirModal('modal-condenar');
+}
+
+function confirmarCondenacao() {
+    if (!agenteSelecionado) return;
+    var motivo = document.getElementById('cond-motivo').value.trim();
+    if (!motivo) { toast('Informe o motivo da condenacao', 'err'); return; }
+    if (!confirm('Tem certeza que deseja condenar este equipamento? Essa acao remove da lista ativa.')) return;
+    var body = {
+        motivo: motivo,
+        laudoFinal: document.getElementById('cond-laudo').value.trim()
+    };
+    fetch('/equipamentos-condenados/condenar/' + agenteSelecionado.id, {
+        method: 'POST',
+        headers: authHeaders({'Content-Type':'application/json'}),
+        body: JSON.stringify(body)
+    })
+    .then(function(r){ return r.json().then(function(d){ return {s:r.status, d:d}; }); })
+    .then(function(res){
+        if (res.s >= 200 && res.s < 300) {
+            toast('Equipamento condenado', 'ok');
+            fecharModal('modal-condenar');
+            fecharModal('modal-detalhe');
+            agenteSelecionado = null;
+            carregar();
+        } else {
+            toast(res.d.message || 'Erro ao condenar', 'err');
+        }
+    })
+    .catch(function(){ toast('Erro de conexao', 'err'); });
+}
+
+// ===== HISTORICO DE CONDENADOS =====
+function abrirModalCondenados() {
+    carregarCondenados();
+    abrirModal('modal-condenados');
+}
+
+function carregarCondenados() {
+    var box = document.getElementById('lista-condenados');
+    box.innerHTML = '<div class="loading-wrap"><div class="loader"></div></div>';
+    fetch('/equipamentos-condenados', { headers: authHeaders() })
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            var lista = Array.isArray(data) ? data : [];
+            if (!lista.length) {
+                box.innerHTML = '<div class="empty-state">Nenhum equipamento condenado</div>';
+                return;
+            }
+            box.innerHTML = lista.map(function(c){
+                return '<div class="cond-item">' +
+                    '<div class="cond-titulo">' + esc(c.hostname || c.agentId) +
+                        (c.patrimonio ? ' <span class="cell-muted">(' + esc(c.patrimonio) + ')</span>' : '') +
+                    '</div>' +
+                    '<div class="cond-meta">' +
+                        'Condenado em ' + esc(c.dataCondenacao) +
+                        ' por ' + esc(c.condenadoPor || '--') +
+                        ' | ' + esc(c.marca || '--') + ' ' + esc(c.modelo || '') +
+                        ' | Setor: ' + esc(c.setor || '--') +
+                        ' | Manutencoes: ' + (c.totalManutencoes || 0) +
+                    '</div>' +
+                    '<div class="cond-motivo"><strong>Motivo:</strong> ' + esc(c.motivoCondenacao || '--') + '</div>' +
+                    '<div class="cond-acoes">' +
+                        '<button class="btn" onclick="verCondenado(' + c.id + ')">Visualizar</button>' +
+                        '<button class="btn btn-danger" onclick="deletarCondenado(' + c.id + ')">Remover do historico</button>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        })
+        .catch(function(){ box.innerHTML = '<div class="empty-state">Erro ao carregar</div>'; });
+}
+
+function verCondenado(id) {
+    fetch('/equipamentos-condenados/' + id, { headers: authHeaders() })
+        .then(function(r){ return r.json(); })
+        .then(function(c){
+            document.getElementById('cond-det-titulo').innerText =
+                'Equipamento Condenado: ' + (c.hostname || c.agentId);
+            var items = [
+                ['Agent ID', c.agentId],
+                ['Hostname', c.hostname],
+                ['Tipo', c.tipo || '--'],
+                ['Marca', c.marca || '--'],
+                ['Modelo', c.modelo || '--'],
+                ['Patrimonio', c.patrimonio || '--'],
+                ['Numero Serie', c.numeroSerie || '--'],
+                ['Setor', c.setor || '--'],
+                ['Filial', c.filial || '--'],
+                ['Total Manutencoes', c.totalManutencoes || 0],
+                ['Condenado por', c.condenadoPor || '--'],
+                ['Data Condenacao', c.dataCondenacao || '--'],
+                ['Motivo', c.motivoCondenacao || '--']
+            ];
+            document.getElementById('cond-det-info').innerHTML = items.map(function(it){
+                return '<div class="info-item"><span class="info-label">' + esc(it[0]) + '</span>' +
+                       '<span class="info-value">' + esc(it[1]) + '</span></div>';
+            }).join('');
+            document.getElementById('cond-det-laudo').innerText = c.laudoFinal || '(sem laudo final)';
+            var hist = Array.isArray(c.historicoManutencoes) ? c.historicoManutencoes : [];
+            var histBox = document.getElementById('cond-det-hist');
+            if (!hist.length) {
+                histBox.innerHTML = '<div class="empty-state">Sem manutencoes registradas</div>';
+            } else {
+                histBox.innerHTML = hist.map(function(m){
+                    return '<div class="manut-item">' +
+                        '<div class="manut-header">' +
+                            '<div class="manut-tecnico">' + esc(m.tecnico || '--') + '</div>' +
+                            '<div class="manut-data">' + esc(m.data || '') + '</div>' +
+                        '</div>' +
+                        '<div class="manut-desc"><strong>Descricao:</strong> ' + esc(m.descricao || '--') + '</div>' +
+                        (m.laudo ? '<div class="manut-laudo">' + esc(m.laudo) + '</div>' : '') +
+                    '</div>';
+                }).join('');
+            }
+            abrirModal('modal-condenado-det');
+        })
+        .catch(function(){ toast('Erro ao carregar detalhes', 'err'); });
+}
+
+function deletarCondenado(id) {
+    if (!confirm('Remover PERMANENTEMENTE este registro do historico?')) return;
+    fetch('/equipamentos-condenados/' + id, { method: 'DELETE', headers: authHeaders() })
+        .then(function(r){ return r.json().then(function(d){ return {s:r.status, d:d}; }); })
+        .then(function(res){
+            if (res.s >= 200 && res.s < 300) {
+                toast('Registro removido', 'ok');
+                carregarCondenados();
+            } else {
+                toast(res.d.message || 'Erro', 'err');
+            }
         });
 }
 
@@ -744,6 +948,7 @@ window.addEventListener('DOMContentLoaded', function(){
     if (!AUTH_TOKEN) {
         toast('Faca login para acessar todos os recursos', 'err');
     }
+    carregarUsuarioLogado();
     carregarFiliais().then(function(){ return carregarMTsetores(); }).then(function(){ carregar(); });
     setInterval(carregar, 15000);
 });
