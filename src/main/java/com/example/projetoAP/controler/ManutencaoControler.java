@@ -406,6 +406,7 @@ public class ManutencaoControler {
             eq.put("status", nz(ag.getStatus()));
             eq.put("statusUso", nz(ag.getStatusUso()));
             eq.put("numManutencoes", ag.getNumManutencoes());
+            eq.put("tempoUso", nz(ag.getTempoUso()));
             eq.put("temImagem", ag.getImagemUrl() != null && !ag.getImagemUrl().isBlank());
             resp.put("equipamento", eq);
         }

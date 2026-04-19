@@ -505,6 +505,7 @@ public class AgenteController {
                 a.getUltimoContato().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) : "");
         m.put("dataCadastro", a.getDataCadastro() != null ?
                 a.getDataCadastro().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) : "");
+        m.put("tempoUso", nz(a.getTempoUso()));
         return m;
     }
     private Long totalManutencaoes (AgenteEntity a){

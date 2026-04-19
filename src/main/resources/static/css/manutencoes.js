@@ -112,6 +112,14 @@ function escapeHtml(s) {
     });
 }
 
+// "23h41m30s" -> "23h 41m 30s"
+function formatTempoUso(s) {
+    if (s === null || s === undefined) return '';
+    var t = String(s).trim();
+    if (!t) return '';
+    return t.replace(/(\d+\s*[a-zA-Z]+)(?=\d)/g, '$1 ').replace(/\s+/g, ' ').trim();
+}
+
 function abrirStatus(id) {
     mntSelecionada = id;
     var item = lista.find(function(x){ return x.id === id; }) || {};
@@ -222,8 +230,10 @@ function renderDetalhes(d) {
     var m = d.manutencao || {};
     var hist = Array.isArray(d.historico) ? d.historico : [];
 
-    document.getElementById('det-titulo').textContent =
-        'Detalhes: ' + (eq.hostname || eq.agentId || m.hostname || ('#' + m.id));
+    var nome = eq.hostname || eq.agentId || m.hostname || ('#' + m.id);
+    var tusoFmt = formatTempoUso(eq.tempoUso);
+    var tuso = tusoFmt ? '<span class="det-tempouso" title="Tempo de uso reportado pelo agente">tempo de uso: ' + escapeHtml(tusoFmt) + '</span>' : '';
+    document.getElementById('det-titulo').innerHTML = 'Detalhes: ' + escapeHtml(nome) + tuso;
 
     // Imagem principal do equipamento
     var imgBox = document.getElementById('det-equip-img');
@@ -254,7 +264,8 @@ function renderDetalhes(d) {
         ['Dominio', eq.dominio],
         ['Status', eq.status, eq.status === 'ONLINE' ? 'ok' : 'bad'],
         ['Status Uso', eq.statusUso || 'NORMAL', classUso(eq.statusUso)],
-        ['Total Manutencoes', (eq.numManutencoes != null ? eq.numManutencoes : 0), countCls(eq.numManutencoes)]
+        ['Total Manutencoes', (eq.numManutencoes != null ? eq.numManutencoes : 0), countCls(eq.numManutencoes)],
+        ['Tempo de Uso', formatTempoUso(eq.tempoUso) || '--']
     ];
     document.getElementById('det-equip-info').innerHTML = items.map(function(it){
         var val = (it[1] == null || it[1] === '') ? '--' : it[1];

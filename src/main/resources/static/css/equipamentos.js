@@ -348,6 +348,7 @@ function renderTabela(lista) {
             '<td>' + metricBar(a.discoPercent) + '</td>' +
             '<td><span class="status-chip ' + statusClass + '"><span class="status-dot"></span>' + esc(a.status || '--') + '</span></td>' +
             '<td><span class="uso-chip uso-' + (a.statusUso || 'NORMAL') + '" title="' + esc(a.usoTooltip || 'Uso normal') + '">' + (a.statusUso || 'NORMAL') + '</span></td>' +
+            '<td><span class="tempo-uso-cell" title="Tempo de uso reportado pelo agente">' + esc(formatTempoUso(a.tempoUso) || '--') + '</span></td>' +
             '<td>' + manutChip + '</td>' +
             '<td class="row-actions">' +
                 '<button class="btn" onclick="verDetalhes(' + a.id + ')">Detalhes</button>' +
@@ -362,6 +363,14 @@ function renderTabela(lista) {
 function esc(s) {
     if (s === null || s === undefined) return '';
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// "23h41m30s" -> "23h 41m 30s"; "2d4h15m" -> "2d 4h 15m"
+function formatTempoUso(s) {
+    if (s === null || s === undefined) return '';
+    var t = String(s).trim();
+    if (!t) return '';
+    return t.replace(/(\d+\s*[a-zA-Z]+)(?=\d)/g, '$1 ').replace(/\s+/g, ' ').trim();
 }
 
 // Converte bytes em formato legivel (GB ou MB)
@@ -508,7 +517,9 @@ function verDetalhes(id) {
         .then(function(r){ return r.json(); })
         .then(function(a){
             agenteSelecionado = a;
-            document.getElementById('det-titulo').innerText = 'Detalhes: ' + (a.hostname || a.agentId);
+            var tusoFmt = formatTempoUso(a.tempoUso);
+            var tuso = tusoFmt ? '<span class="det-tempouso" title="Tempo de uso reportado pelo agente">tempo de uso: ' + esc(tusoFmt) + '</span>' : '';
+            document.getElementById('det-titulo').innerHTML = 'Detalhes: ' + esc(a.hostname || a.agentId) + tuso;
             renderDetInfo(a);
             renderManutList(a.manutencoes || []);
             renderImagemBig(a);
@@ -563,6 +574,7 @@ function renderDetInfo(a) {
         ['CPU', (a.cpu || 0).toFixed(1) + '%'],
         ['Memoria', formatarUso(a.memoriaUsada, a.memoriaTotal, a.memoriaPercent)],
         ['Disco', formatarUso(a.discoUsado, a.discoTotal, a.discoPercent)],
+        ['Tempo de Uso', formatTempoUso(a.tempoUso) || '--'],
         ['Data Cadastro', a.dataCadastro || '--'],
         ['Ultimo Contato', a.ultimoContato || '--']
     ];
