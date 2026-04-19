@@ -146,8 +146,11 @@
                 <input type="hidden" id="eq-id">
                 <div class="form-grid">
                     <div class="form-field">
-                        <label>Agent ID *</label>
-                        <input id="eq-agentId" required>
+                        <label>Agent ID * <span id="lock-agentId" class="lock-badge" title="Travado">&#128274;</span></label>
+                        <div class="field-lock-wrap">
+                            <input id="eq-agentId" required readonly>
+                            <button type="button" class="btn btn-unlock" onclick="pedirDesbloqueio('eq-agentId','lock-agentId')">Desbloquear</button>
+                        </div>
                     </div>
                     <div class="form-field">
                         <label>Tipo</label>
@@ -158,8 +161,11 @@
                         </select>
                     </div>
                     <div class="form-field">
-                        <label>Hostname</label>
-                        <input id="eq-hostname">
+                        <label>Hostname <span id="lock-hostname" class="lock-badge" title="Travado">&#128274;</span></label>
+                        <div class="field-lock-wrap">
+                            <input id="eq-hostname" readonly>
+                            <button type="button" class="btn btn-unlock" onclick="pedirDesbloqueio('eq-hostname','lock-hostname')">Desbloquear</button>
+                        </div>
                     </div>
                     <div class="form-field">
                         <label>Patrimonio</label>
@@ -178,8 +184,11 @@
                         <input id="eq-sn">
                     </div>
                     <div class="form-field">
-                        <label>AnyDesk</label>
-                        <input id="eq-anydesk">
+                        <label>AnyDesk <span id="lock-anydesk" class="lock-badge" title="Travado">&#128274;</span></label>
+                        <div class="field-lock-wrap">
+                            <input id="eq-anydesk" readonly>
+                            <button type="button" class="btn btn-unlock" onclick="pedirDesbloqueio('eq-anydesk','lock-anydesk')">Desbloquear</button>
+                        </div>
                     </div>
                     <div class="form-field">
                         <label>Dominio</label>
@@ -306,6 +315,38 @@
     </div>
 </div>
 
+<!-- Modal MTsetor (Gerenciar Setores) -->
+<div id="modal-mtsetor" class="modal-overlay">
+    <div class="modal sm">
+        <div class="modal-head">
+            <h2>Gerenciar Setores (MTsetor)</h2>
+            <button class="modal-close" onclick="fecharModal('modal-mtsetor')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form onsubmit="event.preventDefault(); salvarMTsetor();">
+                <input type="hidden" id="mts-id">
+                <div class="form-grid cols-2">
+                    <div class="form-field"><label>Nome do Setor *</label><input id="mts-nome" required></div>
+                    <div class="form-field">
+                        <label>Filial</label>
+                        <select id="mts-filial"><option value="">--</option></select>
+                    </div>
+                    <div class="form-field full"><label>Descricao</label><input id="mts-descricao"></div>
+                </div>
+                <div style="display:flex; gap:8px; margin-top:10px;">
+                    <button class="btn btn-primary" type="submit">Salvar</button>
+                    <button class="btn" type="button" onclick="limparFormMTsetor()">Limpar</button>
+                </div>
+            </form>
+            <div class="section-title">Setores Cadastrados</div>
+            <div id="lista-mtsetores"></div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn" onclick="fecharModal('modal-mtsetor')">Fechar</button>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Filiais -->
 <div id="modal-filiais" class="modal-overlay">
     <div class="modal sm">
@@ -331,6 +372,39 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de confirmacao para desbloquear campo -->
+<div id="modal-auth-field" class="modal-overlay">
+    <div class="modal sm">
+        <div class="modal-head">
+            <h2>Confirmar credenciais</h2>
+            <button class="modal-close" onclick="fecharModal('modal-auth-field')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="font-size:12px; color:#8b949e; margin-bottom:10px;">
+                Para alterar este campo, confirme seu usuario e senha.
+            </p>
+            <div class="form-grid cols-2">
+                <div class="form-field"><label>Usuario</label><input id="auth-user"></div>
+                <div class="form-field"><label>Senha</label><input id="auth-pass" type="password"></div>
+            </div>
+            <div id="auth-err" style="color:#f85149; font-size:11px; display:none; margin-top:6px;">Credenciais invalidas</div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn" onclick="fecharModal('modal-auth-field')">Cancelar</button>
+            <button class="btn btn-primary" onclick="confirmarDesbloqueio()">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.field-lock-wrap { display:flex; gap:6px; align-items:stretch; }
+.field-lock-wrap input { flex:1; }
+.field-lock-wrap input[readonly] { opacity:.75; cursor:not-allowed; }
+.btn-unlock { padding:0 10px; font-size:11px; white-space:nowrap; }
+.lock-badge { font-size:11px; margin-left:4px; }
+.lock-badge.unlocked { color:#3fb950; }
+</style>
 
 <!-- Toast -->
 <div id="toast" class="popup-toast"></div>

@@ -1,7 +1,10 @@
 var AUTH_TOKEN = localStorage.getItem('auth_token') || '';
 var todosEquipamentos = [];
 var filiaisCache = [];
+var mtsetoresCache = [];
 var agenteSelecionado = null;
+// Guarda qual campo esta sendo desbloqueado no modal de autenticacao
+var desbloqueioAlvo = null; // { inputId, badgeId }
 
 function authHeaders(extra) {
     var h = extra || {};
@@ -23,6 +26,73 @@ function abrirModal(id) {
 function fecharModal(id) {
     var m = document.getElementById(id);
     if (m) m.classList.remove('show');
+}
+
+// ===== LOCK / UNLOCK POR CAMPO =====
+function travarCampo(inputId, badgeId) {
+    var inp = document.getElementById(inputId);
+    if (inp) { inp.readOnly = true; }
+    var badge = document.getElementById(badgeId);
+    if (badge) { badge.innerHTML = '&#128274;'; badge.title = 'Travado'; badge.classList.remove('unlocked'); }
+    // Garante que o botao Desbloquear volte a aparecer se existir
+    var wrap = inp ? inp.parentElement : null;
+    if (wrap) {
+        var btn = wrap.querySelector('.btn-unlock');
+        if (btn) btn.style.display = '';
+    }
+}
+
+function destravarCampo(inputId, badgeId) {
+    var inp = document.getElementById(inputId);
+    if (inp) { inp.readOnly = false; inp.focus(); }
+    var badge = document.getElementById(badgeId);
+    if (badge) { badge.innerHTML = '&#128275;'; badge.title = 'Liberado'; badge.classList.add('unlocked'); }
+    var wrap = inp ? inp.parentElement : null;
+    if (wrap) {
+        var btn = wrap.querySelector('.btn-unlock');
+        if (btn) btn.style.display = 'none';
+    }
+}
+
+function pedirDesbloqueio(inputId, badgeId) {
+    desbloqueioAlvo = { inputId: inputId, badgeId: badgeId };
+    document.getElementById('auth-user').value = '';
+    document.getElementById('auth-pass').value = '';
+    document.getElementById('auth-err').style.display = 'none';
+    abrirModal('modal-auth-field');
+    setTimeout(function(){ document.getElementById('auth-user').focus(); }, 50);
+}
+
+function confirmarDesbloqueio() {
+    if (!desbloqueioAlvo) return;
+    var user = document.getElementById('auth-user').value.trim();
+    var pass = document.getElementById('auth-pass').value;
+    if (!user || !pass) {
+        document.getElementById('auth-err').innerText = 'Preencha usuario e senha';
+        document.getElementById('auth-err').style.display = 'block';
+        return;
+    }
+    fetch('/auth/revalidar', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ username: user, senha: pass })
+    })
+    .then(function(r){ return r.json().then(function(d){ return {s:r.status, d:d}; }); })
+    .then(function(res){
+        if (res.s >= 200 && res.s < 300 && res.d.autorizado) {
+            destravarCampo(desbloqueioAlvo.inputId, desbloqueioAlvo.badgeId);
+            fecharModal('modal-auth-field');
+            desbloqueioAlvo = null;
+            toast('Campo liberado para edicao', 'ok');
+        } else {
+            document.getElementById('auth-err').innerText = res.d.message || 'Credenciais invalidas';
+            document.getElementById('auth-err').style.display = 'block';
+        }
+    })
+    .catch(function(){
+        document.getElementById('auth-err').innerText = 'Erro de conexao';
+        document.getElementById('auth-err').style.display = 'block';
+    });
 }
 
 // ===== LISTAR =====
@@ -65,12 +135,20 @@ function carregarMTsetores() {
     return fetch('/mtsetores', { headers: authHeaders() })
         .then(function(r){ return r.json(); })
         .then(function(data){
-            var lista = Array.isArray(data) ? data : [];
+            mtsetoresCache = Array.isArray(data) ? data : [];
             var selFiltro = document.getElementById('f-mtsetor');
             var selEq = document.getElementById('eq-mtsetor');
+            var selMtsFil = document.getElementById('mts-filial');
             if (selFiltro) selFiltro.innerHTML = '<option value="">Todos</option>';
             if (selEq) selEq.innerHTML = '<option value="">--</option>';
-            lista.forEach(function(s){
+            if (selMtsFil) {
+                selMtsFil.innerHTML = '<option value="">--</option>';
+                filiaisCache.forEach(function(f){
+                    var o = document.createElement('option'); o.value = f.nome; o.textContent = f.nome;
+                    selMtsFil.appendChild(o);
+                });
+            }
+            mtsetoresCache.forEach(function(s){
                 if (selFiltro) {
                     var o1 = document.createElement('option'); o1.value = s.nome; o1.textContent = s.nome;
                     selFiltro.appendChild(o1);
@@ -80,8 +158,22 @@ function carregarMTsetores() {
                     selEq.appendChild(o2);
                 }
             });
+            atualizarListaMTsetores();
         })
         .catch(function(){});
+}
+
+// Garante que o select contenha a opcao <value>, adicionando-a se ausente.
+function garantirOpcao(selectId, valor) {
+    if (!valor) return;
+    var sel = document.getElementById(selectId);
+    if (!sel) return;
+    for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === valor) return;
+    }
+    var o = document.createElement('option');
+    o.value = valor; o.textContent = valor;
+    sel.appendChild(o);
 }
 
 // ===== RESUMO =====
@@ -202,7 +294,10 @@ function abrirModalNovo() {
     document.getElementById('eq-tipo').value = '';
     document.getElementById('eq-mtsetor').value = '';
     document.getElementById('eq-filial').value = '';
-    document.getElementById('eq-agentId').readOnly = false;
+    // Em cadastro novo, agentId/hostname/anydesk ficam livres para digitar.
+    destravarCampo('eq-agentId','lock-agentId');
+    destravarCampo('eq-hostname','lock-hostname');
+    destravarCampo('eq-anydesk','lock-anydesk');
     abrirModal('modal-equip');
 }
 
@@ -212,8 +307,11 @@ function editarEquip(id) {
     document.getElementById('modal-equip-titulo').innerText = 'Editar: ' + (a.hostname || a.agentId);
     document.getElementById('eq-id').value = a.id;
     document.getElementById('eq-agentId').value = a.agentId || '';
-    document.getElementById('eq-agentId').readOnly = true;
     document.getElementById('eq-hostname').value = a.hostname || '';
+    // Ao editar, os 3 campos criticos comecam travados; so liberam com senha.
+    travarCampo('eq-agentId','lock-agentId');
+    travarCampo('eq-hostname','lock-hostname');
+    travarCampo('eq-anydesk','lock-anydesk');
     document.getElementById('eq-patrimonio').value = a.patrimonio || '';
     document.getElementById('eq-marca').value = a.marca || '';
     document.getElementById('eq-modelo').value = a.modelo || '';
@@ -221,6 +319,9 @@ function editarEquip(id) {
     document.getElementById('eq-anydesk').value = a.anydesk || '';
     document.getElementById('eq-dominio').value = a.dominio || '';
     document.getElementById('eq-tipo').value = a.tipo || '';
+    // Garante que o setor/filial vindo do agente aparecam mesmo sem cadastro previo
+    garantirOpcao('eq-mtsetor', a.setor || '');
+    garantirOpcao('eq-filial', a.filial || '');
     document.getElementById('eq-mtsetor').value = a.setor || '';
     document.getElementById('eq-filial').value = a.filial || '';
     document.getElementById('eq-dataCompra').value = a.dataCompra || '';
@@ -510,7 +611,91 @@ function deletarFilial(id) {
         });
 }
 
-function abrirModalSetores() { window.location.href = '/setores'; }
+// ===== MTsetores (Gerenciar Setores) =====
+function abrirModalSetores() {
+    limparFormMTsetor();
+    atualizarListaMTsetores();
+    abrirModal('modal-mtsetor');
+}
+
+function limparFormMTsetor() {
+    document.getElementById('mts-id').value = '';
+    document.getElementById('mts-nome').value = '';
+    document.getElementById('mts-descricao').value = '';
+    var selMtsFil = document.getElementById('mts-filial');
+    if (selMtsFil) selMtsFil.value = '';
+}
+
+function atualizarListaMTsetores() {
+    var box = document.getElementById('lista-mtsetores');
+    if (!box) return;
+    if (!mtsetoresCache.length) {
+        box.innerHTML = '<div class="empty-state">Nenhum setor cadastrado</div>';
+        return;
+    }
+    box.innerHTML = mtsetoresCache.map(function(s){
+        return '<div class="manut-item">' +
+            '<div class="manut-header">' +
+                '<div class="manut-tecnico">' + esc(s.nome) +
+                    (s.filial ? ' <span class="cell-muted">(' + esc(s.filial) + ')</span>' : '') +
+                '</div>' +
+                '<div class="cell-muted">' + esc(s.descricao || '') + '</div>' +
+            '</div>' +
+            '<div class="manut-actions">' +
+                '<button class="btn" onclick="editarMTsetor(' + s.id + ')">Editar</button>' +
+                '<button class="btn btn-danger" onclick="deletarMTsetor(' + s.id + ')">Excluir</button>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
+function editarMTsetor(id) {
+    var s = mtsetoresCache.find(function(x){ return x.id === id; });
+    if (!s) return;
+    document.getElementById('mts-id').value = s.id;
+    document.getElementById('mts-nome').value = s.nome || '';
+    document.getElementById('mts-descricao').value = s.descricao || '';
+    garantirOpcao('mts-filial', s.filial || '');
+    document.getElementById('mts-filial').value = s.filial || '';
+}
+
+function salvarMTsetor() {
+    var id = document.getElementById('mts-id').value;
+    var body = {
+        nome: document.getElementById('mts-nome').value.trim(),
+        filial: document.getElementById('mts-filial').value,
+        descricao: document.getElementById('mts-descricao').value.trim()
+    };
+    if (!body.nome) { toast('Nome do setor e obrigatorio', 'err'); return; }
+    var url = id ? '/mtsetores/' + id : '/mtsetores';
+    var method = id ? 'PUT' : 'POST';
+    fetch(url, {
+        method: method,
+        headers: authHeaders({'Content-Type':'application/json'}),
+        body: JSON.stringify(body)
+    })
+    .then(function(r){ return r.json().then(function(d){ return {s:r.status, d:d}; }); })
+    .then(function(res){
+        if (res.s >= 200 && res.s < 300) {
+            toast(id ? 'Setor atualizado' : 'Setor criado', 'ok');
+            limparFormMTsetor();
+            carregarMTsetores();
+        } else {
+            toast(res.d.message || 'Erro ao salvar setor', 'err');
+        }
+    })
+    .catch(function(){ toast('Erro de conexao', 'err'); });
+}
+
+function deletarMTsetor(id) {
+    if (!confirm('Excluir este setor?')) return;
+    fetch('/mtsetores/' + id, { method: 'DELETE', headers: authHeaders() })
+        .then(function(r){ return r.json().then(function(d){ return {s:r.status, d:d}; }); })
+        .then(function(res){
+            if (res.s >= 200 && res.s < 300) { toast('Setor excluido', 'ok'); carregarMTsetores(); }
+            else { toast(res.d.message || 'Erro', 'err'); }
+        });
+}
 
 // ===== EXPORTAR EXCEL =====
 function exportarExcel() {

@@ -66,6 +66,7 @@ public class AgenteController {
             return ResponseEntity.badRequest().body(Map.of("message", "agentId obrigatorio"));
         }
 
+        boolean[] isNovo = { false };
         var agente = agenteRepository.findByAgentId(agentId).orElseGet(() -> {
             AgenteEntity novo = new AgenteEntity(
                     agentId,
@@ -76,12 +77,14 @@ public class AgenteController {
                     str(body.get("dominio"))
             );
             novo.setDataCadastro(LocalDateTime.now());
+            isNovo[0] = true;
             return novo;
         });
 
         agente.setAtivo(true);
         agente.setStatus("ONLINE");
         agente.setUltimoContato(LocalDateTime.now());
+        // Metricas dinamicas: sempre atualizadas pelo agente
         if (body.containsKey("cpu")) agente.setCpuPercent(toDouble(body.get("cpu")));
         if (body.containsKey("memoriaPercent")) agente.setMemoriaPercent(toDouble(body.get("memoriaPercent")));
         if (body.containsKey("memoriaTotal")) agente.setMemoriaTotal(toLong(body.get("memoriaTotal")));
@@ -92,11 +95,14 @@ public class AgenteController {
         if (body.containsKey("ip")) agente.setIp(str(body.get("ip")));
         if (body.containsKey("so")) agente.setSistemaOperacional(str(body.get("so")));
         if (body.containsKey("usuario")) agente.setUsuario(str(body.get("usuario")));
-        if (body.containsKey("anydesk")) agente.setAnydesk(str(body.get("anydesk")));
-        if (body.containsKey("dominio")) agente.setDominio(str(body.get("dominio")));
-        if(body.containsKey("setor")) agente.setSetor(str(body.get("setor")));
-        if(body.containsKey("patrimonio")) agente.setPatrimonio(str(body.get("patrimonio")));
-        if(body.containsKey("filial")) agente.setFilial(str(body.get("filial")));
+        // Campos de cadastro (anydesk, dominio, setor, filial, patrimonio):
+        // Agente so preenche se ainda estiver vazio no banco OU na criacao do agente.
+        // Isso evita que edicoes manuais no painel sejam sobrescritas pelo heartbeat.
+        preencherSeVazio(body, "anydesk", agente.getAnydesk(), agente::setAnydesk, isNovo[0]);
+        preencherSeVazio(body, "dominio", agente.getDominio(), agente::setDominio, isNovo[0]);
+        preencherSeVazio(body, "setor", agente.getSetor(), agente::setSetor, isNovo[0]);
+        preencherSeVazio(body, "filial", agente.getFilial(), agente::setFilial, isNovo[0]);
+        preencherSeVazio(body, "patrimonio", agente.getPatrimonio(), agente::setPatrimonio, isNovo[0]);
 
         agenteRepository.save(agente);
 
@@ -491,6 +497,24 @@ public class AgenteController {
         if (body.containsKey("garantiaExpiracao")) {
             String dg = str(body.get("garantiaExpiracao"));
             ag.setGarantiaExpiracao(dg == null || dg.isBlank() ? null : LocalDate.parse(dg));
+        }
+    }
+
+    /**
+     * Atualiza um campo de cadastro vindo do heartbeat apenas quando faz sentido:
+     *  - Se o agente eh novo (primeiro heartbeat), grava o que vier.
+     *  - Se o campo no banco estiver vazio, grava o valor do agente.
+     *  - Caso contrario (ja existe valor no banco), ignora o que o agente mandou
+     *    para nao sobrescrever edicoes manuais feitas no painel.
+     */
+    private void preencherSeVazio(Map<String, Object> body, String chave, String valorAtual,
+                                  java.util.function.Consumer<String> setter, boolean isNovo) {
+        if (!body.containsKey(chave)) return;
+        String novo = str(body.get(chave));
+        boolean novoVazio = novo == null || novo.isBlank();
+        boolean atualVazio = valorAtual == null || valorAtual.isBlank();
+        if (isNovo || (atualVazio && !novoVazio)) {
+            setter.accept(novo);
         }
     }
 
