@@ -197,6 +197,24 @@
                         </select>
                     </div>
                     <div class="form-field">
+                        <label>Tipo de Equipamento</label>
+                        <select id="eq-tipoEquipamento" onchange="atualizarCamposCondicionais()">
+                            <option value="">Selecione um tipo</option>
+                            <option value="LAPTOP">Laptop</option>
+                            <option value="DESKTOP">Desktop</option>
+                            <option value="IMPRESSORA">Impressora</option>
+                            <option value="BALANCA">Balança</option>
+                        </select>
+                    </div>
+                    <div class="form-field" id="field-caminhoCups" style="display:none;">
+                        <label>Caminho CUPS (para impressoras)</label>
+                        <input id="eq-caminhoCups" placeholder="Ex: /dev/usb/lp0 ou socket://ip:9100">
+                    </div>
+                    <div class="form-field" id="field-caminhoMonitor" style="display:none;">
+                        <label>Caminho Monitor (para balança)</label>
+                        <input id="eq-caminhoMonitor" placeholder="Ex: /dev/ttyUSB0 ou com0">
+                    </div>
+                    <div class="form-field">
                         <label>Hostname <span id="lock-hostname" class="lock-badge" title="Travado">&#128274;</span></label>
                         <div class="field-lock-wrap">
                             <input id="eq-hostname" readonly>
@@ -247,6 +265,10 @@
                     <div class="form-field">
                         <label>Expiracao Garantia</label>
                         <input id="eq-garantia" type="date">
+                    </div>
+                     <div class="form-field">
+                        <label>IP</label>
+                        <input id="eq-ip" >
                     </div>
                     <div class="form-field full">
                         <label>Descricao</label>

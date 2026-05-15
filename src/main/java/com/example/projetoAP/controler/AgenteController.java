@@ -238,6 +238,7 @@ public class AgenteController {
         if (body.containsKey("setor")) ag.setSetor(str(body.get("setor")));
         if (body.containsKey("filial")) ag.setFilial(str(body.get("filial")));
         if (body.containsKey("anydesk")) ag.setAnydesk(str(body.get("anydesk")));
+        if (body.containsKey("ipRecebido")) ag.setIpRecebido(str(body.get("ipRecebido")));
         if (body.containsKey("dominio")) ag.setDominio(str(body.get("dominio")));
         aplicarCamposEquipamento(ag, body);
         ag.recalcularStatusUso();
@@ -555,6 +556,9 @@ public class AgenteController {
 
     private void aplicarCamposEquipamento(AgenteEntity ag, Map<String, Object> body) {
         if (body.containsKey("tipo")) ag.setTipo(str(body.get("tipo")));
+        if (body.containsKey("tipoEquipamento")) ag.setTipoEquipamento(str(body.get("tipoEquipamento")));
+        if (body.containsKey("caminhoCups")) ag.setCaminhoCups(str(body.get("caminhoCups")));
+        if (body.containsKey("caminhoMonitor")) ag.setCaminhoMonitor(str(body.get("caminhoMonitor")));
         if (body.containsKey("marca")) ag.setMarca(str(body.get("marca")));
         if (body.containsKey("modelo")) ag.setModelo(str(body.get("modelo")));
         if (body.containsKey("patrimonio")) ag.setPatrimonio(str(body.get("patrimonio")));

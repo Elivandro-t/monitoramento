@@ -35,10 +35,13 @@ public class SheduledService {
     private final String os = System.getProperty("os.name").toLowerCase();
 
     // 🔧 reduzindo threads para evitar sobrecarga
-    private final ExecutorService executorService = Executors.newFixedThreadPool(5);
+    private final ExecutorService executorService = Executors.newFixedThreadPool(3); // Reduzido de 5 para 3
 
     // 🔒 controle para evitar concorrência do scheduler
     private final AtomicBoolean emExecucao = new AtomicBoolean(false);
+    
+    // Limita processamento paralelo com Semaphore
+    private final Semaphore semaphore = new Semaphore(10); // Máximo 10 endpoints simultâneos
 
     public SheduledService(RepositoryEntity repository) {
         this.entityRepository = repository;
@@ -49,25 +52,44 @@ public class SheduledService {
         executorService.shutdown();
     }
 
-    @Scheduled(cron = "*/30 * * * * *")
+    @Scheduled(cron = "0 */2 * * * *")  // A cada 2 minutos em vez de 30 segundos
     public void gerar() {
 
         // 🚫 evita rodar múltiplas execuções ao mesmo tempo
         if (!emExecucao.compareAndSet(false, true)) {
+            System.out.println("⏭️  Scheduler já em execução, pulando ciclo");
             return;
         }
 
         try {
             var endpoints = entityRepository.findAll();
+            
+            if (endpoints.isEmpty()) {
+                return;
+            }
 
             List<CompletableFuture<Void>> futures = new ArrayList<>();
 
             for (var endpoint : endpoints) {
-                futures.add(rodar(endpoint));
+                try {
+                    futures.add(rodar(endpoint));
+                } catch (Exception e) {
+                    System.err.println("❌ Erro ao agendar processamento do endpoint " + endpoint.getId() + ": " + e.getMessage());
+                }
             }
 
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+            // Aguarda com timeout para não travar indefinidamente
+            try {
+                CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
+                    .orTimeout(120, TimeUnit.SECONDS)  // Timeout de 2 minutos
+                    .join();
+            } catch (CompletionException e) {
+                System.err.println("⏱️  Timeout ou erro ao processar endpoints: " + e.getMessage());
+            }
 
+        } catch (Exception e) {
+            System.err.println("❌ Erro crítico no scheduler: " + e.getMessage());
+            e.printStackTrace();
         } finally {
             emExecucao.set(false);
         }
@@ -76,11 +98,21 @@ public class SheduledService {
     public CompletableFuture<Void> rodar(EndpointEntity endpoint) {
         return CompletableFuture.runAsync(() -> {
             try {
-                processarEndpoint(endpoint.getId());
+                // Adquire permissão do semáforo (máximo 10 simultâneos)
+                semaphore.acquire();
+                try {
+                    processarEndpoint(endpoint.getId());
+                } finally {
+                    semaphore.release();
+                }
+            } catch (InterruptedException e) {
+                System.err.println("⚠️  Thread interrompida ao processar endpoint " + endpoint.getId());
+                Thread.currentThread().interrupt();
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                System.err.println("❌ Erro ao processar endpoint " + endpoint.getId() + ": " + e.getMessage());
+                e.printStackTrace();
             }
-        }, executorService); // ✅ agora usando o executor correto
+        }, executorService);
     }
 
     /**

@@ -44,6 +44,9 @@ public class AgenteEntity {
 
     // ===== Equipamento =====
     private String tipo;                 // LAPTOP / DESKTOP
+    private String tipoEquipamento;      // LAPTOP / DESKTOP / IMPRESSORA / BALANCA
+    private String caminhoCups;          // Para impressoras (caminho CUPS)
+    private String caminhoMonitor;       // Para balança (caminho do monitor)
     private String marca;
     private String modelo;
     private String numeroSerie;
@@ -80,7 +83,7 @@ public class AgenteEntity {
     public String getAgentId() { return agentId; }
     public String getHostname() { return hostname; }
     public String getIp() { return ip; }
-    public String getIpRecebido() { return ipRecebido; }
+    public String getIpRecebido() { return ip; }
     public String getSetor() { return setor; }
     public String getFilial() { return filial; }
     public String getAnydesk() { return anydesk; }
@@ -131,6 +134,12 @@ public class AgenteEntity {
     public void setStatus(String status) { this.status = status; }
     public void setAgentId(String agentId) { this.agentId = agentId; }
     public void setTipo(String tipo) { this.tipo = tipo; }
+    public String getTipoEquipamento() { return tipoEquipamento; }
+    public void setTipoEquipamento(String tipoEquipamento) { this.tipoEquipamento = tipoEquipamento; }
+    public String getCaminhoCups() { return caminhoCups; }
+    public void setCaminhoCups(String caminhoCups) { this.caminhoCups = caminhoCups; }
+    public String getCaminhoMonitor() { return caminhoMonitor; }
+    public void setCaminhoMonitor(String caminhoMonitor) { this.caminhoMonitor = caminhoMonitor; }
     public void setMarca(String marca) { this.marca = marca; }
     public void setModelo(String modelo) { this.modelo = modelo; }
     public void setNumeroSerie(String numeroSerie) { this.numeroSerie = numeroSerie; }

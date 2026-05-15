@@ -399,17 +399,37 @@ function abrirModalNovo() {
     document.getElementById('modal-equip-titulo').innerText = 'Novo Equipamento';
     document.getElementById('eq-id').value = '';
     ['eq-agentId','eq-hostname','eq-patrimonio','eq-marca','eq-modelo','eq-sn',
-     'eq-anydesk','eq-dominio','eq-dataCompra','eq-garantia','eq-descricao'].forEach(function(id){
+     'eq-anydesk','eq-dominio','eq-dataCompra','eq-garantia','eq-descricao','eq-caminhoCups','eq-caminhoMonitor'].forEach(function(id){
         document.getElementById(id).value = '';
     });
     document.getElementById('eq-tipo').value = '';
+    document.getElementById('eq-tipoEquipamento').value = '';
     document.getElementById('eq-mtsetor').value = '';
     document.getElementById('eq-filial').value = '';
     // Em cadastro novo, agentId/hostname/anydesk ficam livres para digitar.
     destravarCampo('eq-agentId','lock-agentId');
     destravarCampo('eq-hostname','lock-hostname');
     destravarCampo('eq-anydesk','lock-anydesk');
+    atualizarCamposCondicionais();
     abrirModal('modal-equip');
+}
+
+function atualizarCamposCondicionais() {
+    var tipoEquip = document.getElementById('eq-tipoEquipamento').value;
+    var fieldCups = document.getElementById('field-caminhoCups');
+    var fieldMonitor = document.getElementById('field-caminhoMonitor');
+    
+    // Mostrar/ocultar campos baseado no tipo
+    if (tipoEquip === 'IMPRESSORA') {
+        fieldCups.style.display = 'block';
+        fieldMonitor.style.display = 'none';
+    } else if (tipoEquip === 'BALANCA') {
+        fieldCups.style.display = 'none';
+        fieldMonitor.style.display = 'block';
+    } else {
+        fieldCups.style.display = 'none';
+        fieldMonitor.style.display = 'none';
+    }
 }
 
 function editarEquip(id) {
@@ -440,7 +460,12 @@ function editarEquip(id) {
     document.getElementById('eq-filial').value = filialValor;
     document.getElementById('eq-dataCompra').value = a.dataCompra || '';
     document.getElementById('eq-garantia').value = a.garantiaExpiracao || '';
+    document.getElementById('eq-ip').value = a.ipRecebido || '';
     document.getElementById('eq-descricao').value = a.descricao || '';
+    document.getElementById('eq-tipoEquipamento').value = a.tipoEquipamento || '';
+    document.getElementById('eq-caminhoCups').value = a.caminhoCups || '';
+    document.getElementById('eq-caminhoMonitor').value = a.caminhoMonitor || '';
+    atualizarCamposCondicionais();
     abrirModal('modal-equip');
 }
 
@@ -451,11 +476,15 @@ function salvarEquip() {
         hostname: document.getElementById('eq-hostname').value.trim(),
         patrimonio: document.getElementById('eq-patrimonio').value.trim(),
         marca: document.getElementById('eq-marca').value.trim(),
+        ipRecebido: document.getElementById('eq-ip').value.trim(),
         modelo: document.getElementById('eq-modelo').value.trim(),
         numeroSerie: document.getElementById('eq-sn').value.trim(),
         anydesk: document.getElementById('eq-anydesk').value.trim(),
         dominio: document.getElementById('eq-dominio').value.trim(),
         tipo: document.getElementById('eq-tipo').value,
+        tipoEquipamento: document.getElementById('eq-tipoEquipamento').value,
+        caminhoCups: document.getElementById('eq-caminhoCups').value.trim(),
+        caminhoMonitor: document.getElementById('eq-caminhoMonitor').value.trim(),
         setor: document.getElementById('eq-mtsetor').value,
         filial: document.getElementById('eq-filial').value,
         dataCompra: document.getElementById('eq-dataCompra').value,
@@ -553,6 +582,7 @@ function renderDetInfo(a) {
         ['Agent ID', a.agentId],
         ['Hostname', a.hostname],
         ['Tipo', a.tipo || '--'],
+        ['Tipo de Equipamento', a.tipoEquipamento || '--'],
         ['Marca', a.marca || '--'],
         ['Modelo', a.modelo || '--'],
         ['Patrimonio', a.patrimonio || '--'],
@@ -578,6 +608,15 @@ function renderDetInfo(a) {
         ['Data Cadastro', a.dataCadastro || '--'],
         ['Ultimo Contato', a.ultimoContato || '--']
     ];
+    
+    // Adicionar campos condicionais apenas se existirem
+    if (a.tipoEquipamento === 'IMPRESSORA' && a.caminhoCups) {
+        items.push(['Caminho CUPS', a.caminhoCups]);
+    }
+    if (a.tipoEquipamento === 'BALANCA' && a.caminhoMonitor) {
+        items.push(['Caminho Monitor', a.caminhoMonitor]);
+    }
+    
     var info = items.map(function(it){
         return '<div class="info-item"><span class="info-label">' + esc(it[0]) + '</span>' +
                '<span class="info-value ' + (it[2]||'') + '">' + esc(it[1]) + '</span></div>';
