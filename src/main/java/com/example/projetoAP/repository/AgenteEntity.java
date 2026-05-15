@@ -59,7 +59,6 @@ public class AgenteEntity {
     private String tempoUso;
     private Integer numManutencoes = 0;  // contador de manutencoes
     private String statusUso = "NORMAL"; // NORMAL / USADO / CRITICO
-
     @Column(nullable = false)
     private boolean cadastroManual = false; // true quando cadastrado pela web (sem agente)
 
