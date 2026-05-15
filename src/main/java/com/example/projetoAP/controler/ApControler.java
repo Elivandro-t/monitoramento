@@ -170,12 +170,12 @@ public class ApControler {
 
     @PostMapping("/mult")
     public String mult(@RequestParam(value = "file",required = false) MultipartFile file,Model red, String ReceiveGrupoId,String nome) throws IOException, InterruptedException {
-        String End = "/home/grupomateus/Área de trabalho/monitoramento/arquivos/";
+        String End = "/home/grupomateus/Área de trabalho/servidor/dados/";
         String caminho = End+file.getOriginalFilename();
         file.transferTo(new File(caminho));
         endpointService.salvaMultPartAsync(caminho,ReceiveGrupoId,nome);
         red.addAttribute("mensagem","Processando dados...");
-        return "redirect:/registro";
+        return "redirect:/endpoint/registro";
     };
     @GetMapping("/web")
     public String websocket(){
@@ -331,7 +331,7 @@ public class ApControler {
 
             // Sheet 0: dados para importacao (ordem esperada por EndpointService.processarLinha)
             Sheet sheet = wb.createSheet("Endpoints");
-            String[] cols = {"Localizacao", "MAC", "Hostname", "Descricao", "IPv4", "Modelo", "SN"};
+            String[] cols = {"Localizacao", "MAC", "Hostname", "Ignore", "IPv4", "Modelo", "SN"};
             Row h = sheet.createRow(0);
             for (int i = 0; i < cols.length; i++) {
                 Cell c = h.createCell(i);

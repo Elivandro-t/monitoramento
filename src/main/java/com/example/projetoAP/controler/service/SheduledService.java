@@ -16,52 +16,82 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Component
 public class SheduledService {
+
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
-    private RepositoryEntity entityRepository;
-    @Autowired
-    EndpointService endpointService;
-    private final String os = System.getProperty("os.name").toLowerCase();
-    private final ExecutorService executorService = Executors.newFixedThreadPool(50);
 
-    public SheduledService(RepositoryEntity repository){
+    private final RepositoryEntity entityRepository;
+
+    @Autowired
+    private EndpointService endpointService;
+
+    private final String os = System.getProperty("os.name").toLowerCase();
+
+    // 🔧 reduzindo threads para evitar sobrecarga
+    private final ExecutorService executorService = Executors.newFixedThreadPool(5);
+
+    // 🔒 controle para evitar concorrência do scheduler
+    private final AtomicBoolean emExecucao = new AtomicBoolean(false);
+
+    public SheduledService(RepositoryEntity repository) {
         this.entityRepository = repository;
     }
-
-    private final AtomicInteger totalEndpoints = new AtomicInteger(0);
-    private final AtomicInteger linhasProcessadas = new AtomicInteger(0);
 
     @PreDestroy
     public void shutdownExecutor() {
         executorService.shutdown();
     }
 
-    @Transactional
-    @Scheduled(cron = "*/20 * * * * *")
-    public void gerar() throws IOException, InterruptedException {
-        var endpoints = entityRepository.findAll();
-        totalEndpoints.set(endpoints.size());
-        linhasProcessadas.set(0);
+    @Scheduled(cron = "*/30 * * * * *")
+    public void gerar() {
 
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-        for (var endpoint : endpoints) {
-            futures.add(rodar(endpoint));
+        // 🚫 evita rodar múltiplas execuções ao mesmo tempo
+        if (!emExecucao.compareAndSet(false, true)) {
+            return;
         }
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        try {
+            var endpoints = entityRepository.findAll();
+
+            List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+            for (var endpoint : endpoints) {
+                futures.add(rodar(endpoint));
+            }
+
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        } finally {
+            emExecucao.set(false);
+        }
     }
 
+    public CompletableFuture<Void> rodar(EndpointEntity endpoint) {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                processarEndpoint(endpoint.getId());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }, executorService); // ✅ agora usando o executor correto
+    }
+
+    /**
+     * ✅ Cada thread busca a entidade novamente no banco
+     * ✅ Agora com transação correta
+     */
     @Transactional
-    public void processarEndpoint(EndpointEntity endpoint) throws IOException, InterruptedException {
-        // Lógica de banco de dados que precisa de transação
+    public void processarEndpoint(Long id) throws IOException, InterruptedException {
+
+        EndpointEntity endpoint = entityRepository.findById(id).orElseThrow();
+
         PingResult pingResult = executarPing(endpoint.getIp());
 
         String statusAnterior = endpoint.getStatus();
@@ -70,8 +100,8 @@ public class SheduledService {
 
         boolean agoraIntermitente = false;
 
-        if ("UP".equals(pingResult.status)) {
-            if (pingResult.latenciaMedia != null && pingResult.latenciaMedia > 150) {
+        if ("UP".equals(pingResult.status())) {
+            if (pingResult.latenciaMedia() != null && pingResult.latenciaMedia() > 150) {
                 agoraIntermitente = true;
             } else if ("DOWN".equals(statusAnterior) && ultimaVezOnline != null) {
                 long segundosOffline = Duration.between(ultimaVezOnline, agora).getSeconds();
@@ -81,57 +111,45 @@ public class SheduledService {
             }
         }
 
-        // Atualizar o status no banco de dados
-        endpoint.setStatus(pingResult.status);
+        endpoint.setStatus(pingResult.status());
         endpoint.setUltimaVezOnline(agora);
+
         entityRepository.save(endpoint);
     }
 
-    public CompletableFuture<Void> rodar(EndpointEntity endpoint) {
-        return CompletableFuture.runAsync(() -> {
-            try {
-                processarEndpoint(endpoint);
-            } catch (IOException | InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        });
-    }
-
-    /**
-     * Executa um único ping -c 4 e extrai tudo de uma vez:
-     * - status (UP/DOWN)
-     * - detalhes de cada ICMP (para exibir no card)
-     * - latência média (para verificar intermitência)
-     *
-     * A latência salva no banco é a MESMA usada para validar intermitência.
-     */
     private PingResult executarPing(String ip) throws IOException, InterruptedException {
         String pingCmd = os.contains("win") ? "ping -n 4 " + ip : "ping -c 4 " + ip;
+
         Process process = Runtime.getRuntime().exec(pingCmd);
-        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+
+        BufferedReader reader = new BufferedReader(
+                new InputStreamReader(process.getInputStream())
+        );
 
         StringBuilder detalhes = new StringBuilder();
         Pattern icmpPattern = Pattern.compile("icmp_seq=(\\d+) ttl=(\\d+) time=([\\d.]+) ms");
+
         boolean temResposta = false;
         Double latenciaMedia = null;
+
         String linha;
 
         while ((linha = reader.readLine()) != null) {
-            // Extrai detalhes de cada pacote ICMP
+
             Matcher matcher = icmpPattern.matcher(linha);
+
             if (matcher.find()) {
                 temResposta = true;
-                String icmpSeq = matcher.group(1);
-                String ttl = matcher.group(2);
-                String time = matcher.group(3);
-                detalhes.append("ICMP Seq: ").append(icmpSeq)
-                        .append(", TTL: ").append(ttl)
-                        .append(", Tempo: ").append(time).append(" ms\n");
+
+                detalhes.append("ICMP Seq: ").append(matcher.group(1))
+                        .append(", TTL: ").append(matcher.group(2))
+                        .append(", Tempo: ").append(matcher.group(3))
+                        .append(" ms\n");
             }
 
-            // Extrai latência média da linha de resumo
             if (linha.contains("rtt min/avg/max")) {
                 String[] partes = linha.split("=");
+
                 if (partes.length > 1) {
                     String[] valores = partes[1].trim().split("/");
                     latenciaMedia = Double.parseDouble(valores[1]);
@@ -143,18 +161,19 @@ public class SheduledService {
         process.waitFor();
 
         String status = temResposta ? "UP" : "DOWN";
+
         return new PingResult(status, detalhes.toString().trim(), latenciaMedia);
     }
 
     private record PingResult(String status, String detalhes, Double latenciaMedia) {}
 
-    private void enviarSocket(String mensagem){
+    private void enviarSocket(String mensagem) {
         messagingTemplate.convertAndSend("/topic/processamento", mensagem);
     }
 
-    @Scheduled(cron = "*/10 * * * * *")
-    public void getVierListPage(){
-        var lista = endpointService.getLista().stream().toList();
+    @Scheduled(cron = "*/30 * * * * *")
+    public void getVierListPage() {
+        var lista = endpointService.getLista();
         messagingTemplate.convertAndSend("/lista", lista);
     }
 }

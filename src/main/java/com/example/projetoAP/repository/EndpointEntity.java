@@ -242,6 +242,10 @@ public class EndpointEntity {
         return agoraIntermitente;
     }
 
+    public void setId(long id) {
+        this.id = id;
+    }
+
     public void setIntermitente(boolean intermitente) {
         this.agoraIntermitente = intermitente;
     }

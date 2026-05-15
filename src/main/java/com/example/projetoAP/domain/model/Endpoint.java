@@ -3,6 +3,7 @@ package com.example.projetoAP.domain.model;
 import com.example.projetoAP.EndpointDTO;
 import com.example.projetoAP.Service.EndpointInterfaceDTO;
 import com.example.projetoAP.repository.EndpointEntity;
+import jakarta.persistence.Version;
 
 import java.io.IOException;
 
