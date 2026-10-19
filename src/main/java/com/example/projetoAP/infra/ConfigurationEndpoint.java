@@ -1,5 +1,6 @@
 package com.example.projetoAP.infra;
 
+import com.example.projetoAP.controler.EndpointProcessorService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,10 +16,6 @@ import com.example.projetoAP.repository.SalvaEndPoint;
 @Configuration
 public class ConfigurationEndpoint {
     private final String token = "7938730712:AAEJur7PV7JgRC4c9dlQ49310p4L9NkSbFM";
-   @Bean
-   public RepositoryEntity repository(RepositoryEntity repository){
-       return repository;
-   }
    @Bean
    public ICMPRepository icmpRepository(ICMPRepository icmpRepository){
        return icmpRepository;

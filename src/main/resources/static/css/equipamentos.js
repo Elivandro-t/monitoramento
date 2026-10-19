@@ -460,7 +460,7 @@ function editarEquip(id) {
     document.getElementById('eq-filial').value = filialValor;
     document.getElementById('eq-dataCompra').value = a.dataCompra || '';
     document.getElementById('eq-garantia').value = a.garantiaExpiracao || '';
-    document.getElementById('eq-ip').value = a.ipRecebido || '';
+    document.getElementById('eq-ip').value = a.ip || '';
     document.getElementById('eq-descricao').value = a.descricao || '';
     document.getElementById('eq-tipoEquipamento').value = a.tipoEquipamento || '';
     document.getElementById('eq-caminhoCups').value = a.caminhoCups || '';

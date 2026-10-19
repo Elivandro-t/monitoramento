@@ -207,7 +207,7 @@ public class AgenteController {
                 str(body.get("filial")),
                 str(body.get("anydesk")),
                 str(body.get("dominio")),null);
-        agente.setIpRecebido(ipRecebido);
+        agente.setIp(ipRecebido);
         agente.setCadastroManual(manual);
         aplicarCamposEquipamento(agente, body);
         agente.recalcularStatusUso();
@@ -238,7 +238,7 @@ public class AgenteController {
         if (body.containsKey("setor")) ag.setSetor(str(body.get("setor")));
         if (body.containsKey("filial")) ag.setFilial(str(body.get("filial")));
         if (body.containsKey("anydesk")) ag.setAnydesk(str(body.get("anydesk")));
-        if (body.containsKey("ipRecebido")) ag.setIpRecebido(str(body.get("ipRecebido")));
+        if (body.containsKey("ipRecebido")) ag.setIp(str(body.get("ipRecebido")));
         if (body.containsKey("dominio")) ag.setDominio(str(body.get("dominio")));
         aplicarCamposEquipamento(ag, body);
         ag.recalcularStatusUso();
