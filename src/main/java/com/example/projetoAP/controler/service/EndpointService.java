@@ -237,12 +237,19 @@ public class EndpointService {
             }
         });
 
-        ipToPingThread.put(ip, null); // Apenas marca como em execução
+        ipToPingThread.put(ip, Thread.currentThread()); // ConcurrentHashMap nao aceita null
     }
 
     private final Map<String, Thread> pingThreads = new ConcurrentHashMap<>();
 
+    private static final java.util.regex.Pattern IP_VALIDO = java.util.regex.Pattern.compile("^[A-Za-z0-9.\\-]+$");
+    private static final long CMD_MAX_MS = 10 * 60 * 1000; // nao deixa ping de terminal rodando para sempre
+
     public void CMDPing(cmdDTO dto) throws IOException {
+        if (dto.ip() == null || !IP_VALIDO.matcher(dto.ip().trim()).matches()) {
+            messagingTemplate.convertAndSend("/topic/cmd/" + dto.hostID(), "IP invalido");
+            return;
+        }
         // Se já existe uma thread para esse hostID, interrompe
         Thread existing = pingThreads.get(dto.hostID());
         if (existing != null && existing.isAlive()) {
@@ -259,10 +266,13 @@ public class EndpointService {
             int consecutiveErrors = 0;
             final int MAX_CONSECUTIVE_ERRORS = 5; // Após 5 erros consecutivos, para
             
+            long inicio = System.currentTimeMillis();
             try {
-                while (!Thread.currentThread().isInterrupted()) {
+                while (!Thread.currentThread().isInterrupted()
+                        && System.currentTimeMillis() - inicio < CMD_MAX_MS) {
                     try {
-                        Process p = Runtime.getRuntime().exec("ping -c 1 " + dto.ip());
+                        Process p = new ProcessBuilder("ping", "-c", "1", "-W", "2", dto.ip().trim())
+                                .redirectErrorStream(true).start();
                         BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
                         String line;
                         boolean found = false;
@@ -279,7 +289,7 @@ public class EndpointService {
                             }
                         }
                         
-                        p.waitFor();
+                        if (!p.waitFor(5, TimeUnit.SECONDS)) p.destroyForcibly();
                         
                         // Se nenhuma resposta foi encontrada
                         if (!found) {
@@ -310,7 +320,7 @@ public class EndpointService {
         };
 
         Thread pingThread = new Thread(pingTask);
-        pingThread.setDaemon(false);
+        pingThread.setDaemon(true);
         pingThreads.put(dto.hostID(), pingThread);
         pingThread.start();
     }
@@ -318,7 +328,7 @@ public class EndpointService {
         salvaEndPoint.delete(id);
     }
     @Transactional
-    public void atualizarStatusParcial(Long id, String status, String ping, LocalDateTime ultima, boolean agoraIntermitente) {
-        salvaEndPoint.atualizarStatus(id, status, ping,ultima,agoraIntermitente);
+    public void atualizarStatusParcial(Long id, String status, String ping, LocalDateTime ultima, LocalDateTime ultimaOff, boolean agoraIntermitente) {
+        salvaEndPoint.atualizarStatus(id, status, ping,ultima,ultimaOff,agoraIntermitente);
     }
 }

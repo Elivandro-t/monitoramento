@@ -1,4 +1,4 @@
-let base = "http://10.220.112.112:8083";
+let base = "http://10.220.122.96:8083";
 
 document.addEventListener("DOMContentLoaded", function () {
     let currentMenu = null;

@@ -6,7 +6,7 @@ async function Onlw(){
     const statusDiv = document.getElementById("status")
 
     try {
-      const resposta  = await fetch("http://10.220.112.112:8083/endpoint/monitoramento",{
+      const resposta  = await fetch("http://10.220.122.96:8083/endpoint/monitoramento",{
         method:"GET",
       })
       if(resposta.status === 200){
@@ -37,7 +37,7 @@ async function Onlw(){
 
   async function downloads(){
     try {
-      const resposta  = await fetch("http://10.220.112.112:8081/app-downLoads",{
+      const resposta  = await fetch("http://10.220.122.96:8081/app-downLoads",{
         method:"GET",
       })
       const json = await resposta.json()

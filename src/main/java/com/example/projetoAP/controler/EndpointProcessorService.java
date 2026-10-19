@@ -29,8 +29,8 @@ public class EndpointProcessorService {
         this.entityRepository = entityRepository;
     }
 
+    // sem @Transactional: segurava uma conexao do pool durante o ping e esgotava o Hikari
     @Async("taskExecutor")
-    @Transactional
     public CompletableFuture<Void> processarEndpoint(Long id) {
 
         try {
@@ -93,9 +93,26 @@ public class EndpointProcessorService {
                 );
             }
 
-            if (mudouStatus) {
+            if ("DOWN".equals(pingResult.status())
+                    && (mudouStatus || endpoint.getUltimaVezOffline() == null)) {
 
-                entityRepository.save(endpoint);
+                endpoint.setUltimaVezOffline(agora);
+            }
+
+            // UP grava sempre para manter "ultima vez online" atual
+            if (mudouStatus
+                    || "UP".equals(pingResult.status())
+                    || agoraIntermitente != endpoint.isIntermitente()) {
+
+                // UPDATE pontual: nao sobrescreve edicoes feitas na tela enquanto o ping rodava
+                entityRepository.atualizarStatus(
+                        id,
+                        pingResult.status(),
+                        endpoint.getPing(),
+                        endpoint.getUltimaVezOnline(),
+                        endpoint.getUltimaVezOffline(),
+                        agoraIntermitente
+                );
             }
 
         } catch (Exception e) {
@@ -114,28 +131,30 @@ public class EndpointProcessorService {
     private PingResult executarPing(String ip)
             throws IOException, InterruptedException {
 
+        if (ip == null || !ip.trim().matches("^[A-Za-z0-9.\\-]+$")) {
+            return new PingResult("DOWN", "IP invalido", null);
+        }
+        ip = ip.trim();
+
         String[] comando;
 
         if (os.contains("win")) {
 
             comando = new String[]{
-                    "cmd",
-                    "/c",
-                    "ping -n 1 -w 1500 " + ip
+                    "ping", "-n", "1", "-w", "1500", ip
             };
 
         } else {
 
             comando = new String[]{
-                    "sh",
-                    "-c",
-                    "fping -c 1 -t 1500 " + ip + " 2>&1"
+                    "fping", "-c", "1", "-t", "1500", ip
             };
         }
 
         Process process =
-                Runtime.getRuntime()
-                        .exec(comando);
+                new ProcessBuilder(comando)
+                        .redirectErrorStream(true)
+                        .start();
 
         try {
 

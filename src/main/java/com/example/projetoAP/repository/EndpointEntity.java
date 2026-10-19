@@ -34,6 +34,7 @@ public class EndpointEntity {
     private Integer filialName;
     private String NomeComplexo;
     private LocalDateTime ultimaVezOnline;
+    private LocalDateTime ultimaVezOffline;
     private boolean agoraIntermitente;
     public EndpointEntity(){}
     public EndpointEntity(Endpoint e){
@@ -220,6 +221,21 @@ public class EndpointEntity {
     public void setUltimaVezOnline(LocalDateTime ultimaVezOnline) {
         this.ultimaVezOnline = ultimaVezOnline;
     }
+    public LocalDateTime getUltimaVezOffline() {
+        return ultimaVezOffline;
+    }
+
+    public void setUltimaVezOffline(LocalDateTime ultimaVezOffline) {
+        this.ultimaVezOffline = ultimaVezOffline;
+    }
+
+    public String ConverteHoraOffline(){
+        if(ultimaVezOffline!=null){
+            return ultimaVezOffline.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
+        }
+        return null;
+    }
+
     public String ConverteHora(){
         if(ultimaVezOnline!=null){
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");

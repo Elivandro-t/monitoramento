@@ -21,7 +21,7 @@ public class SalvaEndPoint implements EntityRepository {
     @Override
     public EndpointDTO GetSalva(Endpoint e) throws IOException, InterruptedException {
         var op = repository.getReferenceByIpv4(e.getMac().trim(),e.getIp().trim(),e.getSn().trim());
-        if(op.isPresent()){
+        if(!op.isEmpty()){
             throw new RuntimeException("Endpoint já Existe!");
         };
          EndpointEntity entity = new EndpointEntity(e);
@@ -69,7 +69,7 @@ public class SalvaEndPoint implements EntityRepository {
         repository.deleteById(id);
     }
 
-    public void atualizarStatus(Long id, String status, String ping, LocalDateTime ultima, boolean agoraIntermitente) {
-        repository.atualizarStatus(id,status,ping,ultima,agoraIntermitente);
+    public void atualizarStatus(Long id, String status, String ping, LocalDateTime ultima, LocalDateTime ultimaOff, boolean agoraIntermitente) {
+        repository.atualizarStatus(id,status,ping,ultima,ultimaOff,agoraIntermitente);
     }
 }

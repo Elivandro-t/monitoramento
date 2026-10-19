@@ -55,6 +55,7 @@ function connectToWebSocket() {
         stompClient.subscribe('/lista', function (response) {
             var data = JSON.parse(response.body);
             dadosAtuais = data;
+            marcarAtualizacao();
 
             // Esconde loading e mostra grid no primeiro carregamento
             if (primeiroCarregamento) {
@@ -207,7 +208,10 @@ function renderizar(data) {
                     '<span class="status-text">' + statusLabel + '</span>' +
                     '<span class="latencia-value">' + apenasTempo + '</span>' +
                 '</div>' +
-                '<span class="timestamp">' + formatarData(item.dataUltimaVezOnline) + '</span>' +
+            '</div>' +
+            '<div class="card-times">' +
+                '<div class="info-row"><span class="label">ULT. ONLINE:</span><span class="value time-on">' + formatarData(item.dataUltimaVezOnline) + '</span></div>' +
+                '<div class="info-row"><span class="label">ULT. OFFLINE:</span><span class="value time-off">' + formatarData(item.dataUltimaVezOffline) + '</span></div>' +
             '</div>' +
         '</div>';
     });
@@ -248,3 +252,8 @@ function toggleFullscreen() {
 }
 
 connectToWebSocket();
+
+function marcarAtualizacao() {
+    var el = document.getElementById("ultima-atualizacao");
+    if (el) el.innerText = "Ultima atualizacao: " + new Date().toLocaleTimeString("pt-BR");
+}

@@ -297,3 +297,8 @@ body {
 
     .hostname { font-size: 8px; }
 }
+
+.last-update { font-size: 12px; color: #8b949e; margin: 0 16px; align-self: center; }
+.card-times { padding: 6px 12px 10px; border-top: 1px solid rgba(255,255,255,0.06); }
+.card-times .time-on { color: #39d353; }
+.card-times .time-off { color: #f85149; }

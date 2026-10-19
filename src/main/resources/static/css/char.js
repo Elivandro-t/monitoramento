@@ -1,7 +1,7 @@
 var socket = new SockJS('/ws');
 var stompClient = Stomp.over(socket);
 stompClient.debug = () => { };
-const endpoint = "http://10.220.112.112:8083";
+const endpoint = "http://10.220.122.96:8083";
 
 function connectToWebSocket() {
     let clientId = 'client-' + Date.now().toString(36);
@@ -14,6 +14,8 @@ function connectToWebSocket() {
 
         stompClient.subscribe(`/topic/monitor/${clientId}`, function (response) {
             var data = JSON.parse(response.body);
+            const elAtual = document.getElementById("ultima-atualizacao");
+            if (elAtual) elAtual.innerText = "Ultima atualizacao: " + new Date().toLocaleTimeString("pt-BR");
             let htmlContent = '';
             let countUp = 0;
             let countDown = 0;
@@ -48,10 +50,11 @@ function connectToWebSocket() {
                                   monitoring
                             </span>
                         </div>
-                        <div style="display:flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-                            <span style="font-size: 10px; color: #8b949e;">
-                                ${isUp && item.dataUltimaVezOnline  ? 'Verificado: ' + item.dataUltimaVezOnline : 'Ultimo Visto '+item.dataUltimaVezOnline}
-                            </span>
+                        <div style="margin-top: 8px; font-size: 10px; color: #8b949e; line-height: 1.5;">
+                            <div>Ultima vez online: <span style="color:#39d353">${item.dataUltimaVezOnline || '---'}</span></div>
+                            <div>Ultima vez offline: <span style="color:#f85149">${item.dataUltimaVezOffline || '---'}</span></div>
+                        </div>
+                        <div style="display:flex; justify-content: flex-end; align-items: center; margin-top: 6px;">
                             <span style="font-weight: bold; font-size: 11px; color: ${isUp ? '#39d353' : '#f85149'}">
                                 ${isUp ? '● ONLINE' : '● OFFLINE'}
                             </span>

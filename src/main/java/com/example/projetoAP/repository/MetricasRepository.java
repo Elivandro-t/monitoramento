@@ -1,7 +1,9 @@
 package com.example.projetoAP.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -23,4 +25,9 @@ public interface MetricasRepository extends JpaRepository<MetricasEntity,Long> {
     List<MetricasEntity> findTop200000ByHostidAndTimestampAfterOrderByTimestampDesc(Long hostid, LocalDateTime desde);
 
     List<MetricasEntity> findAllByTimestampBefore(LocalDateTime timeDay);
+
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM history WHERE timestamp < :limite LIMIT 5000", nativeQuery = true)
+    int deleteLoteAntes(@org.springframework.data.repository.query.Param("limite") LocalDateTime limite);
 }

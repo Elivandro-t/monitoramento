@@ -16,7 +16,6 @@ import com.example.projetoAP.domain.vo.*;
 import com.example.projetoAP.repository.*;
 
 import jakarta.annotation.PreDestroy;
-import jakarta.transaction.Transactional;
 
 @Service
 public class CalcularPerdas {
@@ -26,6 +25,9 @@ public class CalcularPerdas {
     private final ICMPRepository icmpRepository;
 
     private final ExecutorService executor = Executors.newFixedThreadPool(10);
+    private final ScheduledExecutorService watchdog = Executors.newSingleThreadScheduledExecutor();
+    private static final java.util.regex.Pattern LOSS = java.util.regex.Pattern.compile("/(\\d+)%");
+    private static final java.util.regex.Pattern IPV4_OU_HOST = java.util.regex.Pattern.compile("^[A-Za-z0-9.\\-]+$");
     private volatile boolean emExecucao = false;
 
     private final ConcurrentHashMap<String, PingStats> resultadoAtual = new ConcurrentHashMap<>();
@@ -44,6 +46,7 @@ public class CalcularPerdas {
     @PreDestroy
     public void shutdownExecutor() {
         executor.shutdown();
+        watchdog.shutdownNow();
     }
 
     private record PingStats(double latencia, int perda) {}
@@ -155,13 +158,19 @@ public class CalcularPerdas {
                 comando.add("-q");
 
                 for (var eq : sub) {
-                    comando.add(eq.getIp());
+                    String ip = eq.getIp() == null ? "" : eq.getIp().trim();
+                    if (IPV4_OU_HOST.matcher(ip).matches()) {
+                        comando.add(ip);
+                    }
                 }
+                if (comando.size() == 4) continue;
 
                 ProcessBuilder pb = new ProcessBuilder(comando);
                 pb.redirectErrorStream(true);
 
                 Process process = pb.start();
+                // se o fping travar, mata o processo (senao o readLine bloqueia e o servico para)
+                ScheduledFuture<?> kill = watchdog.schedule(process::destroyForcibly, 20, TimeUnit.SECONDS);
 
                 BufferedReader reader = new BufferedReader(
                         new InputStreamReader(process.getInputStream())
@@ -174,7 +183,9 @@ public class CalcularPerdas {
                         String[] partes = linha.split(":");
                         String ip = partes[0].trim();
 
-                        int perda = linha.contains("0%") ? 0 : 100;
+                        // "100%" contem "0%": le o numero real do %loss
+                        var m = LOSS.matcher(linha);
+                        int perda = m.find() ? Integer.parseInt(m.group(1)) : 100;
 
                         double latencia = 0;
 
@@ -188,7 +199,8 @@ public class CalcularPerdas {
                     } catch (Exception ignored) {}
                 }
 
-                process.waitFor(3, TimeUnit.SECONDS);
+                kill.cancel(false);
+                if (!process.waitFor(3, TimeUnit.SECONDS)) process.destroyForcibly();
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -262,16 +274,22 @@ public class CalcularPerdas {
         return listaMap;
     }
 
+    // Apaga em lotes pequenos: nada de carregar milhoes de linhas em memoria
+    // nem segurar uma transacao gigante que trava os inserts.
     @Scheduled(cron = "0 0 0 * * *")
-    @Transactional
     public void deletedByTimestamp() {
 
         LocalDateTime timeDay = LocalDateTime.now().minus(2, ChronoUnit.DAYS);
 
-        var lista = metricasRepository.findAllByTimestampBefore(timeDay);
-
-        if (!lista.isEmpty()) {
-            metricasRepository.deleteAll(lista);
-        }
+        int apagados;
+        do {
+            apagados = metricasRepository.deleteLoteAntes(timeDay);
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        } while (apagados > 0);
     }
 }

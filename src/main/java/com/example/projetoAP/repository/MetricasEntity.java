@@ -12,7 +12,8 @@ import java.util.Locale;
 @Entity
 @Table(name = "history", indexes = {
         @Index(name = "idx_history_hostid_timestamp", columnList = "hostid,timestamp"),
-        @Index(name = "idx_history_hostid_itemid", columnList = "hostid,itemid")
+        @Index(name = "idx_history_hostid_itemid", columnList = "hostid,itemid"),
+        @Index(name = "idx_history_timestamp", columnList = "timestamp")
 })
 public class MetricasEntity {
     @Id

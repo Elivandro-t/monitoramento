@@ -1,0 +1,22 @@
+services:
+  monitoramento:
+    image: elivandrolopes/monitoramento:1.0
+    build: .
+    container_name: monitoramento
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    # raw socket para fping/ping dentro do container
+    cap_add:
+      - NET_RAW
+    environment:
+      TZ: America/Fortaleza
+      # sobrescreve o application.properties (descomente se precisar)
+      # SPRING_DATASOURCE_URL: jdbc:mysql://10.220.122.96:3306/informatica
+      # SPRING_DATASOURCE_USERNAME: informatica
+      # SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"

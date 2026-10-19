@@ -42,7 +42,6 @@ public class SheduledService {
     }
 
     @Scheduled(cron = "0 */1 * * * *")
-    @Scheduled(cron = "0 */1 * * * *")
     public void gerar() {
 
         if (!emExecucao.compareAndSet(false, true)) {
@@ -59,7 +58,7 @@ public class SheduledService {
                     .map(endpoint -> endpoint.getId())
                     .toList();
 
-            int batchSize = 10; // 👈 limite REAL de concorrência segura
+            int batchSize = 20; // 20 pings simultaneos (o ping nao segura mais conexao do banco)
 
             for (int i = 0; i < ids.size(); i += batchSize) {
 

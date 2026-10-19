@@ -37,8 +37,6 @@ public class OpenApiConfig {
                         new Server().url("http://localhost:8083").description("Local")
                 ))
                 .tags(List.of(
-                        new Tag().name("Agentes").description("Cadastro, heartbeat, metricas, listagem e export Excel de equipamentos"),
-                        new Tag().name("Manutencoes").description("Laudos tecnicos, upload e download de arquivos e imagens"),
                         new Tag().name("Filiais").description("CRUD de filiais"),
                         new Tag().name("Setores").description("CRUD de setores"),
                         new Tag().name("Autenticacao").description("Login, logout e verificacao de sessao"),
